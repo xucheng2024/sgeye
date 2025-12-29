@@ -138,15 +138,58 @@ function transformRentalRecord(record) {
   try {
     // Field names from "Renting Out of Flats" dataset
     // Support multiple field name variations from data.gov.sg API
-    const month = parseMonth(record.month || record.Month || record.month_year || record.rental_month)
-    const town = (record.town || record.Town || record.town_name || '').trim().toUpperCase()
-    const flatType = normalizeFlatType(record.flat_type || record.Flat_Type || record.flat_type_name || record.room_type)
-    const medianRent = parseFloat(record.median_rent || record.Median_Rent || record.median_monthly_rent || record.median_rental || 0)
-    const contractCount = parseInt(record.number_of_rental_contracts || record.Number_of_Rental_Contracts || record.contract_count || record.rental_contracts || record.number_of_contracts || 0)
-
-    // Validation
-    if (!month || !town || !flatType || medianRent <= 0) {
+    // Try all possible field name variations (case-insensitive)
+    const getField = (variations) => {
+      for (const key of variations) {
+        // Try exact match
+        if (record[key] !== undefined && record[key] !== null && record[key] !== '') {
+          return record[key]
+        }
+        // Try case-insensitive match
+        const lowerKey = key.toLowerCase()
+        for (const recordKey in record) {
+          if (recordKey.toLowerCase() === lowerKey) {
+            return record[recordKey]
+          }
+        }
+      }
       return null
+    }
+
+    const month = parseMonth(
+      getField(['month', 'Month', 'month_year', 'rental_month', 'rental_period', 'period'])
+    )
+    const town = (getField(['town', 'Town', 'town_name', 'town_name_upper']) || '').toString().trim().toUpperCase()
+    const flatType = normalizeFlatType(
+      getField(['flat_type', 'Flat_Type', 'flat_type_name', 'room_type', 'room', 'type'])
+    )
+    const medianRent = parseFloat(
+      getField(['median_rent', 'Median_Rent', 'median_monthly_rent', 'median_rental', 'rent', 'median']) || 0
+    )
+    const contractCount = parseInt(
+      getField([
+        'number_of_rental_contracts',
+        'Number_of_Rental_Contracts',
+        'contract_count',
+        'rental_contracts',
+        'number_of_contracts',
+        'contracts',
+        'count'
+      ]) || 0
+    )
+
+    // Validation - more lenient
+    if (!month) {
+      return null // Month is required
+    }
+    if (!town || town.length < 2) {
+      return null // Town is required
+    }
+    if (!flatType) {
+      return null // Flat type is required
+    }
+    if (medianRent <= 0 || isNaN(medianRent)) {
+      return null // Valid rent is required
     }
 
     return {
@@ -176,6 +219,20 @@ async function importRentalData() {
   console.log('Fetching resource ID from dataset...')
   DATA_GOV_SG_RENTAL_RESOURCE_ID = await getResourceIdFromDataset()
   console.log(`Using resource ID: ${DATA_GOV_SG_RENTAL_RESOURCE_ID}`)
+  
+  // Test fetch first batch to see data structure
+  console.log('\nFetching first batch to inspect data structure...')
+  try {
+    const testBatch = await fetchRentalDataFromDataGovSG(5, 0)
+    if (testBatch.records && testBatch.records.length > 0) {
+      console.log('Sample record structure:')
+      console.log(JSON.stringify(testBatch.records[0], null, 2))
+      console.log('Record keys:', Object.keys(testBatch.records[0]))
+      console.log('')
+    }
+  } catch (error) {
+    console.warn('Could not fetch test batch:', error.message)
+  }
 
   let totalImported = 0
   let totalSkipped = 0
@@ -201,6 +258,11 @@ async function importRentalData() {
 
       if (transformedRecords.length === 0) {
         console.log('No valid records in this batch')
+        // Debug: Show first record structure to understand data format
+        if (records.length > 0 && offset < 500) { // Only log for first few batches
+          console.log('Sample raw record structure:', JSON.stringify(records[0], null, 2))
+          console.log('Record keys:', Object.keys(records[0]))
+        }
         offset += BATCH_SIZE
         continue
       }
