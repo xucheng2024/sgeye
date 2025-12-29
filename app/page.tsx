@@ -32,7 +32,7 @@ export default function Home() {
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <p className="text-2xl md:text-3xl text-center text-gray-800 font-medium">
-            For many households, renting now costs more than buying.
+            For many households, renting now costs more per month than buying — without building equity.
           </p>
         </div>
       </section>
@@ -97,7 +97,10 @@ export default function Home() {
         </div>
 
         {/* Family with Children Section */}
-        <div className="text-center mb-12 mt-16">
+        <div className="text-center mb-12 mt-20">
+          <p className="text-sm text-gray-500 mb-4 italic">
+            Housing decisions don&apos;t exist in isolation — especially for families.
+          </p>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Family with Children</h2>
           <p className="text-gray-600">Make informed decisions about education and location</p>
         </div>
@@ -111,7 +114,7 @@ export default function Home() {
               <h3 className="text-xl font-semibold text-gray-900">PSLE & School Location</h3>
             </div>
             <p className="text-sm text-gray-600 mb-6">
-              Understand school zones, PSLE cut-off points, and housing location trade-offs.
+              Understand school zones, PSLE cut-off points, and how housing choices affect school options.
             </p>
             <div className="flex items-center text-purple-600 text-sm font-medium group-hover:gap-2 transition-all">
               Explore Schools
@@ -161,19 +164,19 @@ export default function Home() {
           </h2>
           <div className="space-y-6">
             <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Uses official public data</h3>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Highlights risks and constraints</h3>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Designed for decision-making</h3>
               </div>
