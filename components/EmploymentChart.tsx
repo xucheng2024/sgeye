@@ -1,20 +1,29 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-const employmentData = [
-  { year: '2018', unemployment: 2.1, employment: 97.9 },
-  { year: '2019', unemployment: 2.3, employment: 97.7 },
-  { year: '2020', unemployment: 3.0, employment: 97.0 },
-  { year: '2021', unemployment: 2.7, employment: 97.3 },
-  { year: '2022', unemployment: 2.1, employment: 97.9 },
-  { year: '2023', unemployment: 1.9, employment: 98.1 },
-]
+import { getEmploymentData } from '@/lib/data'
 
 export default function EmploymentChart() {
+  const [data, setData] = useState<Array<{ year: string; unemployment: number; employment: number }>>([])
+
+  useEffect(() => {
+    getEmploymentData().then(result => {
+      setData(result.map(item => ({
+        year: item.year.toString(),
+        unemployment: item.unemployment_rate,
+        employment: item.employment_rate,
+      })))
+    })
+  }, [])
+
+  if (data.length === 0) {
+    return <div className="flex items-center justify-center h-[300px] text-gray-500">Loading...</div>
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={employmentData}>
+      <AreaChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="year" />
         <YAxis />

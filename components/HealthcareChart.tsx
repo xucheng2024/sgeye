@@ -1,20 +1,33 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { getHealthcareData } from '@/lib/data'
 
-const healthcareData = [
-  { name: 'Public Hospitals', value: 65, color: '#3b82f6' },
-  { name: 'Private Hospitals', value: 20, color: '#10b981' },
-  { name: 'Community Hospitals', value: 10, color: '#f59e0b' },
-  { name: 'Specialty Centers', value: 5, color: '#ef4444' },
-]
+const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
 
 export default function HealthcareChart() {
+  const [data, setData] = useState<Array<{ name: string; value: number; color: string }>>([])
+
+  useEffect(() => {
+    getHealthcareData().then(result => {
+      setData(result.map((item, index) => ({
+        name: item.facility_type,
+        value: item.percentage,
+        color: colors[index % colors.length],
+      })))
+    })
+  }, [])
+
+  if (data.length === 0) {
+    return <div className="flex items-center justify-center h-[300px] text-gray-500">Loading...</div>
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <PieChart>
         <Pie
-          data={healthcareData}
+          data={data}
           cx="50%"
           cy="50%"
           labelLine={false}
@@ -23,7 +36,7 @@ export default function HealthcareChart() {
           fill="#8884d8"
           dataKey="value"
         >
-          {healthcareData.map((entry, index) => (
+          {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>

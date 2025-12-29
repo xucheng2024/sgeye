@@ -1,20 +1,29 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-const housingData = [
-  { year: '2018', hdb: 82.5, private: 17.5 },
-  { year: '2019', hdb: 82.3, private: 17.7 },
-  { year: '2020', hdb: 82.1, private: 17.9 },
-  { year: '2021', hdb: 81.9, private: 18.1 },
-  { year: '2022', hdb: 81.7, private: 18.3 },
-  { year: '2023', hdb: 81.5, private: 18.5 },
-]
+import { getHousingData } from '@/lib/data'
 
 export default function HousingChart() {
+  const [data, setData] = useState<Array<{ year: string; hdb: number; private: number }>>([])
+
+  useEffect(() => {
+    getHousingData().then(result => {
+      setData(result.map(item => ({
+        year: item.year.toString(),
+        hdb: item.hdb_percentage,
+        private: item.private_percentage,
+      })))
+    })
+  }, [])
+
+  if (data.length === 0) {
+    return <div className="flex items-center justify-center h-[300px] text-gray-500">Loading...</div>
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={housingData}>
+      <LineChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="year" />
         <YAxis />

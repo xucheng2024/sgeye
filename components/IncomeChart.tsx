@@ -1,20 +1,29 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-const incomeData = [
-  { year: '2018', median: 4434, mean: 5850 },
-  { year: '2019', median: 4563, mean: 6020 },
-  { year: '2020', median: 4534, mean: 5950 },
-  { year: '2021', median: 4680, mean: 6150 },
-  { year: '2022', median: 5070, mean: 6650 },
-  { year: '2023', median: 5197, mean: 6820 },
-]
+import { getIncomeData } from '@/lib/data'
 
 export default function IncomeChart() {
+  const [data, setData] = useState<Array<{ year: string; median: number; mean: number }>>([])
+
+  useEffect(() => {
+    getIncomeData().then(result => {
+      setData(result.map(item => ({
+        year: item.year.toString(),
+        median: item.median_income,
+        mean: item.mean_income,
+      })))
+    })
+  }, [])
+
+  if (data.length === 0) {
+    return <div className="flex items-center justify-center h-[300px] text-gray-500">Loading...</div>
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={incomeData}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="year" />
         <YAxis />

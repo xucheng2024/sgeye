@@ -1,18 +1,28 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-const educationData = [
-  { level: 'Primary', enrollment: 95.2 },
-  { level: 'Secondary', enrollment: 97.8 },
-  { level: 'Post-Secondary', enrollment: 92.5 },
-  { level: 'University', enrollment: 45.3 },
-]
+import { getEducationData } from '@/lib/data'
 
 export default function EducationChart() {
+  const [data, setData] = useState<Array<{ level: string; enrollment: number }>>([])
+
+  useEffect(() => {
+    getEducationData().then(result => {
+      setData(result.map(item => ({
+        level: item.level,
+        enrollment: item.enrollment_rate,
+      })))
+    })
+  }, [])
+
+  if (data.length === 0) {
+    return <div className="flex items-center justify-center h-[300px] text-gray-500">Loading...</div>
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={educationData}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="level" />
         <YAxis domain={[0, 100]} />
