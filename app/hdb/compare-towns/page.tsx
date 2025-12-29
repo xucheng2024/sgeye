@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary } from '@/lib/hdb-data'
 import { formatCurrency } from '@/lib/utils'
-import { Scale, AlertTriangle, TrendingUp, Map } from 'lucide-react'
+import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
@@ -390,6 +390,7 @@ export default function CompareTownsPage() {
   const [profileB, setProfileB] = useState<TownProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -495,7 +496,7 @@ export default function CompareTownsPage() {
           </div>
         </div>
 
-        {/* Auto-generated Summary */}
+        {/* Auto-generated Summary - 4-layer structure */}
         {compareSummary && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -535,79 +536,122 @@ export default function CompareTownsPage() {
                   ))}
               </div>
             </div>
-            <ul className="space-y-2 mb-4">
-              {compareSummary.bullets.map((bullet, index) => (
-                <li key={index} className="text-base text-gray-800 flex items-start">
-                  <span className="text-blue-600 mr-2 font-bold">•</span>
-                  <span>{bullet}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="pt-3 border-t border-blue-200 space-y-2">
-              <p className="text-base text-gray-800 font-bold text-gray-900">
-                {compareSummary.tradeoff}
-              </p>
-              <p className="text-sm text-gray-600">
-                {compareSummary.conclusion}
-              </p>
-              {(suitabilityA || suitabilityB) && (
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 mb-2">Best for:</p>
-                    <div className="space-y-1">
-                      {suitabilityA && suitabilityA.suits.map((suit, idx) => (
-                        <p key={idx} className="text-sm text-gray-800 flex items-start">
-                          <span className="text-green-600 mr-2">✔</span>
-                          <span><span className="font-medium">{townA}:</span> {suit}</span>
-                        </p>
-                      ))}
-                      {suitabilityB && suitabilityB.suits.map((suit, idx) => (
-                        <p key={idx} className="text-sm text-gray-800 flex items-start">
-                          <span className="text-green-600 mr-2">✔</span>
-                          <span><span className="font-medium">{townB}:</span> {suit}</span>
-                        </p>
-                      ))}
-                    </div>
+
+            {/* Layer 1: One-liner conclusion */}
+            <p className="text-base font-semibold text-gray-900 mb-4 leading-relaxed">
+              {compareSummary.oneLiner}
+            </p>
+
+            {/* Layer 2: Best for / Be cautious */}
+            <div className="space-y-3 mb-4">
+              {(compareSummary.bestFor.townA.length > 0 || compareSummary.bestFor.townB.length > 0) && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">✅ Best for:</p>
+                  <div className="space-y-1">
+                    {compareSummary.bestFor.townA.map((item, idx) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        <span className="font-medium">{townA}</span> → {item}
+                      </p>
+                    ))}
+                    {compareSummary.bestFor.townB.map((item, idx) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        <span className="font-medium">{townB}</span> → {item}
+                      </p>
+                    ))}
                   </div>
-                  {(suitabilityA?.avoids.length || suitabilityB?.avoids.length) > 0 && (
+                </div>
+              )}
+              {(compareSummary.beCautious.townA.length > 0 || compareSummary.beCautious.townB.length > 0) && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 mb-2">⚠️ Be cautious if:</p>
+                  <div className="space-y-1">
+                    {compareSummary.beCautious.townA.map((item, idx) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        <span className="font-medium">{townA}</span> → {item}
+                      </p>
+                    ))}
+                    {compareSummary.beCautious.townB.map((item, idx) => (
+                      <p key={idx} className="text-sm text-gray-800">
+                        <span className="font-medium">{townB}</span> → {item}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Layer 3: Key differences (max 3 bullets) */}
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Key differences:</p>
+              <ul className="space-y-1">
+                {compareSummary.keyDifferences.map((diff, index) => (
+                  <li key={index} className="text-sm text-gray-800 flex items-start">
+                    <span className="text-blue-600 mr-2 font-bold">•</span>
+                    <span>{diff}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Layer 4: Decision hint */}
+            <div className="mb-4 p-3 bg-gray-100 rounded-lg border border-gray-300">
+              <p className="text-xs font-semibold text-gray-700 mb-1">Decision hint:</p>
+              <p className="text-xs text-gray-600">{compareSummary.decisionHint}</p>
+            </div>
+
+            {/* Advanced details (collapsible) */}
+            <div className="border-t border-blue-200 pt-4">
+              <button
+                onClick={() => setAdvancedOpen(!advancedOpen)}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                {advancedOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+                <span>Advanced details</span>
+              </button>
+              {advancedOpen && (
+                <div className="mt-3 space-y-3 text-sm text-gray-600">
+                  <div>
+                    <p className="font-semibold text-gray-700 mb-1">Rent vs Buy gap:</p>
+                    <p>{townA}: {formatCurrency(compareSummary.advanced.rentBuyGapA)}/mo</p>
+                    <p>{townB}: {formatCurrency(compareSummary.advanced.rentBuyGapB)}/mo</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-700 mb-1">Market stability:</p>
+                    <p>{townA}: {compareSummary.advanced.stabilityA}</p>
+                    <p>{townB}: {compareSummary.advanced.stabilityB}</p>
+                  </div>
+                  {(compareSummary.advanced.leaseRiskReasonsA.length > 0 || compareSummary.advanced.leaseRiskReasonsB.length > 0) && (
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 mb-2">Be cautious if:</p>
-                      <div className="space-y-1">
-                        {suitabilityA && suitabilityA.avoids.map((avoid, idx) => (
-                          <p key={idx} className="text-sm text-gray-800 flex items-start">
-                            <span className="text-amber-600 mr-2">⚠</span>
-                            <span><span className="font-medium">{townA}:</span> {avoid}</span>
-                          </p>
-                        ))}
-                        {suitabilityB && suitabilityB.avoids.map((avoid, idx) => (
-                          <p key={idx} className="text-sm text-gray-800 flex items-start">
-                            <span className="text-amber-600 mr-2">⚠</span>
-                            <span><span className="font-medium">{townB}:</span> {avoid}</span>
-                          </p>
-                        ))}
-                      </div>
+                      <p className="font-semibold text-gray-700 mb-1">Lease risk details:</p>
+                      {compareSummary.advanced.leaseRiskReasonsA.length > 0 && (
+                        <div className="mb-2">
+                          <p className="font-medium">{townA}:</p>
+                          <ul className="list-disc list-inside ml-2">
+                            {compareSummary.advanced.leaseRiskReasonsA.map((reason, idx) => (
+                              <li key={idx} className="text-xs">{reason}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {compareSummary.advanced.leaseRiskReasonsB.length > 0 && (
+                        <div>
+                          <p className="font-medium">{townB}:</p>
+                          <ul className="list-disc list-inside ml-2">
+                            {compareSummary.advanced.leaseRiskReasonsB.map((reason, idx) => (
+                              <li key={idx} className="text-xs">{reason}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </div>
-            {decisionHints.length > 0 && (
-              <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-300">
-                <p className="text-xs font-semibold text-gray-700 mb-2">Decision Hint:</p>
-                {decisionHints.map((hint, index) => (
-                  <p key={index} className="text-xs text-gray-600 mb-1">{hint}</p>
-                ))}
-              </div>
-            )}
-            {decisionVerdict && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                <p className="text-sm font-semibold text-gray-900 mb-1">🧭 Decision Lens:</p>
-                <p className="text-sm text-gray-800">
-                  This comparison highlights a trade-off between affordability and long-term lease security.
-                </p>
-                <p className="text-xs text-gray-600 mt-2 italic">{decisionVerdict}</p>
-              </div>
-            )}
           </div>
         )}
 

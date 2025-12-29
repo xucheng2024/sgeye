@@ -691,9 +691,25 @@ export interface TownProfile {
 
 // Compare Summary output
 export interface CompareSummary {
-  bullets: string[] // 3-4 条
-  conclusion: string // 1-2 句
-  tradeoff: string // 最后一行点题
+  oneLiner: string // 一句话结论
+  keyDifferences: string[] // 最多3条
+  decisionHint: string // 一条决策提示
+  bestFor: {
+    townA: string[]
+    townB: string[]
+  }
+  beCautious: {
+    townA: string[]
+    townB: string[]
+  }
+  advanced: {
+    rentBuyGapA: number
+    rentBuyGapB: number
+    stabilityA: string
+    stabilityB: string
+    leaseRiskReasonsA: string[]
+    leaseRiskReasonsB: string[]
+  }
   badges: Array<{ town: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
 }
 
@@ -876,30 +892,75 @@ export async function getTownProfile(
   return null
 }
 
-// Generate Compare Summary from Town Profiles
+// Generate Compare Summary from Town Profiles (simplified 4-layer structure)
 export function generateCompareSummary(
   A: TownProfile,
   B: TownProfile,
   userBudget?: number
 ): CompareSummary {
-  const bullets: string[] = []
   const badges: CompareSummary['badges'] = []
-
-  // 1) Entry cost
+  const leaseRiskLevels = { low: 0, moderate: 1, high: 2, critical: 3 }
+  const leaseA = leaseRiskLevels[A.signals.leaseRisk]
+  const leaseB = leaseRiskLevels[B.signals.leaseRisk]
   const cheaper = A.medianResalePrice <= B.medianResalePrice ? 'A' : 'B'
-  bullets.push(
-    `Entry cost: ${cheaper === 'A' ? A.town : B.town} is lower upfront, ${cheaper === 'A' ? B.town : A.town} is higher.`
-  )
 
-  // 2) Lease profile (THIS is the new core)
-  const leaseText = (t: TownProfile) => {
-    if (t.signals.leaseRisk === 'critical') return 'very short remaining leases (highest risk)'
-    if (t.signals.leaseRisk === 'high') return 'shorter remaining leases (higher risk)'
-    if (t.signals.leaseRisk === 'moderate') return 'mixed lease profile (moderate risk)'
-    return 'healthier lease profile (lower risk)'
+  // 1) One-liner conclusion
+  let oneLiner: string
+  if (leaseA > leaseB) {
+    oneLiner = `${A.town} offers lower upfront cost but comes with higher lease risk. ${B.town} is more expensive, but offers stronger long-term lease security.`
+  } else if (leaseB > leaseA) {
+    oneLiner = `${B.town} offers lower upfront cost but comes with higher lease risk. ${A.town} is more expensive, but offers stronger long-term lease security.`
+  } else {
+    oneLiner = `${cheaper === 'A' ? A.town : B.town} offers lower upfront cost. Both towns have similar lease profiles.`
   }
 
-  bullets.push(`Lease profile: ${A.town} shows ${leaseText(A)}; ${B.town} shows ${leaseText(B)}.`)
+  // 2) Key differences (max 3 bullets, no numbers)
+  const keyDifferences: string[] = []
+  keyDifferences.push(`Entry price: ${cheaper === 'A' ? A.town : B.town} lower, ${cheaper === 'A' ? B.town : A.town} higher`)
+  
+  const leaseTextA = leaseA >= 2 ? 'shorter (<60 yrs common)' : 'healthier'
+  const leaseTextB = leaseB >= 2 ? 'shorter (<60 yrs common)' : 'healthier'
+  keyDifferences.push(`Lease profile: ${A.town} ${leaseTextA}, ${B.town} ${leaseTextB}`)
+  
+  const bothRentAdvantage = A.rentBuyGapMonthly > 0 && B.rentBuyGapMonthly > 0
+  if (bothRentAdvantage) {
+    keyDifferences.push(`Rent vs Buy: Buying beats renting in both towns`)
+  } else {
+    keyDifferences.push(`Rent vs Buy: ${A.rentBuyGapMonthly > 0 ? A.town : B.town} shows stronger buy advantage`)
+  }
+
+  // 3) Decision hint (one line)
+  const decisionHint = leaseA !== leaseB
+    ? 'If you plan to stay long-term, lease profile matters more than entry price.'
+    : 'Both options are viable — choose based on your timeline and risk tolerance.'
+
+  // 4) Best for / Be cautious (only most differentiating)
+  const bestForA: string[] = []
+  const bestForB: string[] = []
+  const beCautiousA: string[] = []
+  const beCautiousB: string[] = []
+
+  // Best for - only show differentiating factors
+  if (A.medianResalePrice < B.medianResalePrice) {
+    bestForA.push('buyers prioritizing lower upfront price or short-term holding')
+  }
+  if (leaseB < leaseA) {
+    bestForB.push('buyers planning long-term stay (15+ years)')
+  }
+  if (leaseA < leaseB) {
+    bestForA.push('buyers comfortable with lease trade-offs')
+  }
+
+  // Be cautious - only show differentiating risks
+  if (leaseA >= 2) {
+    beCautiousA.push('relying on future resale or tight financing')
+  }
+  if (B.medianResalePrice > A.medianResalePrice * 1.1) {
+    beCautiousB.push('highly sensitive to upfront cost')
+  }
+  if (leaseB >= 2) {
+    beCautiousB.push('relying on future resale or tight financing')
+  }
 
   // Badges
   if (A.signals.leaseRisk === 'high' || A.signals.leaseRisk === 'critical')
@@ -910,43 +971,28 @@ export function generateCompareSummary(
     badges.push({ town: 'B', label: B.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
   else badges.push({ town: 'B', label: 'Lease healthier', tone: 'good' })
 
-  // 3) Rent vs Buy lens
-  const gapA = A.rentBuyGapMonthly
-  const gapB = B.rentBuyGapMonthly
-  const rentMoreA = gapA > 0
-  const rentMoreB = gapB > 0
-  bullets.push(
-    `Cash flow: renting is ${rentMoreA ? 'more' : 'less'} costly than buying in ${A.town} (≈ S$${Math.abs(Math.round(gapA))}/mo); ` +
-    `renting is ${rentMoreB ? 'more' : 'less'} costly than buying in ${B.town} (≈ S$${Math.abs(Math.round(gapB))}/mo).`
-  )
-
-  // 4) Stability short statement
-  bullets.push(
-    `Market stability: ${A.town} is ${A.signals.stability}; ${B.town} is ${B.signals.stability}.`
-  )
-
-  // Conclusion/tradeoff (the punchline)
-  const leaseRiskLevels = { low: 0, moderate: 1, high: 2, critical: 3 }
-  const leaseA = leaseRiskLevels[A.signals.leaseRisk]
-  const leaseB = leaseRiskLevels[B.signals.leaseRisk]
-
-  let tradeoff: string
-  if (leaseA > leaseB) {
-    tradeoff = `Trade-off: lower upfront cost vs stronger long-term lease security and resale flexibility.`
-  } else if (leaseB > leaseA) {
-    tradeoff = `Trade-off: lower upfront cost vs stronger long-term lease security and resale flexibility.`
-  } else {
-    tradeoff = `Trade-off: focus on cash flow and stability, as lease profiles are similar.`
+  return {
+    oneLiner,
+    keyDifferences,
+    decisionHint,
+    bestFor: {
+      townA: bestForA,
+      townB: bestForB,
+    },
+    beCautious: {
+      townA: beCautiousA,
+      townB: beCautiousB,
+    },
+    advanced: {
+      rentBuyGapA: A.rentBuyGapMonthly,
+      rentBuyGapB: B.rentBuyGapMonthly,
+      stabilityA: A.signals.stability,
+      stabilityB: B.signals.stability,
+      leaseRiskReasonsA: A.signals.leaseSignalReasons,
+      leaseRiskReasonsB: B.signals.leaseSignalReasons,
+    },
+    badges,
   }
-
-  let conclusion: string
-  if (A.signals.leaseRisk === 'critical' || B.signals.leaseRisk === 'critical') {
-    conclusion = `If you plan to hold long-term or rely on future resale, be cautious with the town showing very short remaining leases.`
-  } else {
-    conclusion = `Both options can work — choose based on whether you prioritize upfront affordability or long-term risk control.`
-  }
-
-  return { bullets, conclusion, tradeoff, badges }
 }
 
 export async function getTownComparisonData(
