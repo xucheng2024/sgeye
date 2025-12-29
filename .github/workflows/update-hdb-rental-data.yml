@@ -1,0 +1,32 @@
+name: Update HDB Rental Data
+
+on:
+  schedule:
+    # Run daily at 2:30 AM UTC (10:30 AM Singapore time)
+    # Runs 30 minutes after resale data update to avoid conflicts
+    - cron: '30 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-rental-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install @supabase/supabase-js
+
+      - name: Update HDB Rental Data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/import-hdb-rental-data.js
+
