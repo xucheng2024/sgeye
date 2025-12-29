@@ -1,13 +1,11 @@
 /**
- * Run Aggregation SQL Script
+ * Run Aggregation via Supabase Database Function
  * 
- * Executes the aggregation SQL to update agg_monthly table
- * Run this after importing new data
+ * Calls the aggregate_monthly_data() function to update agg_monthly table
+ * This function is defined in supabase/schema.sql
  */
 
 const { createClient } = require('@supabase/supabase-js')
-const fs = require('fs')
-const path = require('path')
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
@@ -20,118 +18,50 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 async function runAggregation() {
-  console.log('Running aggregation SQL...')
+  console.log('Running aggregation via database function...')
+  console.log('')
   
   try {
-    // Read SQL file
-    const sqlPath = path.join(__dirname, 'aggregate-hdb-data.sql')
-    const sql = fs.readFileSync(sqlPath, 'utf8')
+    // Call the database function
+    const { data, error } = await supabase.rpc('aggregate_monthly_data')
     
-    // Split into individual statements (simple approach)
-    const statements = sql
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'))
-    
-    console.log(`Found ${statements.length} SQL statements`)
-    
-    // Execute each statement
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i]
-      
-      // Skip TRUNCATE if commented
-      if (statement.toUpperCase().includes('TRUNCATE')) {
-        console.log(`Skipping TRUNCATE statement ${i + 1}`)
-        continue
-      }
-      
-      console.log(`Executing statement ${i + 1}/${statements.length}...`)
-      
-      const { data, error } = await supabase.rpc('exec_sql', {
-        sql_query: statement
-      })
-      
-      if (error) {
-        // Try direct query if RPC doesn't exist
-        console.log('  RPC not available, trying direct query...')
-        // Note: Supabase JS client doesn't support raw SQL directly
-        // We'll use a workaround: create a function or use REST API
-        console.log('  ⚠️  Direct SQL execution not supported via JS client')
-        console.log('  Please run aggregate-hdb-data.sql manually in Supabase SQL Editor')
-        break
-      }
-      
-      console.log(`  ✓ Statement ${i + 1} completed`)
+    if (error) {
+      console.error('Error calling aggregation function:', error.message)
+      console.error('')
+      console.error('Make sure you have run the updated schema.sql that includes')
+      console.error('the aggregate_monthly_data() function.')
+      console.error('')
+      console.error('To fix:')
+      console.error('1. Go to Supabase Dashboard → SQL Editor')
+      console.error('2. Run the updated supabase/schema.sql (the function definition)')
+      console.error('3. Or manually run aggregate-hdb-data.sql')
+      process.exit(1)
     }
     
-    console.log('')
-    console.log('='.repeat(50))
-    console.log('Aggregation completed!')
-    console.log('')
-    console.log('Note: If RPC execution failed, please run aggregate-hdb-data.sql')
-    console.log('manually in Supabase SQL Editor')
+    if (data && data.length > 0) {
+      const result = data[0]
+      console.log('='.repeat(50))
+      console.log('Aggregation completed successfully!')
+      console.log('='.repeat(50))
+      console.log('')
+      console.log('Summary:')
+      console.log(`  Total aggregated records: ${result.total_records}`)
+      console.log(`  Earliest month: ${result.earliest_month}`)
+      console.log(`  Latest month: ${result.latest_month}`)
+      console.log(`  Total transactions: ${result.total_transactions}`)
+      console.log('')
+    } else {
+      console.log('Aggregation completed, but no summary data returned.')
+    }
     
   } catch (error) {
-    console.error('Error running aggregation:', error.message)
-    console.log('')
-    console.log('Please run aggregate-hdb-data.sql manually in Supabase SQL Editor')
+    console.error('Fatal error during aggregation:', error.message)
+    console.error('')
+    console.error('Fallback: Please run aggregate-hdb-data.sql manually in Supabase SQL Editor')
     process.exit(1)
   }
 }
 
-// Alternative: Use Supabase REST API to execute SQL
-async function runAggregationViaREST() {
-  console.log('Running aggregation via Supabase REST API...')
-  
-  try {
-    const sqlPath = path.join(__dirname, 'aggregate-hdb-data.sql')
-    const sql = fs.readFileSync(sqlPath, 'utf8')
-    
-    // Remove comments and TRUNCATE
-    const cleanSql = sql
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .filter(line => !line.toUpperCase().includes('TRUNCATE'))
-      .join('\n')
-    
-    // Use Supabase REST API
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-      },
-      body: JSON.stringify({ sql_query: cleanSql })
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const result = await response.json()
-    console.log('Aggregation result:', result)
-    
-  } catch (error) {
-    console.error('Error:', error.message)
-    console.log('')
-    console.log('Please run aggregate-hdb-data.sql manually in Supabase SQL Editor')
-  }
-}
-
-// For now, just provide instructions
-console.log('='.repeat(50))
-console.log('Aggregation Script')
-console.log('='.repeat(50))
-console.log('')
-console.log('Due to Supabase JS client limitations, please run the aggregation SQL manually:')
-console.log('')
-console.log('1. Go to Supabase Dashboard → SQL Editor')
-console.log('2. Open scripts/aggregate-hdb-data.sql')
-console.log('3. Copy and paste the SQL (skip TRUNCATE if you want to keep old data)')
-console.log('4. Run the query')
-console.log('')
-console.log('Alternatively, you can set up a Supabase Edge Function or Database Function')
-console.log('to automate this step.')
-console.log('')
+// Run aggregation
+runAggregation()
 

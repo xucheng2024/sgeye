@@ -30,10 +30,11 @@ jobs:
         run: node scripts/update-hdb-data.js
 
       - name: Run Aggregation
+        if: success() # Only run if data update succeeded
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          # Run aggregation SQL via Supabase API
+          # Run aggregation via database function
           node scripts/run-aggregation.js
 
