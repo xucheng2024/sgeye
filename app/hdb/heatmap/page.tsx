@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { getTownAggregated } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import HDBNav from '@/components/HDBNav'
 import { Map } from 'lucide-react'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
@@ -44,7 +43,6 @@ export default function HDBHeatmapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <HDBNav />
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">HDB Price Heatmap by Town</h1>

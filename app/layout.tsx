@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import GlobalNav from "@/components/GlobalNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Singapore Data Insights",
-  description: "Visualizing Singapore's public data and key livelihood indicators",
+  title: "Singapore Data Eye | Living in Singapore",
+  description: "Data-driven insights into HDB prices, rental costs, and real housing affordability in Singapore",
 };
 
 export default function RootLayout({
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <GlobalNav />
         {children}
       </body>
     </html>
