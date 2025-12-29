@@ -13,7 +13,9 @@ This guide explains how to set up and run the HDB rental data import.
 
 ### 1. Create Database Table
 
-The table schema is already defined in `supabase/schema.sql`. Run this SQL in your Supabase SQL editor:
+**IMPORTANT**: You must create the table in Supabase before running the import script!
+
+Run this SQL in your Supabase SQL Editor (or use the provided script):
 
 ```sql
 -- HDB Rental Statistics (from data.gov.sg)
@@ -39,6 +41,11 @@ ALTER TABLE hdb_rental_stats ENABLE ROW LEVEL SECURITY;
 -- Create policy
 CREATE POLICY "Allow public read access" ON hdb_rental_stats FOR SELECT USING (true);
 ```
+
+**Quick Option**: You can also run the provided SQL script:
+- Go to Supabase Dashboard → SQL Editor
+- Copy and paste the contents of `scripts/create-rental-table.sql`
+- Click "Run"
 
 ### 2. Configure GitHub Secrets
 
