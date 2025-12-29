@@ -51,3 +51,4 @@ After redeploying:
 - Once Supabase is set up, charts will automatically fetch from the database
 - You can update data in Supabase tables and charts will reflect the changes
 
+
