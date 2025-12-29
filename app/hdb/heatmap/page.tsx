@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getTownAggregated } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { Map } from 'lucide-react'
+import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
@@ -13,6 +14,7 @@ export default function HDBHeatmapPage() {
   const [data, setData] = useState<Array<{ town: string; medianPrice: number; txCount: number }>>([])
   const [loading, setLoading] = useState(true)
   const [hoveredTown, setHoveredTown] = useState<string | null>(null)
+  const [tooltipTown, setTooltipTown] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -27,26 +29,81 @@ export default function HDBHeatmapPage() {
       })
   }, [flatType, months])
 
+  // Calculate quantile buckets (5 equal groups)
+  const getQuantileBuckets = () => {
+    if (data.length === 0) return { buckets: [], priceRanges: [] }
+    
+    const sortedData = [...data].sort((a, b) => b.medianPrice - a.medianPrice)
+    const bucketSize = Math.ceil(sortedData.length / 5)
+    const buckets: Array<{ min: number; max: number; index: number }> = []
+    const priceRanges: Array<{ min: number; max: number; label: string }> = []
+    
+    for (let i = 0; i < 5; i++) {
+      const start = i * bucketSize
+      const end = Math.min(start + bucketSize, sortedData.length)
+      const bucketData = sortedData.slice(start, end)
+      
+      if (bucketData.length > 0) {
+        const min = Math.min(...bucketData.map(d => d.medianPrice))
+        const max = Math.max(...bucketData.map(d => d.medianPrice))
+        buckets.push({ min, max, index: i })
+        
+        // Create label for price range (i=0 is highest, i=4 is lowest)
+        let label = ''
+        if (i === 0) label = 'Most expensive'
+        else if (i === 1) label = 'Higher'
+        else if (i === 2) label = 'Moderate'
+        else if (i === 3) label = 'Lower'
+        else label = 'Most affordable'
+        priceRanges.push({ min, max, label })
+      }
+    }
+    
+    return { buckets, priceRanges }
+  }
+
+  const { buckets, priceRanges } = getQuantileBuckets()
+
+  // Get color and border based on quantile bucket
+  const getColorAndStyle = (price: number) => {
+    if (buckets.length === 0) return { bg: 'rgba(59, 130, 246, 0.2)', border: 'transparent', textColor: 'text-gray-900' }
+    
+    // Find which bucket this price belongs to
+    const bucketIndex = buckets.findIndex(b => price >= b.min && price <= b.max)
+    const index = bucketIndex >= 0 ? bucketIndex : 4
+    
+    // 5 distinct color intensities: 100%, 80%, 60%, 40%, 30% (increased from 20% for better visibility)
+    const intensities = [1.0, 0.8, 0.6, 0.4, 0.3]
+    const intensity = intensities[index] || 0.3
+    
+    // Bottom 20% (most affordable) gets special treatment: lighter blue with prominent border
+    if (index === 4) {
+      return {
+        bg: 'rgba(59, 130, 246, 0.3)',
+        border: 'rgba(59, 130, 246, 0.8)',
+        textColor: 'text-gray-900' // Dark text for light background
+      }
+    }
+    
+    // For darker backgrounds, use white text; for lighter, use dark text
+    const textColor = intensity > 0.5 ? 'text-white' : 'text-gray-900'
+    
+    return {
+      bg: `rgba(59, 130, 246, ${intensity})`,
+      border: 'transparent',
+      textColor
+    }
+  }
+
   const maxPrice = data.length > 0 ? Math.max(...data.map(d => d.medianPrice)) : 1
   const minPrice = data.length > 0 ? Math.min(...data.map(d => d.medianPrice)) : 0
-
-  const getColorIntensity = (price: number) => {
-    if (maxPrice === minPrice) return 100
-    const ratio = (price - minPrice) / (maxPrice - minPrice)
-    return Math.round(20 + ratio * 80) // 20% to 100% opacity
-  }
-
-  const getColor = (price: number) => {
-    const intensity = getColorIntensity(price)
-    return `rgba(59, 130, 246, ${intensity / 100})` // Blue scale
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">HDB Price Heatmap by Town</h1>
-          <p className="mt-2 text-gray-600">Visual representation of resale prices across Singapore</p>
+          <p className="mt-2 text-gray-600">Use this view to compare typical resale prices across towns. Click a town to explore trends, risks, and affordability.</p>
         </div>
       </header>
 
@@ -84,7 +141,7 @@ export default function HDBHeatmapPage() {
 
         <ChartCard
           title="Town Price Heatmap"
-          description={`Median resale prices by town (${months} month${months > 1 ? 's' : ''} rolling). Sorted by median resale price (highest to lowest).`}
+          description={`Towns ranked by typical resale price (${months} month${months > 1 ? 's' : ''} rolling).`}
           icon={<Map className="w-6 h-6" />}
         >
           {loading ? (
@@ -94,16 +151,33 @@ export default function HDBHeatmapPage() {
           ) : (
             <div className="space-y-4">
               {/* Color Legend */}
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-gray-600">Median Price Range (selected period):</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-4 bg-blue-200 rounded"></div>
-                  <span className="text-gray-600">S${minPrice.toLocaleString()}</span>
+              <div className="space-y-3 bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-700">
+                  <span className="font-semibold">Color indicates relative price level (ranked by median price), not exact differences.</span>
                 </div>
-                <span className="text-gray-400">–</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-4 bg-blue-600 rounded"></div>
-                  <span className="text-gray-600">S${maxPrice.toLocaleString()}</span>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {priceRanges.map((range, index) => {
+                    const intensities = [1.0, 0.8, 0.6, 0.4, 0.3]
+                    const intensity = intensities[index] || 0.3
+                    const isLast = index === priceRanges.length - 1
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <div 
+                          className="w-8 h-4 rounded flex-shrink-0"
+                          style={{ 
+                            backgroundColor: `rgba(59, 130, 246, ${intensity})`,
+                            border: isLast ? '2px solid rgba(59, 130, 246, 0.8)' : 'none'
+                          }}
+                        ></div>
+                        <div className="text-xs text-gray-700">
+                          <div className="font-semibold">{range.label}</div>
+                        </div>
+                        {index < priceRanges.length - 1 && (
+                          <span className="text-gray-400 mx-1">→</span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -112,35 +186,50 @@ export default function HDBHeatmapPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
                   <span className="text-blue-600 text-sm">ℹ️</span>
                   <div className="text-xs text-blue-800">
-                    Towns with low transaction volume may show higher price volatility.
+                    Some towns have fewer recent transactions. Prices may fluctuate more due to limited data.
                   </div>
                 </div>
               )}
 
               {/* Town Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {data.map((item) => (
-                  <div
-                    key={item.town}
-                    className="p-4 rounded-lg border-2 transition-all cursor-pointer"
-                    style={{
-                      backgroundColor: getColor(item.medianPrice),
-                      borderColor: hoveredTown === item.town ? '#3b82f6' : 'transparent',
-                      color: 'white',
-                    }}
-                    onMouseEnter={() => setHoveredTown(item.town)}
-                    onMouseLeave={() => setHoveredTown(null)}
-                  >
-                    <div className="font-semibold text-sm mb-1">{item.town}</div>
-                    <div className="text-xs opacity-90">
-                      <div>Median: S${item.medianPrice.toLocaleString()}</div>
-                      <div>Volume: {item.txCount} transactions</div>
-                      {item.txCount < 50 && (
-                        <div className="text-yellow-200 mt-1">⚠️ Low volume</div>
-                      )}
+                {data.map((item) => {
+                  const { bg, border, textColor } = getColorAndStyle(item.medianPrice)
+                  const borderStyle = border !== 'transparent' ? `2px solid ${border}` : hoveredTown === item.town ? '2px solid #3b82f6' : '2px solid transparent'
+                  
+                  return (
+                    <div
+                      key={item.town}
+                      className="p-4 rounded-lg transition-all cursor-pointer relative group"
+                      style={{
+                        backgroundColor: bg,
+                        border: borderStyle,
+                      }}
+                      onMouseEnter={() => setHoveredTown(item.town)}
+                      onMouseLeave={() => setHoveredTown(null)}
+                    >
+                      <div className={`font-semibold text-sm mb-1 ${textColor}`}>{item.town}</div>
+                      <div className={`text-xs ${textColor} ${textColor === 'text-white' ? 'opacity-90' : 'opacity-80'}`}>
+                        <div>Median: {formatCurrency(item.medianPrice)}</div>
+                        <div>Volume: {item.txCount} transactions</div>
+                        {item.txCount < 50 && (
+                          <div 
+                            className="mt-1 relative"
+                            onMouseEnter={() => setTooltipTown(item.town)}
+                            onMouseLeave={() => setTooltipTown(null)}
+                          >
+                            <span className={`${textColor === 'text-white' ? 'text-blue-200' : 'text-blue-600'} cursor-help`}>Fewer recent transactions</span>
+                            {tooltipTown === item.town && (
+                              <div className="absolute bottom-full left-0 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50">
+                                Prices may fluctuate more due to limited data.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

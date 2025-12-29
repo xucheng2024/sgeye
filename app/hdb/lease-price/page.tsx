@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { getBinnedLeasePriceData, BinnedLeaseData } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Clock } from 'lucide-react'
+import { Clock, ArrowRight, AlertTriangle } from 'lucide-react'
+import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
+import Link from 'next/link'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 const TOWNS = ['All', 'ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
@@ -74,6 +76,24 @@ export default function HDBLeasePricePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Key Insight - Layer 1 */}
+        {binnedData.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border border-blue-200 p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Key Insight</h3>
+                <p className="text-base text-gray-800 leading-relaxed">
+                  Based on recent resale data, HDB prices begin to show significant discounting when remaining lease falls below 60 years.
+                  The market appears to price lease decay earlier through price per sqm, even when total prices remain relatively stable.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,7 +128,7 @@ export default function HDBLeasePricePage() {
         <div className="mb-6">
           <ChartCard
             title="Total Price vs Remaining Lease"
-            description="Median, P25, and P75 prices by lease range (binned)"
+            description="How total resale prices change as remaining lease decreases"
             icon={<Clock className="w-6 h-6" />}
           >
             {loading ? (
@@ -117,59 +137,104 @@ export default function HDBLeasePricePage() {
               <div className="flex items-center justify-center h-[500px] text-gray-500">No data available</div>
             ) : (
               <ResponsiveContainer width="100%" height={500}>
-                <LineChart data={totalPriceChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                <LineChart data={totalPriceChartData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                   <XAxis 
                     dataKey="leaseRange" 
                     label={{ value: 'Remaining Lease (years)', position: 'insideBottom', offset: -5 }}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
                   <YAxis 
                     label={{ value: 'Price (S$)', angle: -90, position: 'insideLeft' }}
-                    tickFormatter={(value) => `S$${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => formatCurrency(value)}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
+                  {/* 60 years reference line */}
+                  {(() => {
+                    const sixtyYearBin = totalPriceChartData.find(d => {
+                      const range = d.leaseRange.split('–')
+                      if (range.length === 2) {
+                        const min = parseInt(range[0])
+                        const max = parseInt(range[1])
+                        return min <= 60 && max >= 60
+                      }
+                      return false
+                    })
+                    return sixtyYearBin ? (
+                      <ReferenceLine 
+                        x={sixtyYearBin.leaseRange} 
+                        stroke="#9ca3af" 
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        label={{ value: 'Common financing caution zone (~60 years)', position: 'top', fill: '#6b7280', fontSize: 11 }}
+                      />
+                    ) : null
+                  })()}
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload
                         return (
-                          <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                            <div className="font-semibold mb-2">Lease Range: {data.leaseRange} years</div>
-                            <div>Median: S${data.median.toLocaleString()}</div>
-                            <div>P25: S${data.p25.toLocaleString()}</div>
-                            <div>P75: S${data.p75.toLocaleString()}</div>
-                            <div className="mt-2 text-sm text-gray-500">Count: {data.count} transactions</div>
+                          <div className="bg-white/95 backdrop-blur-sm p-4 border border-gray-200 rounded-lg shadow-xl">
+                            <div className="font-semibold mb-3 text-gray-900 border-b border-gray-200 pb-2">
+                              Lease Range: {data.leaseRange} years
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Typical prices (median): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.median)}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Lower-bound prices (25% below): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.p25)}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Upper-bound prices (top 25%): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.p75)}</span>
+                              </div>
+                            </div>
+                            <div className="mt-3 pt-2 text-xs text-gray-500 border-t border-gray-200">
+                              {data.count} transactions
+                            </div>
                           </div>
                         )
                       }
                       return null
                     }}
                   />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => <span className="text-sm text-gray-700">{value}</span>}
+                  />
+                  {/* Order: Median (bold), then P25/P75 (dashed, lighter) */}
                   <Line 
                     type="monotone" 
                     dataKey="median" 
                     stroke="#3b82f6" 
-                    strokeWidth={3}
-                    name="Median Price"
-                    dot={{ r: 6 }}
+                    strokeWidth={4}
+                    name="Typical prices (median)"
+                    dot={false}
+                    activeDot={{ r: 6 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="p25" 
                     stroke="#10b981" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="P25 Price"
-                    dot={{ r: 4 }}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.6}
+                    name="Lower-bound prices (25% of transactions below)"
+                    dot={false}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="p75" 
                     stroke="#f59e0b" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="P75 Price"
-                    dot={{ r: 4 }}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.6}
+                    name="Upper-bound prices (top 25%)"
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -178,10 +243,10 @@ export default function HDBLeasePricePage() {
         </div>
 
         {/* Price per sqm Chart */}
-        <div>
+        <div className="mb-8">
           <ChartCard
             title="Price per sqm vs Remaining Lease"
-            description="Median, P25, and P75 prices per sqm by lease range (binned) - shows market's early response to lease decay"
+            description="Shows market's early response to lease decay - price per sqm often declines earlier than total price"
             icon={<Clock className="w-6 h-6" />}
           >
             {loading ? (
@@ -190,63 +255,141 @@ export default function HDBLeasePricePage() {
               <div className="flex items-center justify-center h-[500px] text-gray-500">No data available</div>
             ) : (
               <ResponsiveContainer width="100%" height={500}>
-                <LineChart data={pricePerSqmChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                <LineChart data={pricePerSqmChartData} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                   <XAxis 
                     dataKey="leaseRange" 
                     label={{ value: 'Remaining Lease (years)', position: 'insideBottom', offset: -5 }}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
                   <YAxis 
                     label={{ value: 'Price per sqm (S$)', angle: -90, position: 'insideLeft' }}
+                    tickFormatter={(value) => formatCurrency(value)}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
                   />
+                  {/* 60 years reference line */}
+                  {(() => {
+                    const sixtyYearBin = pricePerSqmChartData.find(d => {
+                      const range = d.leaseRange.split('–')
+                      if (range.length === 2) {
+                        const min = parseInt(range[0])
+                        const max = parseInt(range[1])
+                        return min <= 60 && max >= 60
+                      }
+                      return false
+                    })
+                    return sixtyYearBin ? (
+                      <ReferenceLine 
+                        x={sixtyYearBin.leaseRange} 
+                        stroke="#9ca3af" 
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        label={{ value: 'Common financing caution zone (~60 years)', position: 'top', fill: '#6b7280', fontSize: 11 }}
+                      />
+                    ) : null
+                  })()}
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload
+                        // Calculate percentage difference from 70-80 years bin if available
+                        const referenceBin = pricePerSqmChartData.find(d => d.leaseRange.includes('70') || d.leaseRange.includes('80'))
+                        const percentDiff = referenceBin ? ((data.median - referenceBin.median) / referenceBin.median * 100).toFixed(1) : null
+                        
                         return (
-                          <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                            <div className="font-semibold mb-2">Lease Range: {data.leaseRange} years</div>
-                            <div>Median: S${data.median.toLocaleString()}</div>
-                            <div>P25: S${data.p25.toLocaleString()}</div>
-                            <div>P75: S${data.p75.toLocaleString()}</div>
-                            <div className="mt-2 text-sm text-gray-500">Count: {data.count} transactions</div>
+                          <div className="bg-white/95 backdrop-blur-sm p-4 border border-gray-200 rounded-lg shadow-xl">
+                            <div className="font-semibold mb-3 text-gray-900 border-b border-gray-200 pb-2">
+                              Lease Range: {data.leaseRange} years
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Typical prices (median): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.median)}</span>
+                              </div>
+                              {percentDiff && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {percentDiff < 0 ? `${Math.abs(percentDiff)}% lower` : `${percentDiff}% higher`} than 70–80 years range
+                                </div>
+                              )}
+                              <div>
+                                <span className="font-medium text-gray-700">Lower-bound prices (25% below): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.p25)}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Upper-bound prices (top 25%): </span>
+                                <span className="font-semibold text-gray-900">{formatCurrencyFull(data.p75)}</span>
+                              </div>
+                            </div>
+                            <div className="mt-3 pt-2 text-xs text-gray-500 border-t border-gray-200">
+                              {data.count} transactions
+                            </div>
                           </div>
                         )
                       }
                       return null
                     }}
                   />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => <span className="text-sm text-gray-700">{value}</span>}
+                  />
+                  {/* Order: Median (bold), then P25/P75 (dashed, lighter) */}
                   <Line 
                     type="monotone" 
                     dataKey="median" 
                     stroke="#3b82f6" 
-                    strokeWidth={3}
-                    name="Median Price/sqm"
-                    dot={{ r: 6 }}
+                    strokeWidth={4}
+                    name="Typical prices (median)"
+                    dot={false}
+                    activeDot={{ r: 6 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="p25" 
                     stroke="#10b981" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="P25 Price/sqm"
-                    dot={{ r: 4 }}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.6}
+                    name="Lower-bound prices (25% of transactions below)"
+                    dot={false}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="p75" 
                     stroke="#f59e0b" 
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    name="P75 Price/sqm"
-                    dot={{ r: 4 }}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.6}
+                    name="Upper-bound prices (top 25%)"
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
             )}
           </ChartCard>
+        </div>
+
+        {/* What this means for buyers - Layer 3 */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">What this means for buyers</h3>
+          <div className="space-y-4 text-gray-700 mb-6">
+            <p>
+              Flats with &lt;60 years remaining lease may appear affordable but carry higher resale and financing risk.
+            </p>
+            <p>
+              For owner-occupiers planning long-term stay, price per sqm reflects market caution earlier than total price.
+            </p>
+            <p>
+              Consider combining this with the Affordability and Rent vs Buy tools.
+            </p>
+          </div>
+          <Link
+            href="/hdb/affordability"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+          >
+            Check my affordability with lease risk
+            <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </main>
     </div>
