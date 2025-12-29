@@ -216,11 +216,45 @@ export async function getTownAggregated(
   }))
 }
 
+// Parse remaining_lease string to decimal years
+// Handles formats like: "84 years 3 months", "61 years", "49 years 11 months"
+function parseLeaseYears(leaseText: string): number | null {
+  if (!leaseText || typeof leaseText !== 'string') {
+    return null
+  }
+
+  const trimmed = leaseText.trim()
+  if (!trimmed) return null
+
+  // Extract years (e.g., "84 years 3 months" -> 84, "61 years" -> 61)
+  const yearsMatch = trimmed.match(/(\d+)\s*years?/i)
+  const years = yearsMatch ? parseFloat(yearsMatch[1]) : 0
+
+  // Extract months (e.g., "84 years 3 months" -> 3, "49 years 11 months" -> 11)
+  const monthsMatch = trimmed.match(/(\d+)\s*months?/i)
+  const months = monthsMatch ? parseFloat(monthsMatch[1]) : 0
+
+  // Validate: must have at least years
+  if (years === 0 && months === 0) {
+    return null
+  }
+
+  // Convert to decimal years
+  const leaseYears = years + months / 12
+
+  // Validate range (0-99 years is reasonable for HDB)
+  if (leaseYears <= 0 || leaseYears > 99) {
+    return null
+  }
+
+  return leaseYears
+}
+
 // Get lease age vs price data
 export async function getLeasePriceData(
   flatType?: string,
   town?: string,
-  limit: number = 1000
+  limit: number = 10000
 ): Promise<Array<{
   leaseYears: number
   price: number
@@ -251,15 +285,14 @@ export async function getLeasePriceData(
       if (data && data.length > 0) {
         return data
           .map(item => {
-            const leaseText = item.remaining_lease || ''
-            const yearsMatch = leaseText.match(/(\d+)\s*years?/)
-            const monthsMatch = leaseText.match(/(\d+)\s*months?/)
-            const years = yearsMatch ? parseFloat(yearsMatch[1]) : 0
-            const months = monthsMatch ? parseFloat(monthsMatch[1]) : 0
-            const leaseYears = years + months / 12
+            const leaseYears = parseLeaseYears(item.remaining_lease || '')
+            if (leaseYears === null) return null
+
             const price = Number(item.resale_price)
             const area = Number(item.floor_area_sqm) || 1
             const pricePerSqm = price / area
+
+            if (price <= 0 || area <= 0) return null
 
             return {
               leaseYears,
@@ -269,7 +302,7 @@ export async function getLeasePriceData(
               flatType: item.flat_type || 'Unknown',
             }
           })
-          .filter(item => item.leaseYears > 0 && item.price > 0)
+          .filter((item): item is NonNullable<typeof item> => item !== null)
       }
     }
   } catch (error) {
@@ -291,6 +324,88 @@ export async function getLeasePriceData(
     })
   }
   return sampleData
+}
+
+// Binned lease data with statistics
+export interface BinnedLeaseData {
+  binLabel: string
+  binStart: number
+  binEnd: number
+  medianPrice: number
+  p25Price: number
+  p75Price: number
+  medianPricePerSqm: number
+  p25PricePerSqm: number
+  p75PricePerSqm: number
+  count: number
+}
+
+// Get binned lease price data with statistics
+export async function getBinnedLeasePriceData(
+  flatType?: string,
+  town?: string,
+  limit: number = 10000
+): Promise<BinnedLeaseData[]> {
+  const rawData = await getLeasePriceData(flatType, town, limit)
+
+  // Define bins: 0-40, 40-50, 50-60, 60-70, 70-80, 80-99
+  const bins = [
+    { start: 0, end: 40, label: '0-40' },
+    { start: 40, end: 50, label: '40-50' },
+    { start: 50, end: 60, label: '50-60' },
+    { start: 60, end: 70, label: '60-70' },
+    { start: 70, end: 80, label: '70-80' },
+    { start: 80, end: 99, label: '80-99' },
+  ]
+
+  // Helper function to calculate percentile
+  function percentile(arr: number[], p: number): number {
+    if (arr.length === 0) return 0
+    const sorted = [...arr].sort((a, b) => a - b)
+    const index = Math.floor(sorted.length * p)
+    return sorted[Math.min(index, sorted.length - 1)]
+  }
+
+  // Group data by bins
+  const binnedData = bins.map(bin => {
+    const itemsInBin = rawData.filter(
+      item => item.leaseYears >= bin.start && item.leaseYears < bin.end
+    )
+
+    if (itemsInBin.length === 0) {
+      return {
+        binLabel: bin.label,
+        binStart: bin.start,
+        binEnd: bin.end,
+        medianPrice: 0,
+        p25Price: 0,
+        p75Price: 0,
+        medianPricePerSqm: 0,
+        p25PricePerSqm: 0,
+        p75PricePerSqm: 0,
+        count: 0,
+      }
+    }
+
+    const prices = itemsInBin.map(item => item.price)
+    const pricesPerSqm = itemsInBin.map(item => item.pricePerSqm)
+
+    return {
+      binLabel: bin.label,
+      binStart: bin.start,
+      binEnd: bin.end,
+      medianPrice: percentile(prices, 0.5),
+      p25Price: percentile(prices, 0.25),
+      p75Price: percentile(prices, 0.75),
+      medianPricePerSqm: percentile(pricesPerSqm, 0.5),
+      p25PricePerSqm: percentile(pricesPerSqm, 0.25),
+      p75PricePerSqm: percentile(pricesPerSqm, 0.75),
+      count: itemsInBin.length,
+    }
+  })
+
+  // Filter out empty bins
+  return binnedData.filter(bin => bin.count > 0)
 }
 
 // Calculate affordability
