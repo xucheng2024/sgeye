@@ -68,7 +68,7 @@ export async function getAggregatedMonthly(
       }
 
       // Supabase has a default limit of 1000, we need to fetch all data
-      let allData: any[] = []
+      let allData: AggregatedMonthly[] = []
       let hasMore = true
       let page = 0
       const pageSize = 1000
@@ -150,7 +150,7 @@ export async function getTownAggregated(
       }
 
       // Fetch all data with pagination
-      let allData: any[] = []
+      let allData: Array<{ town: string; flat_type: string; median_price: number; tx_count: number }> = []
       let hasMore = true
       let page = 0
       const pageSize = 1000
@@ -419,6 +419,7 @@ export function calculateAffordability(
   maxMonthlyPayment: number
   maxLoanAmount: number
   maxPropertyPrice: number
+  maxPropertyPriceByBudget: number
   constraints: {
     msr: number
     tdsr: number
@@ -456,6 +457,7 @@ export function calculateAffordability(
     maxMonthlyPayment,
     maxLoanAmount,
     maxPropertyPrice,
+    maxPropertyPriceByBudget, // Loan capacity limit
     constraints: {
       msr: maxMonthlyPaymentMSR,
       tdsr: maxMonthlyPaymentTDSR,
@@ -475,6 +477,7 @@ export async function findAffordableProperties(
   medianPrice: number
   p25Price: number
   txCount: number
+  medianLeaseYears: number
 }>> {
   try {
     const endDate = new Date()
@@ -501,14 +504,15 @@ export async function findAffordableProperties(
         medianPrice: item.median_price,
         p25Price: item.p25_price,
         txCount: item.tx_count,
+        medianLeaseYears: item.median_lease_years || 0,
       }))
-      .sort((a, b) => a.p25Price - b.p25Price) // Sort by price ascending
+      .sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice)) // Sort by closest match to budget
 
     // Group by town and flat type, take best option per town
     const townMap = new Map<string, typeof affordable[0]>()
     affordable.forEach(item => {
       const key = `${item.town}-${item.flatType}`
-      if (!townMap.has(key) || item.p25Price < townMap.get(key)!.p25Price) {
+      if (!townMap.has(key) || Math.abs(item.medianPrice - maxPrice) < Math.abs(townMap.get(key)!.medianPrice - maxPrice)) {
         townMap.set(key, item)
       }
     })
@@ -527,6 +531,7 @@ export async function findAffordableProperties(
     medianPrice: maxPrice * 0.8 + Math.random() * maxPrice * 0.2,
     p25Price: maxPrice * 0.7 + Math.random() * maxPrice * 0.15,
     txCount: Math.floor(Math.random() * 100) + 20,
-  })).sort((a, b) => a.p25Price - b.p25Price)
+    medianLeaseYears: 50 + Math.random() * 30,
+  })).sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice))
 }
 

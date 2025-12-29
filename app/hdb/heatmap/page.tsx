@@ -86,7 +86,7 @@ export default function HDBHeatmapPage() {
 
         <ChartCard
           title="Town Price Heatmap"
-          description={`Median resale prices by town (${months} month${months > 1 ? 's' : ''} rolling)`}
+          description={`Median resale prices by town (${months} month${months > 1 ? 's' : ''} rolling). Sorted by median resale price (highest to lowest).`}
           icon={<Map className="w-6 h-6" />}
         >
           {loading ? (
@@ -97,17 +97,27 @@ export default function HDBHeatmapPage() {
             <div className="space-y-4">
               {/* Color Legend */}
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-gray-600">Price Range:</span>
+                <span className="text-gray-600">Median Price Range (selected period):</span>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-4 bg-blue-200 rounded"></div>
                   <span className="text-gray-600">S${minPrice.toLocaleString()}</span>
                 </div>
-                <span className="text-gray-400">→</span>
+                <span className="text-gray-400">–</span>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-4 bg-blue-600 rounded"></div>
                   <span className="text-gray-600">S${maxPrice.toLocaleString()}</span>
                 </div>
               </div>
+
+              {/* Sample Size Warning */}
+              {data.some(item => item.txCount < 50) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                  <span className="text-blue-600 text-sm">ℹ️</span>
+                  <div className="text-xs text-blue-800">
+                    Towns with low transaction volume may show higher price volatility.
+                  </div>
+                </div>
+              )}
 
               {/* Town Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -127,6 +137,9 @@ export default function HDBHeatmapPage() {
                     <div className="text-xs opacity-90">
                       <div>Median: S${item.medianPrice.toLocaleString()}</div>
                       <div>Volume: {item.txCount} transactions</div>
+                      {item.txCount < 50 && (
+                        <div className="text-yellow-200 mt-1">⚠️ Low volume</div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -38,6 +38,8 @@ export default function HDBAffordabilityPage() {
     p25Price: p.p25Price,
     txCount: p.txCount,
     flatType: p.flatType,
+    medianLeaseYears: Math.round(p.medianLeaseYears || 0),
+    label: `${p.town} • ${p.flatType} • ${Math.round(p.medianLeaseYears || 0)}y lease`,
   }))
 
   return (
@@ -94,10 +96,14 @@ export default function HDBAffordabilityPage() {
                   onChange={(e) => setLoanYears(Number(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value={15}>15 years</option>
                   <option value={20}>20 years</option>
                   <option value={25}>25 years (HDB max)</option>
-                  <option value={30}>30 years (Bank loan)</option>
+                  <option value={30}>30 years</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Loan term should align with HDB lease, age, and policy. 25 years is the realistic default for resale HDB.
+                </p>
               </div>
 
               <div>
@@ -166,12 +172,31 @@ export default function HDBAffordabilityPage() {
                 </div>
 
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-1">Maximum Property Price</div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    S${results.maxPropertyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  <div className="text-sm text-gray-600 mb-2">Maximum Property Price</div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">Max by Loan Capacity:</span>
+                      <span className="text-sm font-semibold text-gray-700">
+                        S${results.maxPropertyPriceByBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-600">Max by Down Payment / LTV:</span>
+                      <span className="text-sm font-semibold text-gray-700">
+                        S${results.constraints.ltv.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </span>
+                    </div>
+                    <div className="pt-2 mt-2 border-t border-purple-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">👉 Final Budget:</span>
+                        <span className="text-2xl font-bold text-purple-600">
+                          S${results.maxPropertyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    LTV limit: S${results.constraints.ltv.toLocaleString()}
+                  <div className="text-xs text-gray-500 mt-3 italic">
+                    Your purchase price is limited by down payment and LTV, not monthly affordability.
                   </div>
                 </div>
 
@@ -190,38 +215,57 @@ export default function HDBAffordabilityPage() {
           </ChartCard>
         </div>
 
+        {/* Lease Risk Warning */}
+        {results && results.maxPropertyPrice < 500000 && (
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-amber-600 text-xl">⚠️</span>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-amber-900 mb-1">Lease Risk Consideration</div>
+                <div className="text-xs text-amber-800">
+                  Based on recent resale data, properties under S${results.maxPropertyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })} are mostly concentrated in flats with remaining lease below ~55 years.
+                  Such flats may face future resale and financing constraints.
+                </div>
+                <div className="text-xs text-amber-700 mt-2 italic">
+                  Remember: "Affordable" ≠ "Worth buying". This tool helps you avoid pitfalls, not just find listings.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Affordable Properties */}
         {affordableProperties.length > 0 && (
           <ChartCard
             title="Affordable Properties"
-            description={`Top ${Math.min(15, affordableProperties.length)} affordable options based on your budget`}
+            description={`Top ${Math.min(15, affordableProperties.length)} affordable options sorted by closest match to your budget (P50 price)`}
             icon={<Home className="w-6 h-6" />}
           >
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={chartData}>
+            <ResponsiveContainer width="100%" height={500}>
+              <BarChart data={chartData} margin={{ bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="town" angle={-45} textAnchor="end" height={100} />
+                <XAxis 
+                  dataKey="town" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={120}
+                  tick={{ fontSize: 11 }}
+                />
                 <YAxis label={{ value: 'Price (S$)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip
-                  formatter={(value: any, name?: string) => {
-                    if (name === 'P25 Price') {
-                      return [`S$${value.toLocaleString()}`, 'P25 Price (Conservative)']
-                    }
-                    if (name === 'Median Price') {
-                      return [`S$${value.toLocaleString()}`, 'Median Price']
-                    }
-                    return [`S$${value.toLocaleString()}`, name || '']
-                  }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload
                       return (
                         <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                          <p className="font-semibold">{data.fullTown}</p>
-                          <p className="text-sm text-gray-600">{data.flatType}</p>
-                          <p className="text-sm">P25: S${data.p25Price.toLocaleString()}</p>
-                          <p className="text-sm">Median: S${data.medianPrice.toLocaleString()}</p>
-                          <p className="text-sm">Transactions: {data.txCount}</p>
+                          <p className="font-semibold mb-1">{data.fullTown}</p>
+                          <p className="text-sm text-gray-600 mb-2">{data.flatType}</p>
+                          <div className="text-xs text-gray-500 mb-2">Median Remaining Lease: ~{data.medianLeaseYears} years</div>
+                          <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
+                            <p className="text-sm">P25: S${data.p25Price.toLocaleString()}</p>
+                            <p className="text-sm">Median: S${data.medianPrice.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Transactions: {data.txCount}</p>
+                          </div>
                         </div>
                       )
                     }
@@ -233,6 +277,10 @@ export default function HDBAffordabilityPage() {
                 <Bar dataKey="medianPrice" fill="#3b82f6" name="Median Price" />
               </BarChart>
             </ResponsiveContainer>
+            <div className="mt-4 text-xs text-gray-500">
+              <p className="mb-1">Each bar shows: <span className="font-medium">Town • Flat Type • Median Remaining Lease</span></p>
+              <p>Sorted by closest match to your budget (P50 median price)</p>
+            </div>
           </ChartCard>
         )}
       </main>
