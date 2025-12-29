@@ -192,15 +192,15 @@ export default function HDBAffordabilityPage() {
           >
             {/* Section 1: Summary Box */}
             {results && (
-              <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Your Housing Reality (Summary)</h3>
-                <p className="text-base text-gray-800 leading-relaxed mb-2">
+              <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
+                <h3 className="text-base font-bold text-gray-900 mb-2">Your Housing Reality (Summary)</h3>
+                <p className="text-sm text-gray-800 leading-relaxed mb-2">
                   With your current income and savings, your realistic HDB resale budget is around <span className="font-bold text-blue-600">{formatCurrency(results.maxPropertyPrice)}</span>.
                 </p>
-                <p className="text-base text-gray-800 leading-relaxed mb-3">
+                <p className="text-sm text-gray-800 leading-relaxed mb-2">
                   At current market rents, renting a similar flat costs significantly more per month than buying, but affordable resale options may carry lease-related risks.
                 </p>
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-xs text-gray-500 italic">
                   In short: You can afford to buy, but only within a limited price range, and lease matters.
                 </p>
               </div>
@@ -208,42 +208,45 @@ export default function HDBAffordabilityPage() {
             {results ? (
               <div className="space-y-4">
                 {/* Final Budget - Most Prominent */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-xl border-2 border-purple-300 shadow-lg">
-                  <div className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Final Budget</div>
-                  <div className="text-5xl font-bold text-purple-600 mb-3">
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-300 shadow-lg">
+                  <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Final Budget</div>
+                  <div className="text-4xl font-bold text-purple-600 mb-2">
                     {formatCurrency(results.maxPropertyPrice)}
                   </div>
-                  <div className="text-sm text-gray-600 italic">
+                  <div className="text-xs text-gray-600 italic mb-1">
                     This is your realistic cap
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Used to filter towns and flat types below.
                   </div>
                 </div>
 
                 {/* Supporting Details - Less Prominent */}
-                <div className="bg-blue-50/80 backdrop-blur-sm p-5 rounded-lg border border-blue-200">
-                  <div className="text-xs font-medium text-gray-600 mb-2">Maximum Monthly Payment</div>
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-lg border border-blue-200">
+                  <div className="text-xs font-medium text-gray-600 mb-1">Maximum Monthly Payment</div>
+                  <div className="text-xl font-bold text-blue-600">
                     {formatCurrency(results.maxMonthlyPayment)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-blue-200">
+                  <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-blue-200">
                     MSR: {formatCurrency(results.constraints.msr)} | TDSR: {formatCurrency(results.constraints.tdsr)}
                   </div>
                 </div>
 
-                <div className="bg-green-50/80 backdrop-blur-sm p-5 rounded-lg border border-green-200">
-                  <div className="text-xs font-medium text-gray-600 mb-2">Maximum Loan Amount</div>
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="bg-green-50/80 backdrop-blur-sm p-4 rounded-lg border border-green-200">
+                  <div className="text-xs font-medium text-gray-600 mb-1">Maximum Loan Amount</div>
+                  <div className="text-xl font-bold text-green-600">
                     {formatCurrency(results.maxLoanAmount)}
                   </div>
                 </div>
 
-                <div className="bg-gray-50/80 backdrop-blur-sm p-5 rounded-lg border border-gray-200">
-                  <div className="text-xs font-medium text-gray-600 mb-3">Breakdown:</div>
-                  <div className="space-y-2 text-xs text-gray-600">
-                    <div className="flex justify-between items-center py-1">
+                <div className="bg-gray-50/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200">
+                  <div className="text-xs font-medium text-gray-600 mb-2">Breakdown:</div>
+                  <div className="space-y-1.5 text-xs text-gray-600">
+                    <div className="flex justify-between items-center py-0.5">
                       <span>Max by Loan Capacity:</span>
                       <span className="font-semibold text-gray-800">{formatCurrency(results.maxPropertyPriceByBudget)}</span>
                     </div>
-                    <div className="flex justify-between items-center py-1">
+                    <div className="flex justify-between items-center py-0.5">
                       <span>Max by Down Payment / LTV:</span>
                       <span className="font-semibold text-gray-800">{formatCurrency(results.constraints.ltv)}</span>
                     </div>
@@ -295,8 +298,8 @@ export default function HDBAffordabilityPage() {
               </Link>
             </div>
             <ChartCard
-              title="Affordable Properties"
-              description="Where your budget fits today"
+              title="Where your budget works today"
+              description="Affordable properties based on your budget"
               icon={<Home className="w-6 h-6" />}
             >
             <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
@@ -352,13 +355,16 @@ export default function HDBAffordabilityPage() {
               {closestMatches.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs">
                   <div className="font-semibold text-purple-900 mb-1">✨ Closest match to your budget:</div>
-                  <div className="text-purple-700">
+                  <div className="text-purple-700 mb-2">
                     {sortedByCloseness.slice(0, 3).map((p, idx) => (
                       <span key={idx}>
                         {p.town} {p.flatType}
                         {idx < 2 && ', '}
                       </span>
                     ))}
+                  </div>
+                  <div className="text-purple-600 text-xs italic">
+                    These areas are closest to your budget with relatively healthier lease profiles.
                   </div>
                 </div>
               )}
@@ -467,6 +473,17 @@ export default function HDBAffordabilityPage() {
                               <>Renting costs ~{formatCurrency(Math.abs(diff))} more per month</>
                             ) : (
                               <>Buying costs ~{formatCurrency(Math.abs(diff))} more per month</>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            {isRentHigher ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                🟢 Ownership advantage
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+                                🟠 Cash flow pressure from renting
+                              </span>
                             )}
                           </div>
                           <div className="text-sm text-gray-700 leading-relaxed pt-2 border-t border-gray-200 space-y-2">
