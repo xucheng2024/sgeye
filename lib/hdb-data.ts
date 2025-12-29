@@ -535,3 +535,65 @@ export async function findAffordableProperties(
   })).sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice))
 }
 
+// Get median rent for a specific town and flat type (6-month rolling median)
+export async function getMedianRent(
+  town: string,
+  flatType: string,
+  months: number = 6
+): Promise<number | null> {
+  try {
+    if (supabase) {
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setMonth(startDate.getMonth() - months)
+
+      const { data, error } = await supabase
+        .from('hdb_rental_stats')
+        .select('median_rent')
+        .eq('town', town)
+        .eq('flat_type', flatType)
+        .gte('month', startDate.toISOString().split('T')[0])
+        .lte('month', endDate.toISOString().split('T')[0])
+        .not('median_rent', 'is', null)
+        .order('month', { ascending: true })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        const rents = data.map(item => Number(item.median_rent)).filter(r => r > 0)
+        if (rents.length === 0) return null
+
+        // Calculate median of medians (6-month rolling median)
+        const sorted = rents.sort((a, b) => a - b)
+        const mid = Math.floor(sorted.length / 2)
+        return sorted.length % 2 === 0
+          ? (sorted[mid - 1] + sorted[mid]) / 2
+          : sorted[mid]
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching median rent:', error)
+  }
+
+  return null
+}
+
+// Calculate monthly mortgage payment
+export function calculateMonthlyMortgage(
+  loanAmount: number,
+  loanYears: number,
+  interestRate: number
+): number {
+  const monthlyRate = interestRate / 100 / 12
+  const numPayments = loanYears * 12
+
+  if (monthlyRate === 0) {
+    return loanAmount / numPayments
+  }
+
+  return (
+    (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+    (Math.pow(1 + monthlyRate, numPayments) - 1)
+  )
+}
+

@@ -38,3 +38,10 @@ jobs:
           # Run aggregation via database function
           node scripts/run-aggregation.js
 
+      - name: Update HDB Rental Data
+        if: success() # Only run if previous steps succeeded
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/import-hdb-rental-data.js
+

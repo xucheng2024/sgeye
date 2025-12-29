@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { calculateAffordability, findAffordableProperties } from '@/lib/hdb-data'
+import { calculateAffordability, findAffordableProperties, getMedianRent, calculateMonthlyMortgage } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import HDBNav from '@/components/HDBNav'
-import { Calculator, Home } from 'lucide-react'
+import { Calculator, Home, Scale } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+
+const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
+const FLAT_TYPES_RENT = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -16,6 +19,12 @@ export default function HDBAffordabilityPage() {
   const [results, setResults] = useState<any>(null)
   const [affordableProperties, setAffordableProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  
+  // Rent vs Buy state
+  const [rentTown, setRentTown] = useState('ANG MO KIO')
+  const [rentFlatType, setRentFlatType] = useState('4 ROOM')
+  const [medianRent, setMedianRent] = useState<number | null>(null)
+  const [rentLoading, setRentLoading] = useState(false)
 
   const handleCalculate = async () => {
     setLoading(true)
@@ -30,6 +39,17 @@ export default function HDBAffordabilityPage() {
   useEffect(() => {
     handleCalculate()
   }, [])
+
+  // Fetch median rent when town or flat type changes
+  useEffect(() => {
+    const fetchRent = async () => {
+      setRentLoading(true)
+      const rent = await getMedianRent(rentTown, rentFlatType, 6)
+      setMedianRent(rent)
+      setRentLoading(false)
+    }
+    fetchRent()
+  }, [rentTown, rentFlatType])
 
   const chartData = affordableProperties.slice(0, 15).map(p => ({
     town: p.town.length > 12 ? p.town.substring(0, 12) + '...' : p.town,
@@ -280,6 +300,132 @@ export default function HDBAffordabilityPage() {
             <div className="mt-4 text-xs text-gray-500">
               <p className="mb-1">Each bar shows: <span className="font-medium">Town • Flat Type • Median Remaining Lease</span></p>
               <p>Sorted by closest match to your budget (P50 median price)</p>
+            </div>
+          </ChartCard>
+        )}
+
+        {/* Rent vs Buy Comparison */}
+        {results && (
+          <ChartCard
+            title="Rent vs Buy Comparison"
+            description="Compare monthly mortgage payment with median rental costs"
+            icon={<Scale className="w-6 h-6" />}
+          >
+            <div className="space-y-6">
+              {/* Selection for comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Town</label>
+                  <select
+                    value={rentTown}
+                    onChange={(e) => setRentTown(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {TOWNS.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Flat Type</label>
+                  <select
+                    value={rentFlatType}
+                    onChange={(e) => setRentFlatType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {FLAT_TYPES_RENT.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Comparison Results */}
+              {rentLoading ? (
+                <div className="text-center text-gray-500 py-8">Loading rental data...</div>
+              ) : medianRent ? (
+                <div className="space-y-4">
+                  {/* Buy Option */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🏠</span>
+                      <span className="text-lg font-semibold text-gray-900">Buy</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-600">Monthly mortgage:</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        S${calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        (Assumes {loanYears}y loan @ {interestRate}%)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rent Option */}
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">🏡</span>
+                      <span className="text-lg font-semibold text-gray-900">Rent</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-600">Median rent (same town & flat type):</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        S${medianRent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        (Based on last 6 months)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Difference */}
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">🔍</span>
+                      <span className="text-lg font-semibold text-gray-900">Difference</span>
+                    </div>
+                    {(() => {
+                      const mortgage = calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate)
+                      const diff = medianRent - mortgage
+                      const isRentHigher = diff > 0
+                      return (
+                        <div className="space-y-1">
+                          <div className={`text-lg font-semibold ${isRentHigher ? 'text-green-600' : 'text-blue-600'}`}>
+                            {isRentHigher ? (
+                              <>Renting costs ~S${Math.abs(diff).toLocaleString(undefined, { maximumFractionDigits: 0 })} more per month</>
+                            ) : (
+                              <>Buying costs ~S${Math.abs(diff).toLocaleString(undefined, { maximumFractionDigits: 0 })} more per month</>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-2">
+                            {isRentHigher ? (
+                              <>No equity accumulation with renting</>
+                            ) : (
+                              <>Buying builds equity over time</>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  No rental data available for {rentTown} {rentFlatType}
+                </div>
+              )}
+
+              {/* Disclaimer */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 text-sm">ℹ️</span>
+                  <div className="text-xs text-amber-800">
+                    <div className="font-medium mb-1">Important Note:</div>
+                    <div>Rental figures are based on historical median rents for whole-flat rentals in the selected town and flat type. Actual rents vary by floor level, condition, and furnishings. This comparison is for reference only and does not constitute financial advice.</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </ChartCard>
         )}
