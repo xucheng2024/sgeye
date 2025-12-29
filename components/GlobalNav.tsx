@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { TrendingUp, Map, Clock, Calculator, GraduationCap, Heart, Train, ChevronDown, Users, GitCompare } from 'lucide-react'
+import { TrendingUp, Map, Clock, Calculator, GraduationCap, Heart, Train, ChevronDown, Users, GitCompare, Star } from 'lucide-react'
 
 export default function GlobalNav() {
   const pathname = usePathname()
@@ -16,7 +16,7 @@ export default function GlobalNav() {
     { href: '/hdb', label: 'Market Trends', icon: TrendingUp },
     { href: '/hdb/heatmap', label: 'Prices by Town', icon: Map },
     { href: '/hdb/lease-price', label: 'Lease & Long-term Risk', icon: Clock },
-    { href: '/hdb/compare-towns', label: 'Compare Towns', icon: GitCompare, badge: 'Make trade-offs explicit' },
+    { href: '/hdb/compare-towns', label: 'Compare Towns', icon: GitCompare, recommended: true },
   ]
 
   // Family with Children items
@@ -108,7 +108,11 @@ export default function GlobalNav() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <Icon className="w-4 h-4" />
+                            {item.recommended ? (
+                              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                            ) : (
+                              <Icon className="w-4 h-4" />
+                            )}
                             {item.label}
                           </div>
                           {item.badge && (
