@@ -52,18 +52,40 @@ async function fetchDataFromDataGovSG(limit = 100, offset = 0) {
  * Transform data.gov.sg record to Supabase format
  */
 function transformRecord(record) {
+  // Parse month - handle different formats
+  let month = null
+  if (record.month) {
+    try {
+      const dateStr = record.month.toString()
+      if (dateStr.match(/^\d{4}-\d{2}$/)) {
+        month = `${dateStr}-01`
+      } else {
+        const date = new Date(record.month)
+        if (!isNaN(date.getTime())) {
+          month = date.toISOString().split('T')[0]
+        }
+      }
+    } catch (e) {
+      // Skip invalid dates
+    }
+  }
+
+  const floorArea = record.floor_area_sqm ? parseFloat(record.floor_area_sqm) : null
+  const resalePrice = record.resale_price ? parseFloat(record.resale_price) : null
+  const leaseCommence = record.lease_commence_date ? parseInt(record.lease_commence_date, 10) : null
+
   return {
-    month: record.month ? new Date(record.month).toISOString().split('T')[0] : null,
+    month,
     town: record.town || null,
     flat_type: record.flat_type || null,
-    block: record.block || null,
+    block: record.block ? String(record.block) : null,
     street_name: record.street_name || null,
     storey_range: record.storey_range || null,
-    floor_area_sqm: record.floor_area_sqm ? parseFloat(record.floor_area_sqm) : null,
+    floor_area_sqm: (floorArea && !isNaN(floorArea) && floorArea > 0) ? floorArea : null,
     flat_model: record.flat_model || null,
-    lease_commence_date: record.lease_commence_date ? parseInt(record.lease_commence_date) : null,
+    lease_commence_date: (leaseCommence && !isNaN(leaseCommence) && leaseCommence > 1900) ? leaseCommence : null,
     remaining_lease: record.remaining_lease || null,
-    resale_price: record.resale_price ? parseFloat(record.resale_price) : null,
+    resale_price: (resalePrice && !isNaN(resalePrice) && resalePrice > 0) ? resalePrice : null,
   }
 }
 

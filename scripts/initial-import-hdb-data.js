@@ -1,14 +1,12 @@
 /**
- * HDB Resale Data Update Script
+ * Initial Full Import Script for HDB Resale Data
  * 
- * Fetches latest data from data.gov.sg and updates Supabase
- * Designed to run daily via GitHub Actions
+ * This script imports ALL historical data from data.gov.sg (2017-2025)
+ * Use this for the first-time import, then use update-hdb-data.js for daily updates
  * 
- * Environment variables required:
- * - SUPABASE_URL
- * - SUPABASE_SERVICE_KEY (service role key, not anon key)
- * 
- * Note: Requires Node.js 18+ (for built-in fetch)
+ * Usage:
+ * - Set SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables
+ * - Run: node scripts/initial-import-hdb-data.js
  */
 
 const { createClient } = require('@supabase/supabase-js')
@@ -23,8 +21,8 @@ if (typeof fetch === 'undefined') {
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 const DATA_GOV_SG_RESOURCE_ID = 'f1765b54-a209-4718-8d38-a39237f502b3'
-const BATCH_SIZE = 100
-const MAX_BATCHES = 200 // Increased for initial import scenarios (adjust as needed)
+const BATCH_SIZE = 1000 // Larger batch size for initial import
+const MAX_RECORDS = null // Import all records (set a number to limit)
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set')
@@ -116,7 +114,7 @@ async function insertBatch(records) {
     return { inserted: 0, skipped: 0 }
   }
 
-  // Insert in chunks to avoid payload size limits
+  // Insert in smaller chunks to avoid payload size limits
   const chunkSize = 500
   let totalInserted = 0
   let totalSkipped = 0
@@ -143,116 +141,73 @@ async function insertBatch(records) {
 }
 
 /**
- * Get latest month in database
+ * Main import function - full import
  */
-async function getLatestMonth() {
-  const { data, error } = await supabase
-    .from('raw_resale_2017')
-    .select('month')
-    .order('month', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-    console.error('Error getting latest month:', error.message)
-    return null
-  }
-
-  return data?.month || null
-}
-
-/**
- * Main update function - incremental update
- */
-async function updateData() {
-  console.log('Starting HDB data update...')
+async function importData() {
+  console.log('Starting FULL HDB data import...')
   console.log(`Time: ${new Date().toISOString()}`)
+  console.log('')
   
   try {
-    // Get latest month in database
-    const latestMonth = await getLatestMonth()
-    console.log(`Latest month in database: ${latestMonth || 'None'}`)
-    
     let offset = 0
     let totalInserted = 0
     let totalSkipped = 0
     let batchCount = 0
-    let hasNewData = false
 
     // Fetch first batch to check total
     const firstBatch = await fetchData(1, 0)
     const totalRecords = firstBatch.total
+    const maxRecords = MAX_RECORDS || totalRecords
+    
     console.log(`Total records available: ${totalRecords}`)
+    console.log(`Will import: ${maxRecords} records`)
+    console.log(`Batch size: ${BATCH_SIZE}`)
     console.log('')
 
-    // If database is empty, import more data (first run)
-    const isFirstRun = !latestMonth
-    const maxBatchesForFirstRun = 500 // Import more data on first run
-    
-    while (batchCount < (isFirstRun ? maxBatchesForFirstRun : MAX_BATCHES)) {
-      console.log(`Fetching batch ${batchCount + 1}: offset ${offset}...`)
+    while (offset < maxRecords) {
+      const batchLimit = Math.min(BATCH_SIZE, maxRecords - offset)
+      console.log(`[${new Date().toISOString()}] Batch ${batchCount + 1}: offset ${offset}, limit ${batchLimit}...`)
       
-      const { records } = await fetchData(BATCH_SIZE, offset)
+      const { records } = await fetchData(batchLimit, offset)
       
       if (records.length === 0) {
+        console.log('  No more records available')
         break
       }
 
-      // Check if we've reached data we already have (only for incremental updates)
-      if (latestMonth && !isFirstRun && offset > 0) {
-        const batchMonths = records.map(r => r.month).filter(Boolean)
-        const latestBatchMonth = batchMonths.sort().reverse()[0]
-        
-        if (latestBatchMonth && new Date(latestBatchMonth) <= new Date(latestMonth)) {
-          // Check if any records are newer
-          const hasNewer = batchMonths.some(m => new Date(m) > new Date(latestMonth))
-          if (!hasNewer) {
-            console.log('  Reached existing data, stopping incremental update...')
-            break
-          }
-        }
-      }
-
+      console.log(`  Inserting ${records.length} records...`)
       const result = await insertBatch(records)
       totalInserted += result.inserted
       totalSkipped += result.skipped
       
-      if (result.inserted > 0) {
-        hasNewData = true
-      }
-      
       console.log(`  ✓ Inserted: ${result.inserted}, Skipped: ${result.skipped}`)
+      console.log(`  Progress: ${totalInserted + totalSkipped} / ${maxRecords} (${Math.round((totalInserted + totalSkipped) / maxRecords * 100)}%)`)
+      console.log('')
 
       offset += records.length
       batchCount++
 
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     console.log('')
     console.log('='.repeat(50))
-    console.log('Update completed!')
+    console.log('Import completed!')
+    console.log('='.repeat(50))
     console.log(`Total inserted: ${totalInserted}`)
     console.log(`Total skipped: ${totalSkipped}`)
     console.log(`Batches processed: ${batchCount}`)
-    
-    if (hasNewData) {
-      console.log('')
-      console.log('⚠️  New data detected! Run aggregation SQL to update agg_monthly table.')
-      process.exit(0)
-    } else {
-      console.log('')
-      console.log('✓ No new data found.')
-      process.exit(0)
-    }
+    console.log('')
+    console.log('Next step: Run aggregation SQL or call aggregate_monthly_data() function')
+    console.log('')
     
   } catch (error) {
-    console.error('Fatal error during update:', error)
+    console.error('Fatal error during import:', error)
     process.exit(1)
   }
 }
 
-// Run update
-updateData()
+// Run import
+importData()
 
