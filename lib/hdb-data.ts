@@ -657,3 +657,83 @@ export function calculateMonthlyMortgage(
   )
 }
 
+// Get detailed town comparison data
+export interface TownComparisonData {
+  town: string
+  flatType: string
+  medianPrice: number
+  p25Price: number
+  p75Price: number
+  medianLeaseYears: number
+  pctBelow55Years: number
+  txCount: number
+  priceVolatility: number // Coefficient of variation
+  medianRent: number | null
+  medianPricePerSqm: number
+}
+
+export async function getTownComparisonData(
+  town: string,
+  flatType: string,
+  months: number = 12
+): Promise<TownComparisonData | null> {
+  try {
+    if (supabase) {
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setMonth(startDate.getMonth() - months)
+
+      // Get aggregated monthly data
+      const data = await getAggregatedMonthly(
+        flatType,
+        town,
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0]
+      )
+
+      if (data.length === 0) return null
+
+      // Calculate statistics
+      const prices = data.map(d => d.median_price)
+      const leases = data.map(d => d.median_lease_years).filter(l => l > 0)
+      const pricesPerSqm = data.map(d => d.median_psm).filter(p => p > 0)
+      
+      // Price volatility (coefficient of variation)
+      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length
+      const priceStdDev = Math.sqrt(
+        prices.reduce((sum, p) => sum + Math.pow(p - avgPrice, 2), 0) / prices.length
+      )
+      const priceVolatility = avgPrice > 0 ? priceStdDev / avgPrice : 0
+
+      // % below 55 years
+      const below55 = leases.filter(l => l < 55).length
+      const pctBelow55Years = leases.length > 0 ? (below55 / leases.length) * 100 : 0
+
+      // Get median rent
+      const medianRent = await getMedianRent(town, flatType, 6)
+
+      return {
+        town,
+        flatType,
+        medianPrice: prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)],
+        p25Price: prices.sort((a, b) => a - b)[Math.floor(prices.length * 0.25)],
+        p75Price: prices.sort((a, b) => a - b)[Math.floor(prices.length * 0.75)],
+        medianLeaseYears: leases.length > 0 
+          ? leases.sort((a, b) => a - b)[Math.floor(leases.length / 2)]
+          : 0,
+        pctBelow55Years,
+        txCount: data.reduce((sum, d) => sum + d.tx_count, 0),
+        priceVolatility,
+        medianRent,
+        medianPricePerSqm: pricesPerSqm.length > 0
+          ? pricesPerSqm.sort((a, b) => a - b)[Math.floor(pricesPerSqm.length / 2)]
+          : 0,
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching town comparison data:', error)
+  }
+
+  return null
+}
+

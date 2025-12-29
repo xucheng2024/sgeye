@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { calculateAffordability, findAffordableProperties, getMedianRent, calculateMonthlyMortgage } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, Scale, AlertTriangle } from 'lucide-react'
+import { Calculator, Home, Scale, AlertTriangle, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
+import Link from 'next/link'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
 const FLAT_TYPES_RENT = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
@@ -283,11 +284,21 @@ export default function HDBAffordabilityPage() {
 
         {/* Section 4: Affordable Properties */}
         {affordableProperties.length > 0 && (
-          <ChartCard
-            title="Affordable Properties"
-            description="Where your budget fits today"
-            icon={<Home className="w-6 h-6" />}
-          >
+          <>
+            <div className="mb-4 flex items-center justify-end">
+              <Link
+                href={`/hdb/compare-towns?flatType=${encodeURIComponent(affordableProperties[0]?.flatType || '4 ROOM')}&townA=${encodeURIComponent(affordableProperties[0]?.town || 'ANG MO KIO')}&townB=${encodeURIComponent(affordableProperties[1]?.town || 'BUKIT BATOK')}`}
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                Compare towns
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <ChartCard
+              title="Affordable Properties"
+              description="Where your budget fits today"
+              icon={<Home className="w-6 h-6" />}
+            >
             <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
               These towns and flat types are closest to your budget based on recent median prices.
             </div>
@@ -361,6 +372,7 @@ export default function HDBAffordabilityPage() {
               </div>
             </div>
           </ChartCard>
+          </>
         )}
 
         {/* Rent vs Buy Comparison */}

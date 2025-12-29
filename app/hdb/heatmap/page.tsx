@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { getTownAggregated } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Map } from 'lucide-react'
+import { Map, ArrowRight } from 'lucide-react'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
+import Link from 'next/link'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
@@ -137,6 +138,16 @@ export default function HDBHeatmapPage() {
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="mb-4 flex items-center justify-end">
+          <Link
+            href={`/hdb/compare-towns?flatType=${encodeURIComponent(flatType === 'All' ? '4 ROOM' : flatType)}`}
+            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+          >
+            Compare with another town
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         <ChartCard

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { TrendingUp, Map, Clock, Calculator, GraduationCap, Heart, Train, ChevronDown, Users } from 'lucide-react'
+import { TrendingUp, Map, Clock, Calculator, GraduationCap, Heart, Train, ChevronDown, Users, GitCompare } from 'lucide-react'
 
 export default function GlobalNav() {
   const pathname = usePathname()
@@ -13,9 +13,10 @@ export default function GlobalNav() {
 
   // Housing sub-items: Buy / Rent / Risk
   const buyRentRiskItems = [
-    { href: '/hdb', label: 'Trends', icon: TrendingUp },
-    { href: '/hdb/heatmap', label: 'Heatmap', icon: Map },
-    { href: '/hdb/lease-price', label: 'Lease Analysis', icon: Clock },
+    { href: '/hdb', label: 'Market Trends', icon: TrendingUp },
+    { href: '/hdb/heatmap', label: 'Prices by Town', icon: Map },
+    { href: '/hdb/lease-price', label: 'Lease & Long-term Risk', icon: Clock },
+    { href: '/hdb/compare-towns', label: 'Compare Towns', icon: GitCompare, badge: 'Make trade-offs explicit' },
   ]
 
   // Family with Children items
@@ -74,32 +75,8 @@ export default function GlobalNav() {
               </button>
               {housingOpen && (
                 <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                  {/* Buy / Rent / Risk Section */}
+                  {/* Affordability - First (entry point) */}
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      Buy / Rent / Risk
-                    </div>
-                    {buyRentRiskItems.map((item) => {
-                      const Icon = item.icon
-                      const isActive = pathname === item.href
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`flex items-center gap-3 px-2 py-2 text-sm transition-colors rounded ${
-                            isActive
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          {item.label}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                  {/* Affordability */}
-                  <div className="px-4 py-2">
                     <Link
                       href="/hdb/affordability"
                       className={`flex items-center gap-3 px-2 py-2 text-sm transition-colors rounded ${
@@ -111,6 +88,37 @@ export default function GlobalNav() {
                       <Calculator className="w-4 h-4" />
                       Affordability
                     </Link>
+                  </div>
+                  {/* Buy / Rent / Risk Section */}
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Analysis & Comparison
+                    </div>
+                    {buyRentRiskItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex items-center justify-between px-2 py-2 text-sm transition-colors rounded ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="w-4 h-4" />
+                            {item.label}
+                          </div>
+                          {item.badge && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      )
+                    })}
                   </div>
                 </div>
               )}
