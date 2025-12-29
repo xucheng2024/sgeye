@@ -100,11 +100,19 @@ function normalizeFlatType(flatType) {
   if (!flatType) return null
   
   const normalized = flatType.toUpperCase().trim()
-  // Map common variations
-  if (normalized.includes('3') && normalized.includes('ROOM')) return '3 ROOM'
-  if (normalized.includes('4') && normalized.includes('ROOM')) return '4 ROOM'
-  if (normalized.includes('5') && normalized.includes('ROOM')) return '5 ROOM'
-  if (normalized.includes('EXECUTIVE')) return 'EXECUTIVE'
+  // Handle formats like "4-ROOM", "4 ROOM", "4ROOM"
+  if (normalized.includes('3') && (normalized.includes('ROOM') || normalized.includes('-'))) {
+    return '3 ROOM'
+  }
+  if (normalized.includes('4') && (normalized.includes('ROOM') || normalized.includes('-'))) {
+    return '4 ROOM'
+  }
+  if (normalized.includes('5') && (normalized.includes('ROOM') || normalized.includes('-'))) {
+    return '5 ROOM'
+  }
+  if (normalized.includes('EXECUTIVE')) {
+    return 'EXECUTIVE'
+  }
   
   return normalized
 }
@@ -132,53 +140,20 @@ function parseMonth(monthStr) {
 }
 
 /**
- * Transform and validate rental record
+ * Transform individual rental contract record
+ * Note: This dataset contains individual contracts, not aggregated data
  */
-function transformRentalRecord(record) {
+function transformRentalContract(record) {
   try {
-    // Field names from "Renting Out of Flats" dataset
-    // Support multiple field name variations from data.gov.sg API
-    // Try all possible field name variations (case-insensitive)
-    const getField = (variations) => {
-      for (const key of variations) {
-        // Try exact match
-        if (record[key] !== undefined && record[key] !== null && record[key] !== '') {
-          return record[key]
-        }
-        // Try case-insensitive match
-        const lowerKey = key.toLowerCase()
-        for (const recordKey in record) {
-          if (recordKey.toLowerCase() === lowerKey) {
-            return record[recordKey]
-          }
-        }
-      }
-      return null
-    }
+    // Actual field names from the API:
+    // rent_approval_date, town, block, street_name, flat_type, monthly_rent
+    
+    const month = parseMonth(record.rent_approval_date || record.month)
+    const town = (record.town || '').toString().trim().toUpperCase()
+    const flatType = normalizeFlatType(record.flat_type)
+    const monthlyRent = parseFloat(record.monthly_rent || record.rent || 0)
 
-    const month = parseMonth(
-      getField(['month', 'Month', 'month_year', 'rental_month', 'rental_period', 'period'])
-    )
-    const town = (getField(['town', 'Town', 'town_name', 'town_name_upper']) || '').toString().trim().toUpperCase()
-    const flatType = normalizeFlatType(
-      getField(['flat_type', 'Flat_Type', 'flat_type_name', 'room_type', 'room', 'type'])
-    )
-    const medianRent = parseFloat(
-      getField(['median_rent', 'Median_Rent', 'median_monthly_rent', 'median_rental', 'rent', 'median']) || 0
-    )
-    const contractCount = parseInt(
-      getField([
-        'number_of_rental_contracts',
-        'Number_of_Rental_Contracts',
-        'contract_count',
-        'rental_contracts',
-        'number_of_contracts',
-        'contracts',
-        'count'
-      ]) || 0
-    )
-
-    // Validation - more lenient
+    // Validation
     if (!month) {
       return null // Month is required
     }
@@ -188,7 +163,7 @@ function transformRentalRecord(record) {
     if (!flatType) {
       return null // Flat type is required
     }
-    if (medianRent <= 0 || isNaN(medianRent)) {
+    if (monthlyRent <= 0 || isNaN(monthlyRent)) {
       return null // Valid rent is required
     }
 
@@ -196,13 +171,53 @@ function transformRentalRecord(record) {
       month: month.toISOString().split('T')[0], // Format as YYYY-MM-DD
       town: town,
       flat_type: flatType,
-      median_rent: medianRent,
-      number_of_rental_contracts: contractCount || 0
+      monthly_rent: monthlyRent
     }
-  } catch (error) {
-    console.error('Error transforming record:', error, record)
+  } catch {
     return null
   }
+}
+
+/**
+ * Aggregate contracts by month, town, and flat_type
+ * Calculate median rent and count contracts
+ */
+function aggregateRentalContracts(contracts) {
+  const grouped = new Map()
+  
+  contracts.forEach(contract => {
+    const key = `${contract.month}|${contract.town}|${contract.flat_type}`
+    
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        month: contract.month,
+        town: contract.town,
+        flat_type: contract.flat_type,
+        rents: []
+      })
+    }
+    
+    grouped.get(key).rents.push(contract.monthly_rent)
+  })
+  
+  // Calculate median and count for each group
+  const aggregated = Array.from(grouped.values()).map(group => {
+    const sortedRents = group.rents.sort((a, b) => a - b)
+    const mid = Math.floor(sortedRents.length / 2)
+    const medianRent = sortedRents.length % 2 === 0
+      ? (sortedRents[mid - 1] + sortedRents[mid]) / 2
+      : sortedRents[mid]
+    
+    return {
+      month: group.month,
+      town: group.town,
+      flat_type: group.flat_type,
+      median_rent: Math.round(medianRent * 100) / 100,
+      number_of_rental_contracts: sortedRents.length
+    }
+  })
+  
+  return aggregated
 }
 
 /**
@@ -251,18 +266,22 @@ async function importRentalData() {
         break
       }
 
-      // Transform records
-      const transformedRecords = records
-        .map(transformRentalRecord)
-        .filter(record => record !== null)
+      // Transform individual contracts
+      const contracts = records
+        .map(transformRentalContract)
+        .filter(contract => contract !== null)
 
-      if (transformedRecords.length === 0) {
-        console.log('No valid records in this batch')
-        // Debug: Show first record structure to understand data format
-        if (records.length > 0 && offset < 500) { // Only log for first few batches
-          console.log('Sample raw record structure:', JSON.stringify(records[0], null, 2))
-          console.log('Record keys:', Object.keys(records[0]))
-        }
+      if (contracts.length === 0) {
+        console.log('No valid contracts in this batch')
+        offset += BATCH_SIZE
+        continue
+      }
+
+      // Aggregate contracts by month, town, flat_type
+      const aggregatedRecords = aggregateRentalContracts(contracts)
+
+      if (aggregatedRecords.length === 0) {
+        console.log('No valid aggregated records in this batch')
         offset += BATCH_SIZE
         continue
       }
@@ -270,7 +289,7 @@ async function importRentalData() {
       // Insert into Supabase (using upsert to handle duplicates)
       const { error } = await supabase
         .from('hdb_rental_stats')
-        .upsert(transformedRecords, {
+        .upsert(aggregatedRecords, {
           onConflict: 'month,town,flat_type',
           ignoreDuplicates: false
         })
@@ -280,14 +299,15 @@ async function importRentalData() {
         throw error
       }
 
-      const imported = transformedRecords.length
-      const skipped = records.length - imported
+      const imported = aggregatedRecords.length
+      const contractsProcessed = contracts.length
+      const skipped = records.length - contractsProcessed
       
       totalImported += imported
       totalSkipped += skipped
 
-      console.log(`Imported ${imported} records (${skipped} skipped)`)
-      console.log(`Progress: ${totalImported} total imported`)
+      console.log(`Processed ${contractsProcessed} contracts, aggregated into ${imported} records (${skipped} contracts skipped)`)
+      console.log(`Progress: ${totalImported} aggregated records imported`)
 
       // Check if we should continue
       if (MAX_RECORDS && totalImported >= MAX_RECORDS) {
