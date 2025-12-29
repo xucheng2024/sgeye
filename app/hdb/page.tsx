@@ -5,6 +5,7 @@ import { Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveCont
 import { getAggregatedMonthly } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { TrendingUp } from 'lucide-react'
+import { formatNumber, formatCurrency, formatCurrencyFull } from '@/lib/utils'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 const TOWNS = ['All', 'ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
@@ -30,11 +31,6 @@ export default function HDBTrendsPage() {
       try {
         const result = await getAggregatedMonthly(flatType === 'All' ? undefined : flatType, town === 'All' ? undefined : town)
         if (cancelled) return
-        
-        console.log('Fetched data:', result.length, 'records')
-        if (result.length > 0) {
-          console.log('Date range:', result[0].month, 'to', result[result.length - 1].month)
-        }
         
         // When town is 'All', we need to aggregate across all towns for each month
         // When town is specific, we can use data directly
@@ -88,11 +84,6 @@ export default function HDBTrendsPage() {
           })
         }
         
-        console.log('Formatted data points:', formatted.length)
-        if (formatted.length > 0) {
-          console.log('Display range:', formatted[0].month, 'to', formatted[formatted.length - 1].month)
-        }
-        
         if (!cancelled) {
           setData(formatted)
           setLoading(false)
@@ -112,25 +103,55 @@ export default function HDBTrendsPage() {
     }
   }, [flatType, town])
 
+  // Format Y-axis tick for prices
+  const formatPriceTick = (value: number) => formatCurrency(value)
+  
+  // Format Y-axis tick for volume
+  const formatVolumeTick = (value: number) => formatNumber(value)
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">HDB Resale Price Trends</h1>
-          <p className="mt-2 text-gray-600">Island-wide resale prices have risen steadily since 2020, despite fluctuations in transaction volume</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">HDB Resale Price Trends</h1>
+          <p className="text-lg text-gray-600">Island-wide resale prices have risen steadily since 2020, despite fluctuations in transaction volume</p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Key Takeaways - Moved above chart */}
+        {data.length > 0 && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-8 mb-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <span className="text-2xl">📌</span>
+              <span>What This Chart Shows</span>
+            </h3>
+            <ul className="space-y-4 text-lg text-gray-800">
+              <li className="font-semibold flex items-start gap-3">
+                <span className="text-blue-500 mt-1">•</span>
+                <span>HDB resale prices have risen steadily since 2020.</span>
+              </li>
+              <li className="font-semibold flex items-start gap-3">
+                <span className="text-blue-500 mt-1">•</span>
+                <span>Price differences between cheaper and pricier flats are widening.</span>
+              </li>
+              <li className="font-semibold flex items-start gap-3">
+                <span className="text-blue-500 mt-1">•</span>
+                <span>Transaction volumes fluctuate, but prices remain resilient.</span>
+              </li>
+            </ul>
+          </div>
+        )}
+
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200/50 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Flat Type</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Flat Type</label>
               <select
                 value={flatType}
                 onChange={(e) => setFlatType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 {FLAT_TYPES.map(type => (
                   <option key={type} value={type}>{type}</option>
@@ -138,11 +159,11 @@ export default function HDBTrendsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Town</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Town</label>
               <select
                 value={town}
                 onChange={(e) => setTown(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
               >
                 {TOWNS.map(t => (
                   <option key={t} value={t}>{t}</option>
@@ -150,8 +171,8 @@ export default function HDBTrendsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
               {town === 'All' && flatType === 'All' ? (
                 <>By default, trends reflect island-wide median prices across all flat types and towns.</>
               ) : town !== 'All' ? (
@@ -165,39 +186,64 @@ export default function HDBTrendsPage() {
 
         {/* Price Trends Chart */}
         <ChartCard
-          title="Price Trends (Median, P25, P75)"
-          description="Post-2020 resale prices show sustained growth, with widening price dispersion"
+          title="Price Trends"
+          description="Most resale prices fall between the green and orange lines."
           icon={<TrendingUp className="w-6 h-6" />}
         >
           {loading ? (
-            <div className="flex items-center justify-center h-[400px] text-gray-500">Loading...</div>
-          ) : data.length === 0 ? (
-            <div className="flex items-center justify-center h-[400px] text-gray-500">No data available</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-500">
-                  P25 / P75 show the lower and upper bounds of typical resale prices, indicating market dispersion.
-                </div>
+            <div className="flex items-center justify-center h-[450px]">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-gray-500">Loading data...</p>
               </div>
-              <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" angle={-45} textAnchor="end" height={100} />
-                  <YAxis yAxisId="left" label={{ value: 'Median Price (S$)', angle: -90, position: 'insideLeft' }} />
-                  <YAxis yAxisId="right" orientation="right" label={{ value: 'Volume', angle: 90, position: 'insideRight' }} />
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex items-center justify-center h-[450px] text-gray-500">
+              <p>No data available</p>
+            </div>
+          ) : (
+            <div className="p-4">
+              <ResponsiveContainer width="100%" height={450}>
+                <ComposedChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis 
+                    dataKey="month" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    stroke="#9ca3af"
+                  />
+                  <YAxis 
+                    yAxisId="left" 
+                    tickFormatter={formatPriceTick}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    stroke="#9ca3af"
+                    label={{ value: 'Price', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#374151', fontSize: 14, fontWeight: 600 } }} 
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right"
+                    tickFormatter={formatVolumeTick}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    stroke="#9ca3af"
+                    label={{ value: 'Volume', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: '#374151', fontSize: 14, fontWeight: 600 } }} 
+                  />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
+                          <div className="bg-white/95 backdrop-blur-sm p-4 border border-gray-200 rounded-lg shadow-xl">
+                            <div className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-200 pb-2">
+                              {payload[0]?.payload?.month}
+                            </div>
                             {payload.map((entry, index) => (
-                              <div key={index} className="text-sm">
-                                <span className="font-medium">{entry.name}: </span>
+                              <div key={index} className="text-sm mb-1 last:mb-0">
+                                <span className="font-medium text-gray-700">{entry.name}: </span>
                                 {entry.name && entry.name.includes('Price') ? (
-                                  <span>S${Number(entry.value).toLocaleString()}</span>
+                                  <span className="font-semibold text-gray-900">{formatCurrencyFull(Number(entry.value))}</span>
                                 ) : (
-                                  <span>{Number(entry.value).toLocaleString()}</span>
+                                  <span className="font-semibold text-gray-900">{formatNumber(Number(entry.value))}</span>
                                 )}
                               </div>
                             ))}
@@ -217,45 +263,62 @@ export default function HDBTrendsPage() {
                       <ReferenceLine 
                         x={covidMonth.month} 
                         stroke="#ef4444" 
-                        strokeDasharray="3 3"
-                        label={{ value: 'COVID-19 Circuit Breaker', position: 'top', fill: '#ef4444', fontSize: 10 }}
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        label={{ value: 'COVID-19 Circuit Breaker', position: 'top', fill: '#ef4444', fontSize: 11, fontWeight: 600 }} 
                       />
                     ) : null
                   })()}
-                  {/* Order: Median, P25, P75, Volume */}
-                  <Line yAxisId="left" type="monotone" dataKey="median" stroke="#3b82f6" strokeWidth={2} name="Median Price (S$)" />
-                  <Line yAxisId="left" type="monotone" dataKey="p25" stroke="#10b981" strokeWidth={1} strokeDasharray="5 5" name="P25 Price (S$)" />
-                  <Line yAxisId="left" type="monotone" dataKey="p75" stroke="#f59e0b" strokeWidth={1} strokeDasharray="5 5" name="P75 Price (S$)" />
-                  <Bar yAxisId="right" dataKey="volume" fill="#8b5cf6" opacity={0.3} name="Transaction Volume" />
-                  <Legend />
+                  {/* Order: Median, Lower Range, Upper Range, Volume */}
+                  <Line 
+                    yAxisId="left" 
+                    type="monotone" 
+                    dataKey="median" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6 }}
+                    name="Median Price (typical resale price)" 
+                  />
+                  <Line 
+                    yAxisId="left" 
+                    type="monotone" 
+                    dataKey="p25" 
+                    stroke="#10b981" 
+                    strokeWidth={2} 
+                    strokeDasharray="6 4"
+                    dot={false}
+                    name="Lower Range (cheaper flats)" 
+                  />
+                  <Line 
+                    yAxisId="left" 
+                    type="monotone" 
+                    dataKey="p75" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2} 
+                    strokeDasharray="6 4"
+                    dot={false}
+                    name="Upper Range (pricier flats)" 
+                  />
+                  <Bar 
+                    yAxisId="right" 
+                    dataKey="volume" 
+                    fill="#8b5cf6" 
+                    opacity={0.25}
+                    radius={[4, 4, 0, 0]}
+                    name="Transaction Volume" 
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="line"
+                    formatter={(value) => <span className="text-sm text-gray-700">{value}</span>}
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           )}
         </ChartCard>
-
-        {/* Key Takeaways */}
-        {data.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Takeaways</h3>
-            <ul className="space-y-3 text-sm text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-1">•</span>
-                <span>Median resale prices have shown a sustained upward trend since 2020.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-1">•</span>
-                <span>Transaction volumes fluctuated significantly during the pandemic but recovered thereafter.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-1">•</span>
-                <span>The widening gap between P25 and P75 suggests increasing price dispersion across the market.</span>
-              </li>
-            </ul>
-          </div>
-        )}
       </main>
     </div>
   )
 }
-
