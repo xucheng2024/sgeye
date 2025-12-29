@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { calculateAffordability, findAffordableProperties, getMedianRent, calculateMonthlyMortgage } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, Scale } from 'lucide-react'
+import { Calculator, Home, Scale, AlertTriangle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
 const FLAT_TYPES_RENT = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
@@ -50,6 +51,15 @@ export default function HDBAffordabilityPage() {
     fetchRent()
   }, [rentTown, rentFlatType])
 
+  // Find closest matches (top 2-3)
+  const budget = results?.maxPropertyPrice || 0
+  const sortedByCloseness = [...affordableProperties].sort((a, b) => {
+    const diffA = Math.abs(a.medianPrice - budget)
+    const diffB = Math.abs(b.medianPrice - budget)
+    return diffA - diffB
+  })
+  const closestMatches = sortedByCloseness.slice(0, 3).map(p => `${p.town}-${p.flatType}`)
+
   const chartData = affordableProperties.slice(0, 15).map(p => ({
     town: p.town.length > 12 ? p.town.substring(0, 12) + '...' : p.town,
     fullTown: p.town,
@@ -59,26 +69,28 @@ export default function HDBAffordabilityPage() {
     flatType: p.flatType,
     medianLeaseYears: Math.round(p.medianLeaseYears || 0),
     label: `${p.town} • ${p.flatType} • ${Math.round(p.medianLeaseYears || 0)}y lease`,
+    isClosestMatch: closestMatches.includes(`${p.town}-${p.flatType}`),
+    budgetDiff: Math.abs(p.medianPrice - budget),
   }))
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Can I Afford It?</h1>
-          <p className="mt-2 text-gray-600">Calculate your affordability and find suitable HDB flats</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Can I Afford It?</h1>
+          <p className="text-lg text-gray-600">Calculate your affordability and find suitable HDB flats</p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Form */}
           <ChartCard
             title="Your Financial Profile"
             description="Enter your financial details to calculate affordability"
             icon={<Calculator className="w-6 h-6" />}
           >
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Monthly Gross Income (S$)
@@ -87,7 +99,7 @@ export default function HDBAffordabilityPage() {
                   type="number"
                   value={monthlyIncome}
                   onChange={(e) => setMonthlyIncome(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   min="0"
                 />
               </div>
@@ -100,7 +112,7 @@ export default function HDBAffordabilityPage() {
                   type="number"
                   value={downPayment}
                   onChange={(e) => setDownPayment(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   min="0"
                 />
               </div>
@@ -112,7 +124,7 @@ export default function HDBAffordabilityPage() {
                 <select
                   value={loanYears}
                   onChange={(e) => setLoanYears(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                 >
                   <option value={15}>15 years</option>
                   <option value={20}>20 years</option>
@@ -133,7 +145,7 @@ export default function HDBAffordabilityPage() {
                   value={interestRate}
                   onChange={(e) => setInterestRate(Number(e.target.value))}
                   step="0.1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   min="0"
                   max="10"
                 />
@@ -148,7 +160,7 @@ export default function HDBAffordabilityPage() {
                   type="number"
                   value={otherDebts}
                   onChange={(e) => setOtherDebts(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   min="0"
                 />
                 <p className="mt-1 text-xs text-gray-500">Car loans, credit cards, etc.</p>
@@ -157,9 +169,16 @@ export default function HDBAffordabilityPage() {
               <button
                 onClick={handleCalculate}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors shadow-lg"
               >
-                {loading ? 'Calculating...' : 'Calculate Affordability'}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                    Calculating...
+                  </span>
+                ) : (
+                  'Calculate Affordability'
+                )}
               </button>
             </div>
           </ChartCard>
@@ -170,57 +189,69 @@ export default function HDBAffordabilityPage() {
             description="Based on MSR, TDSR, and LTV regulations"
             icon={<Home className="w-6 h-6" />}
           >
+            {/* Section 1: Summary Box */}
+            {results && (
+              <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Your Housing Reality (Summary)</h3>
+                <p className="text-base text-gray-800 leading-relaxed mb-2">
+                  With your current income and savings, your realistic HDB resale budget is around <span className="font-bold text-blue-600">{formatCurrency(results.maxPropertyPrice)}</span>.
+                </p>
+                <p className="text-base text-gray-800 leading-relaxed mb-3">
+                  At current market rents, renting a similar flat costs significantly more per month than buying, but affordable resale options may carry lease-related risks.
+                </p>
+                <p className="text-sm text-gray-500 italic">
+                  In short: You can afford to buy, but only within a limited price range, and lease matters.
+                </p>
+              </div>
+            )}
             {results ? (
               <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-1">Maximum Monthly Payment</div>
+                {/* Final Budget - Most Prominent */}
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 rounded-xl border-2 border-purple-300 shadow-lg">
+                  <div className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">Final Budget</div>
+                  <div className="text-5xl font-bold text-purple-600 mb-3">
+                    {formatCurrency(results.maxPropertyPrice)}
+                  </div>
+                  <div className="text-sm text-gray-600 italic">
+                    This is your realistic cap
+                  </div>
+                </div>
+
+                {/* Supporting Details - Less Prominent */}
+                <div className="bg-blue-50/80 backdrop-blur-sm p-5 rounded-lg border border-blue-200">
+                  <div className="text-xs font-medium text-gray-600 mb-2">Maximum Monthly Payment</div>
                   <div className="text-2xl font-bold text-blue-600">
-                    S${results.maxMonthlyPayment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {formatCurrency(results.maxMonthlyPayment)}
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    MSR: S${results.constraints.msr.toLocaleString()} | TDSR: S${results.constraints.tdsr.toLocaleString()}
+                  <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-blue-200">
+                    MSR: {formatCurrency(results.constraints.msr)} | TDSR: {formatCurrency(results.constraints.tdsr)}
                   </div>
                 </div>
 
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-1">Maximum Loan Amount</div>
+                <div className="bg-green-50/80 backdrop-blur-sm p-5 rounded-lg border border-green-200">
+                  <div className="text-xs font-medium text-gray-600 mb-2">Maximum Loan Amount</div>
                   <div className="text-2xl font-bold text-green-600">
-                    S${results.maxLoanAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    {formatCurrency(results.maxLoanAmount)}
                   </div>
                 </div>
 
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-2">Maximum Property Price</div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600">Max by Loan Capacity:</span>
-                      <span className="text-sm font-semibold text-gray-700">
-                        S${results.maxPropertyPriceByBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </span>
+                <div className="bg-gray-50/80 backdrop-blur-sm p-5 rounded-lg border border-gray-200">
+                  <div className="text-xs font-medium text-gray-600 mb-3">Breakdown:</div>
+                  <div className="space-y-2 text-xs text-gray-600">
+                    <div className="flex justify-between items-center py-1">
+                      <span>Max by Loan Capacity:</span>
+                      <span className="font-semibold text-gray-800">{formatCurrency(results.maxPropertyPriceByBudget)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600">Max by Down Payment / LTV:</span>
-                      <span className="text-sm font-semibold text-gray-700">
-                        S${results.constraints.ltv.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </span>
+                    <div className="flex justify-between items-center py-1">
+                      <span>Max by Down Payment / LTV:</span>
+                      <span className="font-semibold text-gray-800">{formatCurrency(results.constraints.ltv)}</span>
                     </div>
-                    <div className="pt-2 mt-2 border-t border-purple-200">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-700">👉 Final Budget:</span>
-                        <span className="text-2xl font-bold text-purple-600">
-                          S${results.maxPropertyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-3 italic">
-                    Your purchase price is limited by down payment and LTV, not monthly affordability.
                   </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Regulatory Constraints:</div>
-                  <ul className="text-xs text-gray-600 space-y-1">
+                  <div className="text-xs font-medium text-gray-500 mb-2">Regulatory Constraints (for reference):</div>
+                  <ul className="text-xs text-gray-500 space-y-1">
                     <li>• MSR (Mortgage Servicing Ratio) ≤ 30%</li>
                     <li>• TDSR (Total Debt Servicing Ratio) ≤ 55%</li>
                     <li>• LTV (Loan-to-Value) ≤ 75% for resale flats</li>
@@ -233,32 +264,33 @@ export default function HDBAffordabilityPage() {
           </ChartCard>
         </div>
 
-        {/* Lease Risk Warning */}
+        {/* Section 3: Lease Risk - Moved up and softened */}
         {results && results.maxPropertyPrice < 500000 && (
-          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <span className="text-amber-600 text-xl">⚠️</span>
+          <div className="mt-8 bg-blue-50/90 backdrop-blur-sm border border-blue-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-blue-600" />
+              </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-amber-900 mb-1">Lease Risk Consideration</div>
-                <div className="text-xs text-amber-800">
-                  Based on recent resale data, properties under S${results.maxPropertyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })} are mostly concentrated in flats with remaining lease below ~55 years.
-                  Such flats may face future resale and financing constraints.
-                </div>
-                <div className="text-xs text-amber-700 mt-2 italic">
-                  Remember: "Affordable" ≠ "Worth buying". This tool helps you avoid pitfalls, not just find listings.
+                <div className="text-lg font-bold text-gray-900 mb-2">Important Context: Lease Matters</div>
+                <div className="text-sm text-gray-700 leading-relaxed">
+                  Many resale flats under {formatCurrency(results.maxPropertyPrice)} tend to have shorter remaining leases (below ~55 years), which may affect long-term resale value and future financing.
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Affordable Properties */}
+        {/* Section 4: Affordable Properties */}
         {affordableProperties.length > 0 && (
           <ChartCard
             title="Affordable Properties"
-            description={`Top ${Math.min(15, affordableProperties.length)} affordable options sorted by closest match to your budget (P50 price)`}
+            description="Where your budget fits today"
             icon={<Home className="w-6 h-6" />}
           >
+            <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+              These towns and flat types are closest to your budget based on recent median prices.
+            </div>
             <ResponsiveContainer width="100%" height={500}>
               <BarChart data={chartData} margin={{ bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -291,13 +323,42 @@ export default function HDBAffordabilityPage() {
                   }}
                 />
                 <Legend />
-                <Bar dataKey="p25Price" fill="#10b981" name="P25 Price (Conservative)" />
-                <Bar dataKey="medianPrice" fill="#3b82f6" name="Median Price" />
+                <Bar 
+                  dataKey="p25Price" 
+                  fill="#10b981" 
+                  name="P25 Price (Conservative)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar 
+                  dataKey="medianPrice" 
+                  fill="#3b82f6"
+                  name="Median Price"
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
-            <div className="mt-4 text-xs text-gray-500">
-              <p className="mb-1">Each bar shows: <span className="font-medium">Town • Flat Type • Median Remaining Lease</span></p>
-              <p>Sorted by closest match to your budget (P50 median price)</p>
+            <div className="mt-4 space-y-2">
+              {closestMatches.length > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs">
+                  <div className="font-semibold text-purple-900 mb-1">✨ Closest match to your budget:</div>
+                  <div className="text-purple-700">
+                    {sortedByCloseness.slice(0, 3).map((p, idx) => (
+                      <span key={idx}>
+                        {p.town} {p.flatType}
+                        {idx < 2 && ', '}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="text-xs text-gray-500 space-y-2">
+                <p className="mb-1">Each bar shows: <span className="font-medium">Town • Flat Type • Median Remaining Lease</span></p>
+                <p>Sorted by closest match to your budget (P50 median price)</p>
+                <div className="mt-3 pt-3 border-t border-gray-200 text-gray-600">
+                  <p className="font-medium mb-1">How to use this:</p>
+                  <p>These options are based on recent median prices, not individual listings. Actual availability and unit condition may vary.</p>
+                </div>
+              </div>
             </div>
           </ChartCard>
         )}
@@ -317,7 +378,7 @@ export default function HDBAffordabilityPage() {
                   <select
                     value={rentTown}
                     onChange={(e) => setRentTown(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   >
                     {TOWNS.map(t => (
                       <option key={t} value={t}>{t}</option>
@@ -329,7 +390,7 @@ export default function HDBAffordabilityPage() {
                   <select
                     value={rentFlatType}
                     onChange={(e) => setRentFlatType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   >
                     {FLAT_TYPES_RENT.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -344,64 +405,61 @@ export default function HDBAffordabilityPage() {
               ) : medianRent ? (
                 <div className="space-y-4">
                   {/* Buy Option */}
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">🏠</span>
-                      <span className="text-lg font-semibold text-gray-900">Buy</span>
+                  <div className="bg-blue-50/90 backdrop-blur-sm p-6 rounded-xl border border-blue-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-3xl">🏠</span>
+                      <span className="text-xl font-bold text-gray-900">Buy</span>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600">Monthly mortgage:</div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        S${calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-gray-600">Monthly mortgage:</div>
+                      <div className="text-3xl font-bold text-blue-600">
+                        {formatCurrency(calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate))}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-blue-200">
                         (Assumes {loanYears}y loan @ {interestRate}%)
                       </div>
                     </div>
                   </div>
 
                   {/* Rent Option */}
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">🏡</span>
-                      <span className="text-lg font-semibold text-gray-900">Rent</span>
+                  <div className="bg-green-50/90 backdrop-blur-sm p-6 rounded-xl border border-green-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-3xl">🏡</span>
+                      <span className="text-xl font-bold text-gray-900">Rent</span>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600">Median rent (same town & flat type):</div>
-                      <div className="text-2xl font-bold text-green-600">
-                        S${medianRent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-gray-600">Median rent (same town & flat type):</div>
+                      <div className="text-3xl font-bold text-green-600">
+                        {formatCurrency(medianRent)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-green-200">
                         (Based on last 6 months)
                       </div>
                     </div>
                   </div>
 
                   {/* Difference */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">🔍</span>
-                      <span className="text-lg font-semibold text-gray-900">Difference</span>
+                  <div className="bg-gray-50/90 backdrop-blur-sm p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🔍</span>
+                      <span className="text-xl font-bold text-gray-900">Difference</span>
                     </div>
                     {(() => {
                       const mortgage = calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate)
                       const diff = medianRent - mortgage
                       const isRentHigher = diff > 0
                       return (
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className={`text-lg font-semibold ${isRentHigher ? 'text-green-600' : 'text-blue-600'}`}>
                             {isRentHigher ? (
-                              <>Renting costs ~S${Math.abs(diff).toLocaleString(undefined, { maximumFractionDigits: 0 })} more per month</>
+                              <>Renting costs ~{formatCurrency(Math.abs(diff))} more per month</>
                             ) : (
-                              <>Buying costs ~S${Math.abs(diff).toLocaleString(undefined, { maximumFractionDigits: 0 })} more per month</>
+                              <>Buying costs ~{formatCurrency(Math.abs(diff))} more per month</>
                             )}
                           </div>
-                          <div className="text-xs text-gray-600 mt-2">
-                            {isRentHigher ? (
-                              <>No equity accumulation with renting</>
-                            ) : (
-                              <>Buying builds equity over time</>
-                            )}
+                          <div className="text-sm text-gray-700 leading-relaxed pt-2 border-t border-gray-200 space-y-2">
+                            <p>Over time, buying builds equity, while renting does not. However, ownership also carries lease and resale risks.</p>
+                            <p className="font-medium text-gray-800">The longer you plan to stay, the more relevant buying becomes — provided lease risks are acceptable.</p>
                           </div>
                         </div>
                       )
