@@ -94,6 +94,46 @@ export default function HDBLeasePricePage() {
           </div>
         )}
 
+        {/* Module 1: Lease Risk Threshold */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📌</span>
+            Lease Risk Guide
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-300 bg-gray-50">
+                  <th className="text-left py-3 px-4 font-bold text-gray-900">Remaining Lease</th>
+                  <th className="text-left py-3 px-4 font-bold text-gray-900">Market Interpretation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-semibold text-gray-900">≥ 80 years</td>
+                  <td className="py-3 px-4 text-gray-700">Low risk. Market treats as long-term asset</td>
+                </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 font-semibold text-gray-900">70–79 years</td>
+                  <td className="py-3 px-4 text-gray-700">Generally stable pricing</td>
+                </tr>
+                <tr className="hover:bg-gray-50 bg-amber-50/30">
+                  <td className="py-3 px-4 font-semibold text-amber-700">60–69 years</td>
+                  <td className="py-3 px-4 text-gray-700">Early discounting begins (watch carefully)</td>
+                </tr>
+                <tr className="hover:bg-gray-50 bg-orange-50/30">
+                  <td className="py-3 px-4 font-semibold text-orange-700">&lt; 60 years</td>
+                  <td className="py-3 px-4 text-gray-700">Higher resale &amp; financing risk</td>
+                </tr>
+                <tr className="hover:bg-gray-50 bg-red-50/30">
+                  <td className="py-3 px-4 font-semibold text-red-700">&lt; 55 years</td>
+                  <td className="py-3 px-4 text-gray-700">Limited buyer pool, bank constraints likely</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,6 +409,89 @@ export default function HDBLeasePricePage() {
           </ChartCard>
         </div>
 
+        {/* Module 2: Decision Signals */}
+        {binnedData.length > 0 && (() => {
+          // Calculate decision signals from data
+          const lowLeaseBins = binnedData.filter(bin => {
+            const range = bin.binLabel.split('–')
+            if (range.length === 2) {
+              const max = parseInt(range[1])
+              return max < 60
+            }
+            return false
+          })
+          const hasLowLease = lowLeaseBins.length > 0
+          const hasEarlyDiscount = binnedData.some(bin => {
+            const range = bin.binLabel.split('–')
+            if (range.length === 2) {
+              const min = parseInt(range[0])
+              const max = parseInt(range[1])
+              return min >= 60 && max < 70
+            }
+            return false
+          })
+          
+          return (
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-2xl">🧭</span>
+                Decision Signals
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Lease Risk:</span>
+                    <span className={`text-sm font-semibold ${hasLowLease ? 'text-red-600' : hasEarlyDiscount ? 'text-amber-600' : 'text-green-600'}`}>
+                      {hasLowLease ? '⚠ High' : hasEarlyDiscount ? 'Moderate' : 'Low'}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Market Pricing:</span>
+                    <span className={`text-sm font-semibold ${hasEarlyDiscount || hasLowLease ? 'text-amber-600' : 'text-green-600'}`}>
+                      {hasEarlyDiscount || hasLowLease ? 'Early discount detected' : 'Stable pricing'}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Financing Outlook:</span>
+                    <span className={`text-sm font-semibold ${hasLowLease ? 'text-red-600' : hasEarlyDiscount ? 'text-amber-600' : 'text-green-600'}`}>
+                      {hasLowLease ? 'Increasingly constrained' : hasEarlyDiscount ? 'Watch carefully' : 'Generally available'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">Best For:</p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      {hasLowLease ? (
+                        <>
+                          <li>• Shorter holding periods</li>
+                          <li>• Cash buyers</li>
+                          <li>• Buyers comfortable with lease trade-offs</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>• Long-term owner-occupiers</li>
+                          <li>• Buyers seeking stable resale value</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                  {(hasLowLease || hasEarlyDiscount) && (
+                    <div className="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-500">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Caution If:</p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Relying on future resale</li>
+                        <li>• Planning to upgrade or move</li>
+                        {hasLowLease && <li>• Need financing flexibility</li>}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* What this means for buyers - Layer 3 */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">What this means for buyers</h3>
@@ -383,13 +506,18 @@ export default function HDBLeasePricePage() {
               Consider combining this with the Affordability and Rent vs Buy tools.
             </p>
           </div>
-          <Link
-            href="/hdb/affordability"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-          >
-            Check my affordability with lease risk
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          <div className="space-y-3">
+            <Link
+              href="/hdb/affordability"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+            >
+              Check how lease risk affects your buying options
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <p className="text-sm text-gray-500">
+              See what flats are affordable without crossing risky lease thresholds
+            </p>
+          </div>
         </div>
       </main>
     </div>

@@ -657,7 +657,47 @@ export function calculateMonthlyMortgage(
   )
 }
 
-// Get detailed town comparison data
+// Lease Risk Types
+export type LeaseRiskLevel = 'low' | 'moderate' | 'high' | 'critical'
+
+// Town Profile - Complete decision profile with signals
+export interface TownProfile {
+  town: string
+  flatType: string
+
+  // Price & cashflow
+  medianResalePrice: number
+  estimatedMonthlyMortgage: number
+  medianRent: number | null
+  rentBuyGapMonthly: number // rent - mortgage
+
+  // Lease stats
+  medianRemainingLease: number // years
+  pctTxBelow60: number // 0-1
+  pctTxBelow55: number // 0-1
+
+  // Market stability
+  volumeRecent: number
+  volatility12m: number
+
+  // Derived signals (engine output)
+  signals: {
+    leaseRisk: LeaseRiskLevel
+    leaseSignalReasons: string[] // explainable
+    pricingResponse: 'early_discount' | 'stable' | 'premium'
+    stability: 'stable' | 'volatile' | 'fragile'
+  }
+}
+
+// Compare Summary output
+export interface CompareSummary {
+  bullets: string[] // 3-4 条
+  conclusion: string // 1-2 句
+  tradeoff: string // 最后一行点题
+  badges: Array<{ town: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
+}
+
+// Get detailed town comparison data (legacy, kept for compatibility)
 export interface TownComparisonData {
   town: string
   flatType: string
@@ -670,6 +710,243 @@ export interface TownComparisonData {
   priceVolatility: number // Coefficient of variation
   medianRent: number | null
   medianPricePerSqm: number
+}
+
+// Compute Lease Risk from raw data
+export function computeLeaseRisk(input: {
+  medianRemainingLease: number
+  pctTxBelow60: number
+  pctTxBelow55: number
+}): { level: LeaseRiskLevel; reasons: string[] } {
+  const reasons: string[] = []
+  const { medianRemainingLease, pctTxBelow60, pctTxBelow55 } = input
+
+  // Baseline by median
+  let score = 0
+
+  if (medianRemainingLease < 55) {
+    score += 3
+    reasons.push('Median remaining lease is below 55 years')
+  } else if (medianRemainingLease < 60) {
+    score += 2
+    reasons.push('Median remaining lease is below 60 years')
+  } else if (medianRemainingLease < 70) {
+    score += 1
+    reasons.push('Median remaining lease is below 70 years')
+  }
+
+  // Concentration checks
+  if (pctTxBelow55 >= 0.3) {
+    score += 2
+    reasons.push('High share of transactions below 55 years')
+  } else if (pctTxBelow55 >= 0.15) {
+    score += 1
+    reasons.push('Meaningful share of transactions below 55 years')
+  }
+
+  if (pctTxBelow60 >= 0.5) {
+    score += 1
+    reasons.push('Majority of transactions below 60 years')
+  }
+
+  // Map score → level
+  let level: LeaseRiskLevel = 'low'
+  if (score >= 5) level = 'critical'
+  else if (score >= 3) level = 'high'
+  else if (score >= 1) level = 'moderate'
+
+  return { level, reasons }
+}
+
+// Get Town Profile with signals (new unified API)
+export async function getTownProfile(
+  town: string,
+  flatType: string,
+  months: number = 24, // Use 24 months for decision tool
+  loanYears: number = 25,
+  interestRate: number = 2.6
+): Promise<TownProfile | null> {
+  try {
+    if (supabase) {
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setMonth(startDate.getMonth() - months)
+
+      // Get aggregated monthly data
+      const data = await getAggregatedMonthly(
+        flatType,
+        town,
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0]
+      )
+
+      if (data.length === 0) return null
+
+      // Calculate statistics
+      const prices = data.map(d => d.median_price)
+      const leases = data.map(d => d.median_lease_years).filter(l => l > 0)
+      const pricesPerSqm = data.map(d => d.median_psm).filter(p => p > 0)
+      
+      // Price volatility (coefficient of variation)
+      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length
+      const priceStdDev = Math.sqrt(
+        prices.reduce((sum, p) => sum + Math.pow(p - avgPrice, 2), 0) / prices.length
+      )
+      const priceVolatility = avgPrice > 0 ? priceStdDev / avgPrice : 0
+
+      // Calculate lease statistics from monthly aggregated data
+      // Note: We use median_lease_years from aggregated monthly data
+      // For more accurate pctTxBelow60/55, we should ideally query raw transactions
+      // But for now, we use the monthly medians as a proxy
+      const medianLease = leases.length > 0 
+        ? leases.sort((a, b) => a - b)[Math.floor(leases.length / 2)]
+        : 0
+      
+      // For percentage calculations, we approximate using monthly data
+      // A more accurate approach would query raw transactions, but this is acceptable for decision tool
+      const below60 = leases.filter(l => l < 60).length
+      const below55 = leases.filter(l => l < 55).length
+      const pctTxBelow60 = leases.length > 0 ? below60 / leases.length : 0
+      const pctTxBelow55 = leases.length > 0 ? below55 / leases.length : 0
+
+      // Get median rent
+      const medianRent = await getMedianRent(town, flatType, 6)
+
+      // Calculate mortgage
+      const medianPrice = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
+      const estimatedMortgage = calculateMonthlyMortgage(
+        medianPrice * 0.75, // 75% LTV
+        loanYears,
+        interestRate
+      )
+
+      // Compute lease risk
+      const leaseRiskResult = computeLeaseRisk({
+        medianRemainingLease: medianLease,
+        pctTxBelow60,
+        pctTxBelow55,
+      })
+
+      // Determine pricing response
+      let pricingResponse: 'early_discount' | 'stable' | 'premium'
+      if (medianLease < 60) {
+        pricingResponse = 'early_discount'
+      } else if (medianLease < 70) {
+        pricingResponse = 'stable'
+      } else {
+        pricingResponse = 'premium'
+      }
+
+      // Determine stability
+      const islandAvgVolatility = 0.12
+      const islandAvgVolume = 100
+      let stability: 'stable' | 'volatile' | 'fragile'
+      if (priceVolatility > islandAvgVolatility && data.reduce((sum, d) => sum + d.tx_count, 0) < islandAvgVolume) {
+        stability = 'fragile'
+      } else if (priceVolatility > islandAvgVolatility) {
+        stability = 'volatile'
+      } else {
+        stability = 'stable'
+      }
+
+      return {
+        town,
+        flatType,
+        medianResalePrice: medianPrice,
+        estimatedMonthlyMortgage: estimatedMortgage,
+        medianRent,
+        rentBuyGapMonthly: medianRent ? medianRent - estimatedMortgage : 0,
+        medianRemainingLease: medianLease,
+        pctTxBelow60,
+        pctTxBelow55,
+        volumeRecent: data.reduce((sum, d) => sum + d.tx_count, 0),
+        volatility12m: priceVolatility,
+        signals: {
+          leaseRisk: leaseRiskResult.level,
+          leaseSignalReasons: leaseRiskResult.reasons,
+          pricingResponse,
+          stability,
+        },
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching town profile:', error)
+  }
+
+  return null
+}
+
+// Generate Compare Summary from Town Profiles
+export function generateCompareSummary(
+  A: TownProfile,
+  B: TownProfile,
+  userBudget?: number
+): CompareSummary {
+  const bullets: string[] = []
+  const badges: CompareSummary['badges'] = []
+
+  // 1) Entry cost
+  const cheaper = A.medianResalePrice <= B.medianResalePrice ? 'A' : 'B'
+  bullets.push(
+    `Entry cost: ${cheaper === 'A' ? A.town : B.town} is lower upfront, ${cheaper === 'A' ? B.town : A.town} is higher.`
+  )
+
+  // 2) Lease profile (THIS is the new core)
+  const leaseText = (t: TownProfile) => {
+    if (t.signals.leaseRisk === 'critical') return 'very short remaining leases (highest risk)'
+    if (t.signals.leaseRisk === 'high') return 'shorter remaining leases (higher risk)'
+    if (t.signals.leaseRisk === 'moderate') return 'mixed lease profile (moderate risk)'
+    return 'healthier lease profile (lower risk)'
+  }
+
+  bullets.push(`Lease profile: ${A.town} shows ${leaseText(A)}; ${B.town} shows ${leaseText(B)}.`)
+
+  // Badges
+  if (A.signals.leaseRisk === 'high' || A.signals.leaseRisk === 'critical')
+    badges.push({ town: 'A', label: A.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
+  else badges.push({ town: 'A', label: 'Lease healthier', tone: 'good' })
+
+  if (B.signals.leaseRisk === 'high' || B.signals.leaseRisk === 'critical')
+    badges.push({ town: 'B', label: B.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
+  else badges.push({ town: 'B', label: 'Lease healthier', tone: 'good' })
+
+  // 3) Rent vs Buy lens
+  const gapA = A.rentBuyGapMonthly
+  const gapB = B.rentBuyGapMonthly
+  const rentMoreA = gapA > 0
+  const rentMoreB = gapB > 0
+  bullets.push(
+    `Cash flow: renting is ${rentMoreA ? 'more' : 'less'} costly than buying in ${A.town} (≈ S$${Math.abs(Math.round(gapA))}/mo); ` +
+    `renting is ${rentMoreB ? 'more' : 'less'} costly than buying in ${B.town} (≈ S$${Math.abs(Math.round(gapB))}/mo).`
+  )
+
+  // 4) Stability short statement
+  bullets.push(
+    `Market stability: ${A.town} is ${A.signals.stability}; ${B.town} is ${B.signals.stability}.`
+  )
+
+  // Conclusion/tradeoff (the punchline)
+  const leaseRiskLevels = { low: 0, moderate: 1, high: 2, critical: 3 }
+  const leaseA = leaseRiskLevels[A.signals.leaseRisk]
+  const leaseB = leaseRiskLevels[B.signals.leaseRisk]
+
+  let tradeoff: string
+  if (leaseA > leaseB) {
+    tradeoff = `Trade-off: lower upfront cost vs stronger long-term lease security and resale flexibility.`
+  } else if (leaseB > leaseA) {
+    tradeoff = `Trade-off: lower upfront cost vs stronger long-term lease security and resale flexibility.`
+  } else {
+    tradeoff = `Trade-off: focus on cash flow and stability, as lease profiles are similar.`
+  }
+
+  let conclusion: string
+  if (A.signals.leaseRisk === 'critical' || B.signals.leaseRisk === 'critical') {
+    conclusion = `If you plan to hold long-term or rely on future resale, be cautious with the town showing very short remaining leases.`
+  } else {
+    conclusion = `Both options can work — choose based on whether you prioritize upfront affordability or long-term risk control.`
+  }
+
+  return { bullets, conclusion, tradeoff, badges }
 }
 
 export async function getTownComparisonData(

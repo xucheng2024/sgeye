@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getTownComparisonData, calculateMonthlyMortgage, TownComparisonData } from '@/lib/hdb-data'
+import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary } from '@/lib/hdb-data'
 import { formatCurrency } from '@/lib/utils'
 import { Scale, AlertTriangle, TrendingUp, Map } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
@@ -187,27 +187,24 @@ function generateSummary(
   return bullets
 }
 
-// Generate "Who this suits" and "Who should avoid" from signals
-function generateSuitability(
-  signals: TownSignals,
+// Generate "Who this suits" and "Who should avoid" from TownProfile
+function generateSuitabilityFromProfile(
+  profile: TownProfile,
   townName: string
 ): { suits: string[]; avoids: string[] } {
   const suits: string[] = []
   const avoids: string[] = []
   
-  // Based on affordability
-  if (signals.affordability === 'Comfortable') {
-    suits.push('First-time buyers on tighter budgets')
-    suits.push('Households prioritizing monthly cash flow')
-  }
+  // Based on affordability (if price is lower)
+  // This would need userBudget to determine, but we can infer from signals
   
   // Based on cashflow
-  if (signals.cashflow === 'Strong buy advantage' || signals.cashflow === 'Buy advantage') {
+  if (profile.rentBuyGapMonthly > 0) {
     suits.push('Buyers prioritizing cash flow advantage')
   }
   
   // Based on lease risk
-  if (signals.leaseRisk === 'High') {
+  if (profile.signals.leaseRisk === 'high' || profile.signals.leaseRisk === 'critical') {
     suits.push('Households planning shorter holding periods')
     avoids.push('Buyers relying on future resale')
     avoids.push('Buyers sensitive to lease-related financing risk')
@@ -216,9 +213,9 @@ function generateSuitability(
   }
   
   // Based on stability
-  if (signals.stability === 'Stable') {
+  if (profile.signals.stability === 'stable') {
     suits.push('Buyers valuing resale stability')
-  } else if (signals.stability === 'Fragile') {
+  } else if (profile.signals.stability === 'fragile') {
     avoids.push('Buyers needing quick resale flexibility')
   }
   
@@ -228,6 +225,58 @@ function generateSuitability(
   }
   
   return { suits, avoids }
+}
+
+// Generate decision hint from TownProfiles
+function generateDecisionHintFromProfiles(
+  profileA: TownProfile,
+  profileB: TownProfile
+): string[] {
+  const hints: string[] = []
+  
+  // Rule: If lease risk is High → mark lease risk
+  if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical' ||
+      profileB.signals.leaseRisk === 'high' || profileB.signals.leaseRisk === 'critical') {
+    hints.push('If you plan to stay long-term (15+ years), lease profile matters more than entry price.')
+  }
+  
+  // Rule: If volatility high → mark upgrade risk
+  if (profileA.signals.stability === 'volatile' || profileA.signals.stability === 'fragile' || 
+      profileB.signals.stability === 'volatile' || profileB.signals.stability === 'fragile') {
+    hints.push('If you plan to upgrade or move again, market liquidity matters more.')
+  }
+  
+  // Rule: If rent > mortgage → emphasize ownership advantage
+  if (profileA.rentBuyGapMonthly > 0 || profileB.rentBuyGapMonthly > 0) {
+    hints.push('With rents exceeding mortgage payments, buying builds equity while renting does not.')
+  }
+  
+  // Default hint if no specific rules match
+  if (hints.length === 0) {
+    hints.push('Consider your timeline: longer stays favor lease security, shorter stays favor liquidity.')
+  }
+  
+  return hints
+}
+
+// Generate decision verdict from TownProfiles
+function generateDecisionVerdictFromProfiles(
+  profileA: TownProfile,
+  profileB: TownProfile
+): string | null {
+  // More balanced long-term option
+  if ((profileA.rentBuyGapMonthly > 0 && profileA.signals.leaseRisk !== 'high' && profileA.signals.leaseRisk !== 'critical') ||
+      (profileB.rentBuyGapMonthly > 0 && profileB.signals.leaseRisk !== 'high' && profileB.signals.leaseRisk !== 'critical')) {
+    return 'More balanced long-term option'
+  }
+  
+  // Affordability-driven, higher long-term risk
+  if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical' ||
+      profileB.signals.leaseRisk === 'high' || profileB.signals.leaseRisk === 'critical') {
+    return 'Affordability-driven, higher long-term risk'
+  }
+  
+  return null
 }
 
 // Generate decision hint from signals
@@ -281,45 +330,51 @@ function generateDecisionVerdict(
   return null
 }
 
-// Generate decision guidance
-function generateDecisionGuidance(
-  townA: TownComparisonData,
-  townB: TownComparisonData,
-  mortgageA: number,
-  mortgageB: number
+// Generate decision guidance from TownProfiles
+function generateDecisionGuidanceFromProfiles(
+  profileA: TownProfile,
+  profileB: TownProfile,
+  townA: string,
+  townB: string
 ): { chooseA: string; chooseB: string; conclusion: string } {
   const chooseAParts: string[] = []
   const chooseBParts: string[] = []
   
   // Town A advantages
-  if (townA.medianPrice < townB.medianPrice) {
+  if (profileA.medianResalePrice < profileB.medianResalePrice) {
     chooseAParts.push('lower upfront cost')
   }
-  if (townA.txCount > townB.txCount * 1.2) {
+  if (profileA.volumeRecent > profileB.volumeRecent * 1.2) {
     chooseAParts.push('higher liquidity')
   }
-  if (townA.medianLeaseYears < 55 && townB.medianLeaseYears >= 55) {
+  if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical') {
     chooseAParts.push('comfortable with lease trade-offs')
+  }
+  if (profileA.rentBuyGapMonthly > profileB.rentBuyGapMonthly) {
+    chooseAParts.push('stronger cash flow advantage')
   }
   
   // Town B advantages
-  if (townB.medianLeaseYears > townA.medianLeaseYears + 5) {
+  if (profileB.medianRemainingLease > profileA.medianRemainingLease + 5) {
     chooseBParts.push('longer remaining leases')
   }
-  if (townB.priceVolatility < townA.priceVolatility * 0.8) {
+  if (profileB.volatility12m < profileA.volatility12m * 0.8) {
     chooseBParts.push('more stable long-term ownership')
   }
-  if (townB.medianPrice > townA.medianPrice) {
+  if (profileB.signals.leaseRisk === 'low' || profileB.signals.leaseRisk === 'moderate') {
+    chooseBParts.push('healthier lease profile')
+  }
+  if (profileB.medianResalePrice > profileA.medianResalePrice) {
     chooseBParts.push('at a slightly higher cost')
   }
   
   return {
     chooseA: chooseAParts.length > 0 
-      ? `Choose ${townA.town} if you prioritize ${chooseAParts.join(' and ')}.`
-      : `Choose ${townA.town} based on your specific preferences.`,
+      ? `Choose ${townA} if you prioritize ${chooseAParts.join(' and ')}.`
+      : `Choose ${townA} based on your specific preferences.`,
     chooseB: chooseBParts.length > 0
-      ? `Choose ${townB.town} if you value ${chooseBParts.join(' and ')}.`
-      : `Choose ${townB.town} based on your specific preferences.`,
+      ? `Choose ${townB} if you value ${chooseBParts.join(' and ')}.`
+      : `Choose ${townB} based on your specific preferences.`,
     conclusion: 'There is no universally better town — only a better fit for your situation.'
   }
 }
@@ -331,52 +386,38 @@ export default function CompareTownsPage() {
   const [townA, setTownA] = useState(searchParams.get('townA') || defaultPair.townA)
   const [townB, setTownB] = useState(searchParams.get('townB') || defaultPair.townB)
   const [flatType, setFlatType] = useState(searchParams.get('flatType') || '4 ROOM')
-  const [dataA, setDataA] = useState<TownComparisonData | null>(null)
-  const [dataB, setDataB] = useState<TownComparisonData | null>(null)
+  const [profileA, setProfileA] = useState<TownProfile | null>(null)
+  const [profileB, setProfileB] = useState<TownProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [loanYears, setLoanYears] = useState(25)
-  const [interestRate, setInterestRate] = useState(2.6)
+  const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       const [resultA, resultB] = await Promise.all([
-        getTownComparisonData(townA, flatType),
-        getTownComparisonData(townB, flatType),
+        getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
+        getTownProfile(townB, flatType, 24),
       ])
-      setDataA(resultA)
-      setDataB(resultB)
+      setProfileA(resultA)
+      setProfileB(resultB)
       setLoading(false)
     }
     fetchData()
   }, [townA, townB, flatType])
 
-  const mortgageA = dataA ? calculateMonthlyMortgage(
-    dataA.medianPrice * 0.75, // Assume 75% LTV
-    loanYears,
-    interestRate
-  ) : 0
+  // Generate Compare Summary from Town Profiles
+  const compareSummary: CompareSummary | null = profileA && profileB 
+    ? generateCompareSummary(profileA, profileB, userBudget)
+    : null
 
-  const mortgageB = dataB ? calculateMonthlyMortgage(
-    dataB.medianPrice * 0.75,
-    loanYears,
-    interestRate
-  ) : 0
-
-  // Generate signals from raw data
-  const userBudget = 500000 // Default, could be from props or context
-  const signalsA = dataA ? generateSignals(dataA, userBudget, mortgageA) : null
-  const signalsB = dataB ? generateSignals(dataB, userBudget, mortgageB) : null
+  // Generate suitability from profiles
+  const suitabilityA = profileA ? generateSuitabilityFromProfile(profileA, townA) : null
+  const suitabilityB = profileB ? generateSuitabilityFromProfile(profileB, townB) : null
   
-  // Generate content from signals
-  const summaryBullets = signalsA && signalsB && dataA && dataB 
-    ? generateSummaryFromSignals(townA, townB, signalsA, signalsB) 
-    : []
-  const suitabilityA = signalsA ? generateSuitability(signalsA, townA) : null
-  const suitabilityB = signalsB ? generateSuitability(signalsB, townB) : null
-  const decisionHints = signalsA && signalsB ? generateDecisionHint(signalsA, signalsB) : []
-  const decisionVerdict = signalsA && signalsB ? generateDecisionVerdict(signalsA, signalsB) : null
-  const guidance = dataA && dataB ? generateDecisionGuidance(dataA, dataB, mortgageA, mortgageB) : null
+  // Generate decision hints from profiles
+  const decisionHints = profileA && profileB ? generateDecisionHintFromProfiles(profileA, profileB) : []
+  const decisionVerdict = profileA && profileB ? generateDecisionVerdictFromProfiles(profileA, profileB) : null
+  const guidance = profileA && profileB ? generateDecisionGuidanceFromProfiles(profileA, profileB, townA, townB) : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -455,11 +496,47 @@ export default function CompareTownsPage() {
         </div>
 
         {/* Auto-generated Summary */}
-        {summaryBullets.length > 0 && (
+        {compareSummary && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Summary</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Summary</h3>
+              <div className="flex items-center gap-2">
+                {compareSummary.badges
+                  .filter(b => b.town === 'A')
+                  .map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        badge.tone === 'warn'
+                          ? 'bg-red-100 text-red-700'
+                          : badge.tone === 'good'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {townA}: {badge.label}
+                    </span>
+                  ))}
+                {compareSummary.badges
+                  .filter(b => b.town === 'B')
+                  .map((badge, idx) => (
+                    <span
+                      key={idx}
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        badge.tone === 'warn'
+                          ? 'bg-red-100 text-red-700'
+                          : badge.tone === 'good'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {townB}: {badge.label}
+                    </span>
+                  ))}
+              </div>
+            </div>
             <ul className="space-y-2 mb-4">
-              {summaryBullets.map((bullet, index) => (
+              {compareSummary.bullets.map((bullet, index) => (
                 <li key={index} className="text-base text-gray-800 flex items-start">
                   <span className="text-blue-600 mr-2 font-bold">•</span>
                   <span>{bullet}</span>
@@ -467,8 +544,11 @@ export default function CompareTownsPage() {
               ))}
             </ul>
             <div className="pt-3 border-t border-blue-200 space-y-2">
-              <p className="text-base text-gray-800 font-medium">
-                Both towns are within your budget.
+              <p className="text-base text-gray-800 font-bold text-gray-900">
+                {compareSummary.tradeoff}
+              </p>
+              <p className="text-sm text-gray-600">
+                {compareSummary.conclusion}
               </p>
               {(suitabilityA || suitabilityB) && (
                 <div className="space-y-3">
@@ -538,7 +618,7 @@ export default function CompareTownsPage() {
               <p className="text-gray-500">Loading comparison data...</p>
             </div>
           </div>
-        ) : dataA && dataB ? (
+        ) : profileA && profileB ? (
           <>
             {/* Module A: Price & Cash Flow */}
             <ChartCard
@@ -558,36 +638,36 @@ export default function CompareTownsPage() {
                   <tbody className="divide-y divide-gray-100">
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Median resale price</td>
-                      <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(dataA.medianPrice)}</td>
-                      <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(dataB.medianPrice)}</td>
+                      <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(profileA.medianResalePrice)}</td>
+                      <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(profileB.medianResalePrice)}</td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Estimated monthly mortgage</td>
-                      <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(mortgageA)}</td>
-                      <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(mortgageB)}</td>
+                      <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileA.estimatedMonthlyMortgage)}</td>
+                      <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileB.estimatedMonthlyMortgage)}</td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Median rent (same flat)</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataA.medianRent ? formatCurrency(dataA.medianRent) : <span className="text-gray-400">N/A</span>}
+                        {profileA.medianRent ? formatCurrency(profileA.medianRent) : <span className="text-gray-400">N/A</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataB.medianRent ? formatCurrency(dataB.medianRent) : <span className="text-gray-400">N/A</span>}
+                        {profileB.medianRent ? formatCurrency(profileB.medianRent) : <span className="text-gray-400">N/A</span>}
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Rent vs Buy gap</td>
                       <td className="py-4 px-4 text-right">
-                        {dataA.medianRent ? (
-                          <span className={`font-semibold ${dataA.medianRent > mortgageA ? 'text-green-600' : 'text-red-600'}`}>
-                            {dataA.medianRent > mortgageA ? '+' : ''}{formatCurrency(dataA.medianRent - mortgageA)}
+                        {profileA.medianRent ? (
+                          <span className={`font-semibold ${profileA.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {profileA.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileA.rentBuyGapMonthly)}
                           </span>
                         ) : <span className="text-gray-400">N/A</span>}
                       </td>
                       <td className="py-4 px-4 text-right">
-                        {dataB.medianRent ? (
-                          <span className={`font-semibold ${dataB.medianRent > mortgageB ? 'text-green-600' : 'text-red-600'}`}>
-                            {dataB.medianRent > mortgageB ? '+' : ''}{formatCurrency(dataB.medianRent - mortgageB)}
+                        {profileB.medianRent ? (
+                          <span className={`font-semibold ${profileB.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {profileB.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileB.rentBuyGapMonthly)}
                           </span>
                         ) : <span className="text-gray-400">N/A</span>}
                       </td>
@@ -604,9 +684,9 @@ export default function CompareTownsPage() {
                   When rents exceed mortgage payments, buying builds equity while renting does not. The larger the gap, the stronger the ownership advantage.
                 </p>
               </div>
-              {dataA.medianRent && dataB.medianRent && (
+              {profileA.medianRent && profileB.medianRent && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
-                  {dataA.medianRent - mortgageA > dataB.medianRent - mortgageB ? (
+                  {profileA.rentBuyGapMonthly > profileB.rentBuyGapMonthly ? (
                     <>Renting in {townA} costs significantly more than buying, widening the ownership advantage.</>
                   ) : (
                     <>Renting in {townB} costs significantly more than buying, widening the ownership advantage.</>
@@ -634,33 +714,33 @@ export default function CompareTownsPage() {
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Typical remaining lease (median)</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        <span className="font-semibold">{Math.round(dataA.medianLeaseYears)} yrs</span>
-                        {dataA.medianLeaseYears < 55 && <span className="ml-2 text-amber-600">⚠️</span>}
+                        <span className="font-semibold">{Math.round(profileA.medianRemainingLease)} yrs</span>
+                        {(profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical') && <span className="ml-2 text-amber-600">⚠️</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        <span className="font-semibold">{Math.round(dataB.medianLeaseYears)} yrs</span>
-                        {dataB.medianLeaseYears < 55 && <span className="ml-2 text-amber-600">⚠️</span>}
+                        <span className="font-semibold">{Math.round(profileB.medianRemainingLease)} yrs</span>
+                        {(profileB.signals.leaseRisk === 'high' || profileB.signals.leaseRisk === 'critical') && <span className="ml-2 text-amber-600">⚠️</span>}
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">% of transactions &lt; 55 yrs</td>
-                      <td className="py-4 px-4 text-right text-gray-800">{dataA.pctBelow55Years.toFixed(0)}%</td>
-                      <td className="py-4 px-4 text-right text-gray-800">{dataB.pctBelow55Years.toFixed(0)}%</td>
+                      <td className="py-4 px-4 text-right text-gray-800">{(profileA.pctTxBelow55 * 100).toFixed(0)}%</td>
+                      <td className="py-4 px-4 text-right text-gray-800">{(profileB.pctTxBelow55 * 100).toFixed(0)}%</td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Price per sqm trend</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataA.medianLeaseYears < 60 ? <span className="text-amber-600 font-medium">Early discount</span> : <span className="text-green-600 font-medium">Stable</span>}
+                        {profileA.signals.pricingResponse === 'early_discount' ? <span className="text-amber-600 font-medium">Early discount</span> : profileA.signals.pricingResponse === 'premium' ? <span className="text-green-600 font-medium">Premium</span> : <span className="text-green-600 font-medium">Stable</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataB.medianLeaseYears < 60 ? <span className="text-amber-600 font-medium">Early discount</span> : <span className="text-green-600 font-medium">Stable</span>}
+                        {profileB.signals.pricingResponse === 'early_discount' ? <span className="text-amber-600 font-medium">Early discount</span> : profileB.signals.pricingResponse === 'premium' ? <span className="text-green-600 font-medium">Premium</span> : <span className="text-green-600 font-medium">Stable</span>}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm text-gray-700">
-                {dataA.medianLeaseYears < dataB.medianLeaseYears - 5 ? (
+                {profileA.medianRemainingLease < profileB.medianRemainingLease - 5 ? (
                   <>{townA} shows earlier market discounting due to lease decay.</>
                 ) : (
                   <>{townB} shows earlier market discounting due to lease decay.</>
@@ -696,34 +776,34 @@ export default function CompareTownsPage() {
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Recent transaction volume</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataA.txCount > dataB.txCount * 1.2 ? <span className="font-semibold text-green-600">High</span> : dataA.txCount < dataB.txCount * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
+                        {profileA.volumeRecent > profileB.volumeRecent * 1.2 ? <span className="font-semibold text-green-600">High</span> : profileA.volumeRecent < profileB.volumeRecent * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataB.txCount > dataA.txCount * 1.2 ? <span className="font-semibold text-green-600">High</span> : dataB.txCount < dataA.txCount * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
+                        {profileB.volumeRecent > profileA.volumeRecent * 1.2 ? <span className="font-semibold text-green-600">High</span> : profileB.volumeRecent < profileA.volumeRecent * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Price volatility (12m)</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataA.priceVolatility > dataB.priceVolatility * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
+                        {profileA.volatility12m > profileB.volatility12m * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataB.priceVolatility > dataA.priceVolatility * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
+                        {profileB.volatility12m > profileA.volatility12m * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
                       </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Liquidity risk</td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataA.txCount < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
+                        {profileA.volumeRecent < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
                       </td>
                       <td className="py-4 px-4 text-right text-gray-800">
-                        {dataB.txCount < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
+                        {profileB.volumeRecent < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-              {(dataA.txCount < 50 || dataB.txCount < 50) && (
+              {(profileA.volumeRecent < 50 || profileB.volumeRecent < 50) && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                   Lower volume towns may show larger price swings.
                 </div>
