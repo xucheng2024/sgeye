@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Singapore Data Insights
+
+A Next.js web application that visualizes Singapore's public data and key livelihood indicators using interactive charts and graphs.
+
+## Features
+
+- **Population Trends**: Visualize population breakdown by citizenship status
+- **Housing Distribution**: Track HDB vs Private housing percentages
+- **Employment Rate**: Monitor employment and unemployment trends
+- **Household Income**: Analyze median and mean income statistics
+- **Healthcare Facilities**: View healthcare infrastructure distribution
+- **Education Enrollment**: Track enrollment rates across education levels
+
+## Tech Stack
+
+- **Framework**: Next.js 16 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts
+- **Icons**: Lucide React
+- **Database**: Supabase (configured, ready for data integration)
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ and npm
+- Supabase account (optional, for future data integration)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd sgeye
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables (optional for Supabase):
+```bash
+cp .env.local.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edit `.env.local` and add your Supabase credentials:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-## Learn More
+4. Run the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel
 
-## Deploy on Vercel
+1. Push your code to GitHub
+2. Import your repository in Vercel
+3. Add environment variables in Vercel dashboard (if using Supabase)
+4. Deploy!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The project is configured for Vercel deployment with `vercel.json`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+sgeye/
+├── app/
+│   ├── layout.tsx       # Root layout
+│   ├── page.tsx         # Main dashboard page
+│   └── globals.css      # Global styles
+├── components/
+│   ├── ChartCard.tsx    # Reusable chart container
+│   ├── PopulationChart.tsx
+│   ├── HousingChart.tsx
+│   ├── EmploymentChart.tsx
+│   ├── IncomeChart.tsx
+│   ├── HealthcareChart.tsx
+│   └── EducationChart.tsx
+├── lib/
+│   └── supabase.ts      # Supabase client configuration
+└── public/              # Static assets
+```
+
+## Data Sources
+
+The current visualizations use sample data based on Singapore's public statistics. To integrate real-time data:
+
+1. Set up a Supabase project
+2. Create tables for your data
+3. Update the chart components to fetch from Supabase
+4. Add data fetching logic using the Supabase client
+
+## License
+
+MIT
