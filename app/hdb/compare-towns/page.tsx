@@ -10,6 +10,86 @@ import ChartCard from '@/components/ChartCard'
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
 const FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
+// Signal Layer: Convert raw data to signals
+interface TownSignals {
+  affordability: 'Comfortable' | 'Stretch' | 'Out of reach'
+  cashflow: 'Strong buy advantage' | 'Buy advantage' | 'Rent competitive'
+  leaseRisk: 'High' | 'Moderate' | 'Low'
+  stability: 'Fragile' | 'Volatile' | 'Stable'
+  valueProfile: 'Early discount' | 'Stable pricing' | 'Premium growth'
+}
+
+function generateSignals(
+  data: TownComparisonData,
+  userBudget: number,
+  estimatedMortgage: number,
+  islandAvgVolatility: number = 0.12,
+  islandAvgVolume: number = 100
+): TownSignals {
+  // Signal 1: Affordability
+  let affordability: 'Comfortable' | 'Stretch' | 'Out of reach'
+  if (data.medianPrice <= userBudget * 0.95) {
+    affordability = 'Comfortable'
+  } else if (data.medianPrice <= userBudget) {
+    affordability = 'Stretch'
+  } else {
+    affordability = 'Out of reach'
+  }
+
+  // Signal 2: Cash Flow Advantage
+  let cashflow: 'Strong buy advantage' | 'Buy advantage' | 'Rent competitive'
+  if (data.medianRent && data.medianRent > estimatedMortgage * 1.2) {
+    cashflow = 'Strong buy advantage'
+  } else if (data.medianRent && data.medianRent > estimatedMortgage) {
+    cashflow = 'Buy advantage'
+  } else {
+    cashflow = 'Rent competitive'
+  }
+
+  // Signal 3: Lease Risk
+  let leaseRisk: 'High' | 'Moderate' | 'Low'
+  if (data.medianLeaseYears < 60) {
+    leaseRisk = 'High'
+  } else if (data.medianLeaseYears < 70) {
+    leaseRisk = 'Moderate'
+  } else {
+    leaseRisk = 'Low'
+  }
+  
+  // Correction: Market-wide risk
+  if (data.pctBelow55Years > 50) {
+    leaseRisk = 'High'
+  }
+
+  // Signal 4: Market Stability
+  let stability: 'Fragile' | 'Volatile' | 'Stable'
+  if (data.priceVolatility > islandAvgVolatility && data.txCount < islandAvgVolume) {
+    stability = 'Fragile'
+  } else if (data.priceVolatility > islandAvgVolatility) {
+    stability = 'Volatile'
+  } else {
+    stability = 'Stable'
+  }
+
+  // Signal 5: Value Profile
+  let valueProfile: 'Early discount' | 'Stable pricing' | 'Premium growth'
+  if (data.medianLeaseYears < 60) {
+    valueProfile = 'Early discount'
+  } else if (data.medianLeaseYears < 70) {
+    valueProfile = 'Stable pricing'
+  } else {
+    valueProfile = 'Premium growth'
+  }
+
+  return {
+    affordability,
+    cashflow,
+    leaseRisk,
+    stability,
+    valueProfile
+  }
+}
+
 // Recommended comparison pairs
 const RECOMMENDED_PAIRS = [
   { townA: 'ANG MO KIO', townB: 'BUKIT BATOK', label: 'Popular vs Value', description: 'Compare two popular towns with different price points' },
@@ -18,7 +98,50 @@ const RECOMMENDED_PAIRS = [
   { townA: 'BEDOK', townB: 'WOODLANDS', label: 'East vs North', description: 'Compare eastern and northern options' },
 ]
 
-// Generate automatic summary as structured bullets
+// Generate summary from signals (template-based)
+function generateSummaryFromSignals(
+  townA: string,
+  townB: string,
+  signalsA: TownSignals,
+  signalsB: TownSignals
+): string[] {
+  const bullets: string[] = []
+  
+  // Entry cost from affordability signal
+  if (signalsA.affordability === 'Comfortable' && signalsB.affordability !== 'Comfortable') {
+    bullets.push(`Entry cost: ${townA} lower, ${townB} slightly higher`)
+  } else if (signalsB.affordability === 'Comfortable' && signalsA.affordability !== 'Comfortable') {
+    bullets.push(`Entry cost: ${townB} lower, ${townA} slightly higher`)
+  } else {
+    bullets.push(`Entry cost: Similar price points`)
+  }
+  
+  // Lease profile from lease risk signal
+  if (signalsA.leaseRisk === 'High' && signalsB.leaseRisk !== 'High') {
+    bullets.push(`Lease profile: ${townA} shorter, ${townB} longer`)
+  } else if (signalsB.leaseRisk === 'High' && signalsA.leaseRisk !== 'High') {
+    bullets.push(`Lease profile: ${townB} shorter, ${townA} longer`)
+  } else {
+    bullets.push(`Lease profile: Similar remaining lease`)
+  }
+  
+  // Market stability from stability signal
+  if (signalsA.stability === 'Fragile' || signalsA.stability === 'Volatile') {
+    if (signalsB.stability === 'Stable') {
+      bullets.push(`Market stability: ${townA} more volatile, ${townB} more stable`)
+    } else {
+      bullets.push(`Market stability: ${townA} more volatile, ${townB} moderate`)
+    }
+  } else if (signalsB.stability === 'Fragile' || signalsB.stability === 'Volatile') {
+    bullets.push(`Market stability: ${townB} more volatile, ${townA} more stable`)
+  } else {
+    bullets.push(`Market stability: Similar transaction volume`)
+  }
+  
+  return bullets
+}
+
+// Generate automatic summary as structured bullets (legacy function, kept for compatibility)
 function generateSummary(
   townA: TownComparisonData,
   townB: TownComparisonData,
@@ -62,6 +185,100 @@ function generateSummary(
   }
   
   return bullets
+}
+
+// Generate "Who this suits" and "Who should avoid" from signals
+function generateSuitability(
+  signals: TownSignals,
+  townName: string
+): { suits: string[]; avoids: string[] } {
+  const suits: string[] = []
+  const avoids: string[] = []
+  
+  // Based on affordability
+  if (signals.affordability === 'Comfortable') {
+    suits.push('First-time buyers on tighter budgets')
+    suits.push('Households prioritizing monthly cash flow')
+  }
+  
+  // Based on cashflow
+  if (signals.cashflow === 'Strong buy advantage' || signals.cashflow === 'Buy advantage') {
+    suits.push('Buyers prioritizing cash flow advantage')
+  }
+  
+  // Based on lease risk
+  if (signals.leaseRisk === 'High') {
+    suits.push('Households planning shorter holding periods')
+    avoids.push('Buyers relying on future resale')
+    avoids.push('Buyers sensitive to lease-related financing risk')
+  } else {
+    suits.push('Buyers planning long-term ownership')
+  }
+  
+  // Based on stability
+  if (signals.stability === 'Stable') {
+    suits.push('Buyers valuing resale stability')
+  } else if (signals.stability === 'Fragile') {
+    avoids.push('Buyers needing quick resale flexibility')
+  }
+  
+  // Default if no specific signals
+  if (suits.length === 0) {
+    suits.push('Buyers with specific preferences')
+  }
+  
+  return { suits, avoids }
+}
+
+// Generate decision hint from signals
+function generateDecisionHint(
+  signalsA: TownSignals,
+  signalsB: TownSignals
+): string[] {
+  const hints: string[] = []
+  
+  // Rule: If lease risk is High → mark lease risk
+  if (signalsA.leaseRisk === 'High' || signalsB.leaseRisk === 'High') {
+    hints.push('If you plan to stay long-term (15+ years), lease profile matters more than entry price.')
+  }
+  
+  // Rule: If volatility high → mark upgrade risk
+  if (signalsA.stability === 'Volatile' || signalsA.stability === 'Fragile' || 
+      signalsB.stability === 'Volatile' || signalsB.stability === 'Fragile') {
+    hints.push('If you plan to upgrade or move again, market liquidity matters more.')
+  }
+  
+  // Rule: If rent > mortgage → emphasize ownership advantage
+  if (signalsA.cashflow === 'Strong buy advantage' || signalsA.cashflow === 'Buy advantage' ||
+      signalsB.cashflow === 'Strong buy advantage' || signalsB.cashflow === 'Buy advantage') {
+    hints.push('With rents exceeding mortgage payments, buying builds equity while renting does not.')
+  }
+  
+  // Default hint if no specific rules match
+  if (hints.length === 0) {
+    hints.push('Consider your timeline: longer stays favor lease security, shorter stays favor liquidity.')
+  }
+  
+  return hints
+}
+
+// Generate decision verdict from signals
+function generateDecisionVerdict(
+  signalsA: TownSignals,
+  signalsB: TownSignals
+): string | null {
+  // More balanced long-term option
+  if ((signalsA.cashflow === 'Strong buy advantage' && signalsA.leaseRisk !== 'High') ||
+      (signalsB.cashflow === 'Strong buy advantage' && signalsB.leaseRisk !== 'High')) {
+    return 'More balanced long-term option'
+  }
+  
+  // Affordability-driven, higher long-term risk
+  if (signalsA.leaseRisk === 'High' || signalsB.leaseRisk === 'High') {
+    return 'Affordability-driven, higher long-term risk'
+  }
+  
+  return null
 }
 
 // Generate decision guidance
@@ -146,7 +363,19 @@ export default function CompareTownsPage() {
     interestRate
   ) : 0
 
-  const summaryBullets = dataA && dataB ? generateSummary(dataA, dataB, mortgageA, mortgageB) : []
+  // Generate signals from raw data
+  const userBudget = 500000 // Default, could be from props or context
+  const signalsA = dataA ? generateSignals(dataA, userBudget, mortgageA) : null
+  const signalsB = dataB ? generateSignals(dataB, userBudget, mortgageB) : null
+  
+  // Generate content from signals
+  const summaryBullets = signalsA && signalsB && dataA && dataB 
+    ? generateSummaryFromSignals(townA, townB, signalsA, signalsB) 
+    : []
+  const suitabilityA = signalsA ? generateSuitability(signalsA, townA) : null
+  const suitabilityB = signalsB ? generateSuitability(signalsB, townB) : null
+  const decisionHints = signalsA && signalsB ? generateDecisionHint(signalsA, signalsB) : []
+  const decisionVerdict = signalsA && signalsB ? generateDecisionVerdict(signalsA, signalsB) : null
   const guidance = dataA && dataB ? generateDecisionGuidance(dataA, dataB, mortgageA, mortgageB) : null
 
   return (
@@ -237,14 +466,68 @@ export default function CompareTownsPage() {
                 </li>
               ))}
             </ul>
-            <div className="pt-3 border-t border-blue-200 space-y-1">
+            <div className="pt-3 border-t border-blue-200 space-y-2">
               <p className="text-base text-gray-800 font-medium">
                 Both towns are within your budget.
               </p>
-              <p className="text-base text-gray-800">
-                The choice depends on whether you prioritize upfront cost or longer-term value retention.
-              </p>
+              {(suitabilityA || suitabilityB) && (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">Best for:</p>
+                    <div className="space-y-1">
+                      {suitabilityA && suitabilityA.suits.map((suit, idx) => (
+                        <p key={idx} className="text-sm text-gray-800 flex items-start">
+                          <span className="text-green-600 mr-2">✔</span>
+                          <span><span className="font-medium">{townA}:</span> {suit}</span>
+                        </p>
+                      ))}
+                      {suitabilityB && suitabilityB.suits.map((suit, idx) => (
+                        <p key={idx} className="text-sm text-gray-800 flex items-start">
+                          <span className="text-green-600 mr-2">✔</span>
+                          <span><span className="font-medium">{townB}:</span> {suit}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  {(suitabilityA?.avoids.length || suitabilityB?.avoids.length) > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 mb-2">Be cautious if:</p>
+                      <div className="space-y-1">
+                        {suitabilityA && suitabilityA.avoids.map((avoid, idx) => (
+                          <p key={idx} className="text-sm text-gray-800 flex items-start">
+                            <span className="text-amber-600 mr-2">⚠</span>
+                            <span><span className="font-medium">{townA}:</span> {avoid}</span>
+                          </p>
+                        ))}
+                        {suitabilityB && suitabilityB.avoids.map((avoid, idx) => (
+                          <p key={idx} className="text-sm text-gray-800 flex items-start">
+                            <span className="text-amber-600 mr-2">⚠</span>
+                            <span><span className="font-medium">{townB}:</span> {avoid}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+            {decisionHints.length > 0 && (
+              <div className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-300">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Decision Hint:</p>
+                {decisionHints.map((hint, index) => (
+                  <p key={index} className="text-xs text-gray-600 mb-1">{hint}</p>
+                ))}
+              </div>
+            )}
+            {decisionVerdict && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                <p className="text-sm font-semibold text-gray-900 mb-1">🧭 Decision Lens:</p>
+                <p className="text-sm text-gray-800">
+                  This comparison highlights a trade-off between affordability and long-term lease security.
+                </p>
+                <p className="text-xs text-gray-600 mt-2 italic">{decisionVerdict}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -315,6 +598,12 @@ export default function CompareTownsPage() {
               <div className="mt-3 text-xs text-gray-500 italic">
                 Positive values indicate renting costs more per month than buying.
               </div>
+              <div className="mt-3 p-2 bg-gray-50 rounded border-l-2 border-blue-400">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Why it matters:</p>
+                <p className="text-xs text-gray-600">
+                  When rents exceed mortgage payments, buying builds equity while renting does not. The larger the gap, the stronger the ownership advantage.
+                </p>
+              </div>
               {dataA.medianRent && dataB.medianRent && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                   {dataA.medianRent - mortgageA > dataB.medianRent - mortgageB ? (
@@ -380,6 +669,12 @@ export default function CompareTownsPage() {
               <div className="mt-3 text-xs text-gray-500 italic">
                 Flats with remaining lease below ~60 years may face tighter financing and resale constraints.
               </div>
+              <div className="mt-3 p-2 bg-gray-50 rounded border-l-2 border-amber-400">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Why it matters:</p>
+                <p className="text-xs text-gray-600">
+                  Flats below ~60 years remaining may face tighter financing and weaker resale demand over time. This becomes more critical if you plan to stay long-term or need to refinance.
+                </p>
+              </div>
             </ChartCard>
 
             {/* Module C: Market Stability */}
@@ -433,6 +728,12 @@ export default function CompareTownsPage() {
                   Lower volume towns may show larger price swings.
                 </div>
               )}
+              <div className="mt-3 p-2 bg-gray-50 rounded border-l-2 border-green-400">
+                <p className="text-xs font-semibold text-gray-700 mb-1">Why it matters:</p>
+                <p className="text-xs text-gray-600">
+                  Higher transaction volume means easier resale and more stable prices. Lower volume can mean longer selling time and greater price volatility when you need to move.
+                </p>
+              </div>
             </ChartCard>
 
             {/* Module D: School Access (Coming soon) */}
