@@ -67,11 +67,28 @@ export async function getAggregatedMonthly(
         query = query.lte('month', endMonth)
       }
 
-      const { data, error } = await query
+      // Supabase has a default limit of 1000, we need to fetch all data
+      let allData: any[] = []
+      let hasMore = true
+      let page = 0
+      const pageSize = 1000
 
-      if (error) throw error
-      if (data && data.length > 0) {
-        return data.map(item => ({
+      while (hasMore) {
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1)
+
+        if (error) throw error
+        
+        if (data && data.length > 0) {
+          allData = allData.concat(data)
+          hasMore = data.length === pageSize
+          page++
+        } else {
+          hasMore = false
+        }
+      }
+
+      if (allData.length > 0) {
+        return allData.map(item => ({
           month: item.month,
           town: item.town,
           flat_type: item.flat_type,
@@ -132,10 +149,27 @@ export async function getTownAggregated(
         query = query.eq('flat_type', flatType)
       }
 
-      const { data, error } = await query
+      // Fetch all data with pagination
+      let allData: any[] = []
+      let hasMore = true
+      let page = 0
+      const pageSize = 1000
 
-      if (error) throw error
-      if (data && data.length > 0) {
+      while (hasMore) {
+        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1)
+
+        if (error) throw error
+        
+        if (data && data.length > 0) {
+          allData = allData.concat(data)
+          hasMore = data.length === pageSize
+          page++
+        } else {
+          hasMore = false
+        }
+      }
+
+      if (allData.length > 0) {
         // Aggregate by town
         const townMap = new Map<string, {
           town: string
@@ -144,7 +178,7 @@ export async function getTownAggregated(
           flatType: string
         }>()
 
-        data.forEach(item => {
+        allData.forEach(item => {
           const town = item.town || 'Unknown'
           if (!townMap.has(town)) {
             townMap.set(town, {

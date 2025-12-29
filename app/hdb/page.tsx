@@ -20,18 +20,74 @@ export default function HDBTrendsPage() {
     setLoading(true)
     getAggregatedMonthly(flatType === 'All' ? undefined : flatType, town === 'All' ? undefined : town)
       .then(result => {
-        const formatted = result.map(item => ({
-          month: new Date(item.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
-          median: Math.round(item.median_price),
-          p25: Math.round(item.p25_price),
-          p75: Math.round(item.p75_price),
-          volume: item.tx_count,
-        }))
+        console.log('Fetched data:', result.length, 'records')
+        if (result.length > 0) {
+          console.log('Date range:', result[0].month, 'to', result[result.length - 1].month)
+        }
+        
+        console.log('Fetched data:', result.length, 'records')
+        if (result.length > 0) {
+          console.log('First record:', result[0])
+          console.log('Last record:', result[result.length - 1])
+          console.log('Date range:', result[0].month, 'to', result[result.length - 1].month)
+        }
+        
+        // When town is 'All', we need to aggregate across all towns for each month
+        // When town is specific, we can use data directly
+        let formatted
+        if (town === 'All') {
+          // Group by month and aggregate across all towns
+          const monthMap = new Map<string, { month: string; prices: number[]; volumes: number[] }>()
+          result.forEach(item => {
+            const monthKey = item.month
+            if (!monthMap.has(monthKey)) {
+              monthMap.set(monthKey, {
+                month: monthKey,
+                prices: [],
+                volumes: [],
+              })
+            }
+            const entry = monthMap.get(monthKey)!
+            entry.prices.push(item.median_price)
+            entry.volumes.push(item.tx_count)
+          })
+          
+          // Calculate aggregated values per month
+          formatted = Array.from(monthMap.values()).map(entry => {
+            const sortedPrices = entry.prices.sort((a: number, b: number) => a - b)
+            const median = sortedPrices[Math.floor(sortedPrices.length / 2)]
+            const p25 = sortedPrices[Math.floor(sortedPrices.length * 0.25)]
+            const p75 = sortedPrices[Math.floor(sortedPrices.length * 0.75)]
+            
+            return {
+              month: new Date(entry.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+              median: Math.round(median),
+              p25: Math.round(p25),
+              p75: Math.round(p75),
+              volume: entry.volumes.reduce((a: number, b: number) => a + b, 0),
+            }
+          }).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+        } else {
+          // Direct mapping when town is specific
+          formatted = result.map(item => ({
+            month: new Date(item.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+            median: Math.round(item.median_price),
+            p25: Math.round(item.p25_price),
+            p75: Math.round(item.p75_price),
+            volume: item.tx_count,
+          }))
+        }
+        
+        console.log('Formatted data points:', formatted.length)
+        if (formatted.length > 0) {
+          console.log('Display range:', formatted[0].month, 'to', formatted[formatted.length - 1].month)
+        }
+        
         setData(formatted)
         setLoading(false)
       })
       .catch(err => {
-        console.error(err)
+        console.error('Error fetching data:', err)
         setLoading(false)
       })
   }, [flatType, town])
