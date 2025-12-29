@@ -221,6 +221,31 @@ function aggregateRentalContracts(contracts) {
 }
 
 /**
+ * Get latest month in database for incremental updates
+ */
+async function getLatestRentalMonth() {
+  try {
+    const { data, error } = await supabase
+      .from('hdb_rental_stats')
+      .select('month')
+      .order('month', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.warn('Could not get latest month (table might be empty):', error.message)
+      return null
+    }
+
+    if (data && data.length > 0) {
+      return new Date(data[0].month)
+    }
+  } catch (error) {
+    console.warn('Error getting latest month:', error.message)
+  }
+  return null
+}
+
+/**
  * Import rental data to Supabase
  */
 async function importRentalData() {
@@ -230,23 +255,36 @@ async function importRentalData() {
     throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY must be set')
   }
 
+  // Check for incremental update
+  const latestMonth = await getLatestRentalMonth()
+  const isIncremental = latestMonth !== null
+  
+  if (isIncremental) {
+    console.log(`Incremental update mode: Latest data in database is ${latestMonth.toISOString().split('T')[0]}`)
+    console.log('Will only process contracts from months after this date')
+  } else {
+    console.log('Full import mode: No existing data found, importing all records')
+  }
+
   // Get resource ID from dataset
   console.log('Fetching resource ID from dataset...')
   DATA_GOV_SG_RENTAL_RESOURCE_ID = await getResourceIdFromDataset()
   console.log(`Using resource ID: ${DATA_GOV_SG_RENTAL_RESOURCE_ID}`)
   
-  // Test fetch first batch to see data structure
-  console.log('\nFetching first batch to inspect data structure...')
-  try {
-    const testBatch = await fetchRentalDataFromDataGovSG(5, 0)
-    if (testBatch.records && testBatch.records.length > 0) {
-      console.log('Sample record structure:')
-      console.log(JSON.stringify(testBatch.records[0], null, 2))
-      console.log('Record keys:', Object.keys(testBatch.records[0]))
-      console.log('')
+  // Test fetch first batch to see data structure (only for full import)
+  if (!isIncremental) {
+    console.log('\nFetching first batch to inspect data structure...')
+    try {
+      const testBatch = await fetchRentalDataFromDataGovSG(5, 0)
+      if (testBatch.records && testBatch.records.length > 0) {
+        console.log('Sample record structure:')
+        console.log(JSON.stringify(testBatch.records[0], null, 2))
+        console.log('Record keys:', Object.keys(testBatch.records[0]))
+        console.log('')
+      }
+    } catch (error) {
+      console.warn('Could not fetch test batch:', error.message)
     }
-  } catch (error) {
-    console.warn('Could not fetch test batch:', error.message)
   }
 
   let totalImported = 0
@@ -267,9 +305,19 @@ async function importRentalData() {
       }
 
       // Transform individual contracts
-      const contracts = records
+      let contracts = records
         .map(transformRentalContract)
         .filter(contract => contract !== null)
+
+      // Filter for incremental update: only process contracts newer than latest month
+      if (isIncremental && latestMonth) {
+        const latestMonthStr = latestMonth.toISOString().split('T')[0]
+        const beforeCount = contracts.length
+        contracts = contracts.filter(contract => contract.month > latestMonthStr)
+        if (contracts.length < beforeCount) {
+          console.log(`  Filtered: ${beforeCount - contracts.length} contracts skipped (already in database)`)
+        }
+      }
 
       if (contracts.length === 0) {
         console.log('No valid contracts in this batch')
