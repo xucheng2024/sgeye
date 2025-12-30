@@ -755,51 +755,68 @@ export async function generateCompareSummary(
     const tradeoffs: string[] = []
     
     // Always show: Entry cost, Lease profile, School pressure, Transport burden
-    // 1. Entry cost
+    // 1. Entry cost (with emoji)
     const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
     const priceDiff = Math.abs(metrics.deltaPrice)
     if (priceDiff >= 1000) {
       const priceDiffK = Math.round(priceDiff / 1000)
-      tradeoffs.push(`Entry cost: ${cheaper} is lower by ~S$${priceDiffK}k`)
+      tradeoffs.push(`💰 Entry cost: ${cheaper} is lower by ~S$${priceDiffK}k`)
     } else if (priceDiff > 0) {
-      tradeoffs.push(`Entry cost: ${cheaper} is lower by ~S$${Math.round(priceDiff)}`)
+      tradeoffs.push(`💰 Entry cost: ${cheaper} is lower by ~S$${Math.round(priceDiff)}`)
     } else {
-      tradeoffs.push(`Entry cost: Both towns have similar entry prices`)
+      tradeoffs.push(`💰 Entry cost: Both towns have similar entry prices`)
     }
     
-    // 2. Lease profile (lifecycle-aware phrasing)
+    // 2. Lease profile (lifecycle-aware phrasing, with emoji)
     const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
     const shorter = metrics.deltaLeaseYears < 0 ? B.town : A.town
     const leaseDiff = Math.abs(metrics.deltaLeaseYears)
     if (leaseDiff >= 1) {
       if (planningHorizon === 'short') {
-        tradeoffs.push(`Lease profile: Lease decay is less critical over a short holding period. ${healthier} has ~${Math.round(leaseDiff)} more remaining years.`)
+        tradeoffs.push(`🧱 Lease profile: Lease decay is less critical over a short holding period. ${healthier} has ~${Math.round(leaseDiff)} more remaining years.`)
       } else if (planningHorizon === 'long') {
-        tradeoffs.push(`Lease profile: ${shorter} has shorter remaining lease (~${Math.round(leaseDiff)} years less), which significantly limits long-term flexibility.`)
+        tradeoffs.push(`🧱 Lease profile: ${shorter} has shorter remaining lease (~${Math.round(leaseDiff)} years less), which significantly limits long-term flexibility.`)
       } else {
-        tradeoffs.push(`Lease profile: ${healthier} has ~${Math.round(leaseDiff)} more remaining years`)
+        tradeoffs.push(`🧱 Lease profile: ${healthier} has ~${Math.round(leaseDiff)} more remaining years`)
       }
     } else {
-      tradeoffs.push(`Lease profile: Both towns have similar remaining lease`)
+      tradeoffs.push(`🧱 Lease profile: Both towns have similar remaining lease`)
     }
     
-    // 3. School pressure
+    // 3. School pressure (human-readable format, no SPI numbers)
     if (spiA && spiB) {
       const spiChange = metrics.deltaSPI
       const spiChangeAbs = Math.abs(spiChange)
       const finalLevel = spiChange > 0 ? spiB.level : spiA.level
-      const levelText = finalLevel === 'low' ? 'still Low' : finalLevel === 'medium' ? 'Moderate' : 'High'
       const direction = spiChange > 0 ? 'decreases' : 'increases'
+      
       if (spiChangeAbs > 0.1) {
-        tradeoffs.push(`School pressure: Moving ${direction} SPI by +${spiChangeAbs.toFixed(1)} (${levelText})`)
+        // Human-readable format based on level and change
+        if (finalLevel === 'low') {
+          if (spiChangeAbs < 2) {
+            tradeoffs.push(`🎓 School competition: Slightly ${direction === 'increases' ? 'higher' : 'lower'}, but still low — unlikely to affect daily stress`)
+          } else {
+            tradeoffs.push(`🎓 School competition: ${direction === 'increases' ? 'Increases' : 'Decreases'} to low level — manageable for most families`)
+          }
+        } else if (finalLevel === 'medium') {
+          tradeoffs.push(`🎓 School competition: ${direction === 'increases' ? 'Increases' : 'Decreases'} to moderate level — may require more planning`)
+        } else {
+          tradeoffs.push(`🎓 School competition: ${direction === 'increases' ? 'Increases' : 'Decreases'} to high level — significant competition expected`)
+        }
       } else {
-        tradeoffs.push(`School pressure: Similar pressure levels (${levelText})`)
+        if (finalLevel === 'low') {
+          tradeoffs.push(`🎓 School competition: Similar low level — comfortable for most families`)
+        } else if (finalLevel === 'medium') {
+          tradeoffs.push(`🎓 School competition: Similar moderate level — manageable with planning`)
+        } else {
+          tradeoffs.push(`🎓 School competition: Similar high level — competitive environment`)
+        }
       }
     } else {
-      tradeoffs.push(`School pressure: Data not available for comparison`)
+      tradeoffs.push(`🎓 School competition: Data not available for comparison`)
     }
     
-    // 4. Transport burden (using TBI)
+    // 4. Transport burden (human-readable format, no TBI numbers)
     const transportProfileA = getTownTransportProfile(A.town)
     const transportProfileB = getTownTransportProfile(B.town)
     if (transportProfileA && transportProfileB) {
@@ -809,14 +826,24 @@ export async function generateCompareSummary(
       
       if (Math.abs(tbiDiff) >= 3) { // Show if significant difference
         if (tbiDiff > 0) {
-          const burdenText = tbiDiff >= 15 ? 'higher daily time cost' : tbiDiff >= 8 ? 'moderate time cost increase' : 'slightly higher time cost'
-          tradeoffs.push(`Transport burden: +${tbiDiff} (${burdenText})`)
+          if (tbiDiff >= 15) {
+            tradeoffs.push(`🚗 Daily time cost: Commute becomes noticeably longer over time — consider long-term impact`)
+          } else if (tbiDiff >= 8) {
+            tradeoffs.push(`🚗 Daily time cost: Commute likely becomes a bit longer over time`)
+          } else {
+            tradeoffs.push(`🚗 Daily time cost: Slightly longer commute — minor impact`)
+          }
         } else {
-          const burdenText = Math.abs(tbiDiff) >= 15 ? 'lower daily time cost' : Math.abs(tbiDiff) >= 8 ? 'moderate time cost reduction' : 'slightly lower time cost'
-          tradeoffs.push(`Transport burden: ${tbiDiff} (${burdenText})`)
+          if (Math.abs(tbiDiff) >= 15) {
+            tradeoffs.push(`🚗 Daily time cost: Commute becomes noticeably shorter over time — meaningful improvement`)
+          } else if (Math.abs(tbiDiff) >= 8) {
+            tradeoffs.push(`🚗 Daily time cost: Commute likely becomes a bit shorter over time`)
+          } else {
+            tradeoffs.push(`🚗 Daily time cost: Slightly shorter commute — minor improvement`)
+          }
         }
       } else {
-        tradeoffs.push(`Transport burden: Similar daily time cost`)
+        tradeoffs.push(`🚗 Daily time cost: Similar commute structure — no significant change`)
       }
     }
     

@@ -582,130 +582,141 @@ function CompareTownsPageContent() {
           />
         )}
 
-        {/* Evidence (expandable) - Right after Recommendation - Only for 2 towns */}
+        {/* Evidence Layer (Default Collapsed) - Second Layer: For users who want to verify */}
         {compareSummary && evidenceOpen && !townC && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Evidence</h3>
             
-            {/* Always show headline verdict first */}
-            {compareSummary.headlineVerdict && (
+            {/* Only show data, no judgments/interpretations (those are in Summary) */}
+            {/* Moving Education Pressure - Data only */}
+            {compareSummary.movingEducationImpact && (
               <div className="mb-6">
-                <p className="text-lg font-bold text-gray-900 leading-relaxed">
-                  {compareSummary.headlineVerdict}
-                </p>
-                {compareSummary.movingPhrase && (
-                  <p className="text-sm text-gray-700 italic mt-2">
-                    {compareSummary.movingPhrase}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* Bottom Line (if exists) */}
-            {compareSummary.bottomLine && (
-              <div className="mb-6 p-5 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">🧭</span>
-                  <h4 className="text-lg font-bold text-gray-900">Bottom Line</h4>
-                </div>
-                <p className="text-sm font-semibold text-gray-800 mb-3">
-                  If you move from {townA} → {townB}:
-                </p>
-                <ul className="space-y-2 mb-4">
-                  {compareSummary.bottomLine.changes.map((change, idx) => (
-                    <li key={idx} className="text-sm text-gray-800">
-                      {change}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-sm font-semibold text-gray-900 border-t border-gray-200 pt-3">
-                  {compareSummary.bottomLine.bestFor}
-                </p>
-              </div>
-            )}
-
-            {/* Block 2: Education Pressure Comparison */}
-            {compareSummary.educationPressure ? (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Education Pressure Comparison</p>
-                <div className="text-sm text-gray-800 whitespace-pre-line mb-2">
-                  {compareSummary.educationPressure.comparison}
-                </div>
-                <p className="text-sm text-gray-700 mb-2">
-                  {compareSummary.educationPressure.explanation}
-                </p>
-                {compareSummary.educationPressure.pressureRangeNote && (
-                  <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-xs font-semibold text-gray-900 mb-1">Pressure scale:</p>
-                    <div className="text-xs text-gray-700 space-y-1 mb-2">
-                      <div>0–20 🟢 Low pressure</div>
-                      <div>20–40 🟡 Moderate pressure</div>
-                      <div>40+ 🔴 High pressure</div>
-                    </div>
-                    <p className="text-xs text-gray-800 italic">
-                      {compareSummary.educationPressure.pressureRangeNote}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Education Pressure Comparison</p>
-                <p className="text-sm text-gray-700">
-                  School pressure data is not available for one or both towns. This may be because the towns don&apos;t have primary schools in our database.
-                </p>
-              </div>
-            )}
-
-            {/* Block 3: Housing Trade-off */}
-            {(compareSummary.housingTradeoff.price || compareSummary.housingTradeoff.lease) && (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Housing Trade-off</p>
-                <div className="space-y-1">
-                  {compareSummary.housingTradeoff.price && (
-                    <p className="text-sm text-gray-800">
-                      <strong>Entry Price:</strong> {compareSummary.housingTradeoff.price}
-                    </p>
-                  )}
-                  {compareSummary.housingTradeoff.lease && (
-                    <p className="text-sm text-gray-800">
-                      <strong>Lease:</strong> {compareSummary.housingTradeoff.lease}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Block 4: Who Each Town Is Better For */}
-            {(compareSummary.bestSuitedFor.townA.length > 0 || compareSummary.bestSuitedFor.townB.length > 0) && (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-semibold text-gray-900 mb-3">Best suited for:</p>
+                <h4 className="text-base font-semibold text-gray-900 mb-3">Moving Education Pressure</h4>
                 <div className="space-y-2">
-                  {compareSummary.bestSuitedFor.townA.map((item, idx) => (
-                    <p key={idx} className="text-sm text-gray-800">
-                      <span className="mr-2 text-green-600">✔</span>
-                      <span className="font-medium">{townA}:</span> {item}
-                    </p>
-                  ))}
-                  {compareSummary.bestSuitedFor.townB.map((item, idx) => (
-                    <p key={idx} className="text-sm text-gray-800">
-                      <span className="mr-2 text-green-600">✔</span>
-                      <span className="font-medium">{townB}:</span> {item}
-                    </p>
-                  ))}
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">SPI change:</span>
+                    <span className={`text-sm font-semibold ${
+                      compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChange.toFixed(1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">High-demand schools:</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {compareSummary.movingEducationImpact.highDemandSchoolsText}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Number of primary schools:</span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      {compareSummary.movingEducationImpact.schoolCountText}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Block 5: Decision Hint - Always show */}
-            {compareSummary.decisionHint && (
-              <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
-                <p className="text-sm font-semibold text-gray-900 mb-1">Decision hint:</p>
-                <p className="text-sm text-gray-800">{compareSummary.decisionHint}</p>
+            {/* Moving Pressure: What Changes - Data only */}
+            {spiA && spiB && profileA && profileB && (
+              <div className="mb-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-3">Moving Pressure: What Changes</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Education Pressure:</span>
+                    <span className={`text-sm font-semibold ${
+                      spiB.spi > spiA.spi ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {spiB.spi > spiA.spi ? '+' : ''}{Math.round((spiB.spi - spiA.spi) * 10) / 10}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Entry Price:</span>
+                    <span className={`text-sm font-semibold ${
+                      profileB.medianResalePrice > profileA.medianResalePrice ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {profileB.medianResalePrice > profileA.medianResalePrice ? '+' : ''}{formatCurrency(Math.abs(profileB.medianResalePrice - profileA.medianResalePrice))}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">Remaining Lease:</span>
+                    <span className={`text-sm font-semibold ${
+                      profileB.medianRemainingLease > profileA.medianRemainingLease ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {profileB.medianRemainingLease > profileA.medianRemainingLease ? '+' : ''}{Math.round(Math.abs(profileB.medianRemainingLease - profileA.medianRemainingLease))} years
+                    </span>
+                  </div>
+                  {transportProfileA && transportProfileB && (
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <span className="text-sm font-medium text-gray-700">Transport Burden (TBI):</span>
+                      <span className={`text-sm font-semibold ${
+                        (() => {
+                          const tbiA = calculateTBI(transportProfileA)
+                          const tbiB = calculateTBI(transportProfileB)
+                          return tbiB > tbiA ? 'text-red-600' : tbiB < tbiA ? 'text-green-600' : 'text-gray-600'
+                        })()
+                      }`}>
+                        {(() => {
+                          const tbiA = calculateTBI(transportProfileA)
+                          const tbiB = calculateTBI(transportProfileB)
+                          const tbiDiff = tbiB - tbiA
+                          return tbiDiff > 0 ? `+${tbiDiff}` : `${tbiDiff}`
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Advanced details (collapsible) */}
+            {/* Price & Cash Flow - Data only */}
+            <div className="mb-6">
+              <h4 className="text-base font-semibold text-gray-900 mb-3">Price & Cash Flow</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">{townA} median price:</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileA.medianResalePrice)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">{townB} median price:</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileB.medianResalePrice)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Lease & Risk - Data only */}
+            <div className="mb-6">
+              <h4 className="text-base font-semibold text-gray-900 mb-3">Lease & Risk</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">{townA} remaining lease:</span>
+                  <span className="text-sm font-semibold text-gray-900">{Math.round(profileA.medianRemainingLease)} years</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">{townB} remaining lease:</span>
+                  <span className="text-sm font-semibold text-gray-900">{Math.round(profileB.medianRemainingLease)} years</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Time & Access - Data only */}
+            {transportProfileA && transportProfileB && (
+              <div className="mb-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-3">Time & Access</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townA} TBI:</span>
+                    <span className="text-sm font-semibold text-gray-900">{calculateTBI(transportProfileA)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townB} TBI:</span>
+                    <span className="text-sm font-semibold text-gray-900">{calculateTBI(transportProfileB)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Third Layer: Deep Dive - Methodology (Accordion) */}
             <div className="border-t border-gray-200 pt-4 mt-6">
               <button
                 onClick={() => setAdvancedOpen(!advancedOpen)}
@@ -716,122 +727,110 @@ function CompareTownsPageContent() {
                 ) : (
                   <ChevronDown className="w-4 h-4" />
                 )}
-                <span>Advanced details</span>
+                <span>How these indicators are calculated</span>
               </button>
               {advancedOpen && (
-                <div className="mt-3 space-y-3 text-sm text-gray-600">
-                  <div>
-                    <p className="font-semibold text-gray-700 mb-1">Rent vs Buy gap:</p>
-                    <p>{townA}: {formatCurrency(compareSummary.advanced.rentBuyGapA)}/mo</p>
-                    <p>{townB}: {formatCurrency(compareSummary.advanced.rentBuyGapB)}/mo</p>
+                <div className="mt-4 space-y-4 text-sm text-gray-700">
+                  {/* SPI Methodology */}
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h5 className="font-semibold text-gray-900 mb-2">School Pressure Index (SPI)</h5>
+                    <p className="text-xs text-gray-700 mb-2">
+                      SPI measures competition for primary school places in a town. It combines:
+                    </p>
+                    <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside ml-2">
+                      <li>Number of high-demand schools (Phase 2A/2B competition)</li>
+                      <li>Total number of primary schools in the town</li>
+                      <li>Historical application patterns</li>
+                    </ul>
+                    <p className="text-xs text-gray-600 mt-2">
+                      <strong>Scale:</strong> 0–20 (Low), 20–40 (Moderate), 40+ (High)
+                    </p>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-700 mb-1">Market stability:</p>
-                    <p>{townA}: {compareSummary.advanced.stabilityA}</p>
-                    <p>{townB}: {compareSummary.advanced.stabilityB}</p>
+
+                  {/* TBI Methodology */}
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h5 className="font-semibold text-gray-900 mb-2">Transport Burden Index (TBI)</h5>
+                    <p className="text-xs text-gray-700 mb-2">
+                      TBI measures structural time and effort cost of living in a town (0–100):
+                    </p>
+                    <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside ml-2">
+                      <li>Central Access Burden (40%): Distance to major employment hubs</li>
+                      <li>Transfer Burden (25%): Complexity of MRT transfers</li>
+                      <li>Network Redundancy (20%): Alternative route options</li>
+                      <li>Daily Mobility Friction (15%): Non-commute travel ease</li>
+                    </ul>
+                    <p className="text-xs text-gray-600 mt-2">
+                      <strong>Scale:</strong> 0–25 (Low), 26–50 (Moderate), 51–75 (High), 76–100 (Very High)
+                    </p>
                   </div>
-                  {(compareSummary.advanced.leaseRiskReasonsA.length > 0 || compareSummary.advanced.leaseRiskReasonsB.length > 0) && (
-                    <div>
-                      <p className="font-semibold text-gray-700 mb-1">Lease risk details:</p>
-                      {compareSummary.advanced.leaseRiskReasonsA.length > 0 && (
-                        <div className="mb-2">
-                          <p className="font-medium">{townA}:</p>
-                          <ul className="list-disc list-inside ml-2">
-                            {compareSummary.advanced.leaseRiskReasonsA.map((reason, idx) => (
-                              <li key={idx} className="text-xs">{reason}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {compareSummary.advanced.leaseRiskReasonsB.length > 0 && (
-                        <div>
-                          <p className="font-medium">{townB}:</p>
-                          <ul className="list-disc list-inside ml-2">
-                            {compareSummary.advanced.leaseRiskReasonsB.map((reason, idx) => (
-                              <li key={idx} className="text-xs">{reason}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
+
+                  {/* Lease Risk Methodology */}
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h5 className="font-semibold text-gray-900 mb-2">Lease Risk Assessment</h5>
+                    <p className="text-xs text-gray-700 mb-2">
+                      Lease risk is calculated based on:
+                    </p>
+                    <ul className="text-xs text-gray-600 space-y-1 list-disc list-inside ml-2">
+                      <li>Remaining lease years (threshold: &lt;60 years = higher risk)</li>
+                      <li>Historical resale price trends</li>
+                      <li>Market liquidity indicators</li>
+                    </ul>
+                    <p className="text-xs text-gray-600 mt-2">
+                      <strong>Note:</strong> Risk increases significantly when remaining lease falls below 60 years, especially for long-term holding periods.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Moving Education Pressure: What Changes (Second Screen) - Only for 2 towns */}
+        {/* Moving Education Pressure: What Changes - Data only (no judgments) */}
         {compareSummary && compareSummary.movingEducationImpact && spiA && spiB && !townC && (
           <ChartCard
             title="Moving Education Pressure: What Changes"
-            description="Understand how moving affects primary school competition and choice"
+            description="Data on how moving affects primary school competition and choice"
             icon={<GraduationCap className="w-6 h-6" />}
           >
-            <div className="space-y-4">
-              {/* SPI Explanation */}
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-xs text-gray-700 italic">
-                  SPI measures structural pressure (competition + choice constraints), not your child&apos;s score.
-                </p>
+            <div className="space-y-3">
+              {/* SPI Change - Data only */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">SPI change:</span>
+                <span className={`text-sm font-semibold ${
+                  compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
+                }`}>
+                  {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChange.toFixed(1)} (SPI {spiA.spi.toFixed(1)} → {spiB.spi.toFixed(1)})
+                </span>
               </div>
 
-              {/* Four-line changes */}
-              <div className="space-y-3">
-                {/* SPI Change */}
-                <div className="p-3 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">SPI change:</span>
-                    <span className={`text-sm font-semibold ${
-                      compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChangeText}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-700 mt-2 font-medium">
-                    {compareSummary.movingEducationImpact.explanation || 
-                      (compareSummary.movingEducationImpact.spiChangeText.includes('Low') 
-                        ? 'Still within Low range — unlikely to change day-to-day stress.'
-                        : 'In practice: unlikely to change daily study stress unless targeting specific elite schools.')}
-                  </p>
-                </div>
-
-                {/* High-demand schools */}
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">High-demand schools:</span>
-                  <span className={`text-sm font-semibold ${
-                    compareSummary.movingEducationImpact.highDemandSchoolsChange > 0 ? 'text-red-600' : 
-                    compareSummary.movingEducationImpact.highDemandSchoolsChange < 0 ? 'text-green-600' : 'text-gray-600'
-                  }`}>
-                    {compareSummary.movingEducationImpact.highDemandSchoolsText}
-                  </span>
-                </div>
-
-                {/* Number of primary schools */}
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">Number of primary schools:</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {compareSummary.movingEducationImpact.schoolCountText}
-                  </span>
-                </div>
-
-                {/* Choice flexibility */}
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">Choice flexibility:</span>
-                  <span className={`text-sm font-semibold ${
-                    compareSummary.movingEducationImpact.choiceFlexibility === 'Better' ? 'text-green-600' :
-                    compareSummary.movingEducationImpact.choiceFlexibility === 'Worse' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {compareSummary.movingEducationImpact.choiceFlexibility}
-                  </span>
-                </div>
+              {/* High-demand schools */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">High-demand schools:</span>
+                <span className={`text-sm font-semibold ${
+                  compareSummary.movingEducationImpact.highDemandSchoolsChange > 0 ? 'text-red-600' : 
+                  compareSummary.movingEducationImpact.highDemandSchoolsChange < 0 ? 'text-green-600' : 'text-gray-600'
+                }`}>
+                  {compareSummary.movingEducationImpact.highDemandSchoolsText}
+                </span>
               </div>
 
-              {/* Explanation sentence */}
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-800 leading-relaxed">
-                  {compareSummary.movingEducationImpact.explanation}
-                </p>
+              {/* Number of primary schools */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">Number of primary schools:</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {compareSummary.movingEducationImpact.schoolCountText}
+                </span>
+              </div>
+
+              {/* Choice flexibility */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <span className="text-sm font-medium text-gray-700">Choice flexibility:</span>
+                <span className={`text-sm font-semibold ${
+                  compareSummary.movingEducationImpact.choiceFlexibility === 'Better' ? 'text-green-600' :
+                  compareSummary.movingEducationImpact.choiceFlexibility === 'Worse' ? 'text-red-600' : 'text-gray-600'
+                }`}>
+                  {compareSummary.movingEducationImpact.choiceFlexibility}
+                </span>
               </div>
             </div>
           </ChartCard>
@@ -1180,37 +1179,37 @@ function CompareTownsPageContent() {
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         <tr className="hover:bg-gray-50">
-                          <td className="py-4 px-4 text-gray-700 font-medium">School Pressure Index</td>
+                          <td className="py-4 px-4 text-gray-700 font-medium">School pressure</td>
                           <td className="py-4 px-4 text-right">
-                            <span className="font-bold text-gray-900">{spiA.spi}</span>
-                            <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
-                              spiA.level === 'low' ? 'bg-green-100 text-green-700' :
-                              spiA.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
+                            <span className={`font-semibold ${
+                              spiA.level === 'low' ? 'text-green-600' :
+                              spiA.level === 'medium' ? 'text-yellow-600' :
+                              'text-red-600'
                             }`}>
-                              {spiA.level === 'low' ? '🟢 Low' : spiA.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                              {spiA.level === 'low' ? 'Low' : spiA.level === 'medium' ? 'Moderate' : 'High'}
                             </span>
+                            <span className="text-xs text-gray-500 ml-2">(SPI {spiA.spi.toFixed(1)})</span>
                           </td>
                           <td className="py-4 px-4 text-right">
-                            <span className="font-bold text-gray-900">{spiB.spi}</span>
-                            <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
-                              spiB.level === 'low' ? 'bg-green-100 text-green-700' :
-                              spiB.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
+                            <span className={`font-semibold ${
+                              spiB.level === 'low' ? 'text-green-600' :
+                              spiB.level === 'medium' ? 'text-yellow-600' :
+                              'text-red-600'
                             }`}>
-                              {spiB.level === 'low' ? '🟢 Low' : spiB.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                              {spiB.level === 'low' ? 'Low' : spiB.level === 'medium' ? 'Moderate' : 'High'}
                             </span>
+                            <span className="text-xs text-gray-500 ml-2">(SPI {spiB.spi.toFixed(1)})</span>
                           </td>
                           {townC && spiC && (
                             <td className="py-4 px-4 text-right">
-                              <span className="font-bold text-gray-900">{spiC.spi}</span>
-                              <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
-                                spiC.level === 'low' ? 'bg-green-100 text-green-700' :
-                                spiC.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
+                              <span className={`font-semibold ${
+                                spiC.level === 'low' ? 'text-green-600' :
+                                spiC.level === 'medium' ? 'text-yellow-600' :
+                                'text-red-600'
                               }`}>
-                                {spiC.level === 'low' ? '🟢 Low' : spiC.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                                {spiC.level === 'low' ? 'Low' : spiC.level === 'medium' ? 'Moderate' : 'High'}
                               </span>
+                              <span className="text-xs text-gray-500 ml-2">(SPI {spiC.spi.toFixed(1)})</span>
                             </td>
                           )}
                         </tr>
@@ -1463,6 +1462,9 @@ function CompareTownsPageContent() {
                                   {(compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'high' ? 'High' :
                                    (compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'medium' ? 'Medium' : 'Low'}
                                 </span>
+                                {transportProfileA && (
+                                  <span className="text-xs text-gray-500 ml-2">(TBI {calculateTBI(transportProfileA)})</span>
+                                )}
                               </td>
                               <td className="py-4 px-4 text-right">
                                 <span className={`font-semibold ${
@@ -1472,6 +1474,9 @@ function CompareTownsPageContent() {
                                   {(compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'high' ? 'High' :
                                    (compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'medium' ? 'Medium' : 'Low'}
                                 </span>
+                                {transportProfileB && (
+                                  <span className="text-xs text-gray-500 ml-2">(TBI {calculateTBI(transportProfileB)})</span>
+                                )}
                               </td>
                               {townC && timeAccessC && (
                                 <td className="py-4 px-4 text-right">
@@ -1482,6 +1487,9 @@ function CompareTownsPageContent() {
                                     {getTimeBurdenLevel(timeAccessC) === 'high' ? 'High' :
                                      getTimeBurdenLevel(timeAccessC) === 'medium' ? 'Medium' : 'Low'}
                                   </span>
+                                  {transportProfileC && (
+                                    <span className="text-xs text-gray-500 ml-2">(TBI {calculateTBI(transportProfileC)})</span>
+                                  )}
                                 </td>
                               )}
                             </tr>

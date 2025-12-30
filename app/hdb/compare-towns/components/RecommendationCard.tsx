@@ -125,73 +125,63 @@ export default function RecommendationCard({
         )}
       </div>
 
-      {/* Verdict-style Recommendation */}
+      {/* Decision Layer (Default Expanded) - For 80% of users */}
       <div className="space-y-6">
-        {/* Main recommendation - LARGEST TEXT */}
+        {/* 1. Recommendation (极简) */}
         <div className="p-6 bg-white rounded-xl border-2 border-blue-300">
-          <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+          <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
             {compareSummary.recommendation.headline}
           </p>
-          
-          <div className="border-t border-gray-200 pt-6">
-            <p className="text-sm font-semibold text-gray-700 mb-4">Key trade-offs:</p>
-            <ul className="space-y-3">
-              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => {
-                const { icon, direction, color } = parseTradeoff(tradeoff)
-                const DirectionIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus
-                const iconColor = direction === 'up' ? 'text-orange-600' : direction === 'down' ? 'text-green-600' : 'text-gray-500'
-                
-                return (
-                  <li key={idx} className={`text-sm flex items-start gap-3 ${color}`}>
-                    <span className="text-lg">{icon}</span>
-                    <div className="flex-1 flex items-center gap-2">
-                      <span>{tradeoff}</span>
-                      {direction !== 'neutral' && (
-                        <DirectionIcon className={`w-4 h-4 ${iconColor}`} />
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
         </div>
 
-        {/* Alternative recommendation (if long-term holding) */}
-        {holdingPeriod === 'long' && compareSummary.recommendation.tradeoffs.some(t => t.includes('Lease')) && (
-          <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm font-semibold text-gray-600 mb-3">
-              If you plan to hold long-term (15+ years):
-            </p>
-            <p className="text-lg font-semibold text-gray-900 mb-2">
-              → Consider {compareSummary.recommendation.headline.includes(townA) ? townB : townA} for stronger lease safety.
-            </p>
-          </div>
-        )}
+        {/* 2. Key trade-offs (最多4条，人话格式) */}
+        <div className="p-6 bg-white rounded-xl border border-gray-200">
+          <p className="text-sm font-semibold text-gray-700 mb-4">Key trade-offs:</p>
+          <ul className="space-y-3">
+            {compareSummary.recommendation.tradeoffs.slice(0, 4).map((tradeoff, idx) => {
+              // Extract emoji and text (tradeoffs now include emojis at the start)
+              let emoji = '•'
+              let text = tradeoff
+              
+              // Check if tradeoff starts with known emojis
+              if (tradeoff.startsWith('🎓')) {
+                emoji = '🎓'
+                text = tradeoff.replace(/^🎓\s*/, '')
+              } else if (tradeoff.startsWith('🚗')) {
+                emoji = '🚗'
+                text = tradeoff.replace(/^🚗\s*/, '')
+              } else if (tradeoff.startsWith('💰')) {
+                emoji = '💰'
+                text = tradeoff.replace(/^💰\s*/, '')
+              } else if (tradeoff.startsWith('🧱')) {
+                emoji = '🧱'
+                text = tradeoff.replace(/^🧱\s*/, '')
+              }
+              
+              return (
+                <li key={idx} className="text-sm text-gray-800 flex items-start gap-3">
+                  <span className="text-lg mt-0.5">{emoji}</span>
+                  <span className="flex-1 leading-relaxed">{text}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
 
-        {/* Decision Hint */}
+        {/* 3. One-line decision hint (必须，放在Recommendation下) */}
         {compareSummary.decisionHint && (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-800">
-              {compareSummary.decisionHint}
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-gray-800 leading-relaxed">
+              <strong>Decision hint:</strong> {compareSummary.decisionHint}
             </p>
           </div>
         )}
-
-        {/* Completion message */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center leading-relaxed">
-            This comparison helps you narrow down locations — not choose a specific flat.
-            <br />
-            Use it to decide where to focus your search next.
-          </p>
-        </div>
       </div>
 
-      {/* See the evidence button */}
+      {/* Why we reached this conclusion button (第二层：Evidence Layer) */}
       <button
         onClick={onToggleEvidence}
-        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-4"
+        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium mt-6 pt-6 border-t border-gray-200"
       >
         {evidenceOpen ? (
           <>
@@ -201,7 +191,7 @@ export default function RecommendationCard({
         ) : (
           <>
             <ChevronDown className="w-4 h-4" />
-            See the evidence
+            Why we reached this conclusion
           </>
         )}
       </button>
