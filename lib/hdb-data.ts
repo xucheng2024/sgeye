@@ -30,6 +30,7 @@ export type {
   TransferComplexity,
   RegionalHubAccess,
   ThreeTownCompareSummary,
+  TownTransportProfile,
 } from './hdb-data/types'
 
 // Re-export fetch functions from new structure
@@ -57,6 +58,9 @@ export { getTownProfile } from './hdb-data/town-profile'
 export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './hdb-data/comparison'
 
 // Re-export helper functions
-export { getTimeBurdenLevel } from './hdb-data/types'
+export { getTimeBurdenLevel, calculateTBI, getTBILevel, getTBILevelLabel } from './hdb-data/types'
+
+// Re-export transport functions
+export { getTownTransportProfile, TOWN_TRANSPORT_PROFILES } from './hdb-data/transport-data'
 
 // Re-exported above for backward compatibility

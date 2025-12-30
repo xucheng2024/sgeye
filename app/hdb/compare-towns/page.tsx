@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getTownProfile, generateCompareSummary, generateThreeTownCompareSummary, TownProfile, CompareSummary, PreferenceLens, ThreeTownCompareSummary, getTownTimeAccess, TownTimeAccess, getTimeBurdenLevel } from '@/lib/hdb-data'
+import { getTownProfile, generateCompareSummary, generateThreeTownCompareSummary, TownProfile, CompareSummary, PreferenceLens, ThreeTownCompareSummary, getTownTimeAccess, TownTimeAccess, getTimeBurdenLevel, getTownTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import { FamilyProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
@@ -53,6 +53,9 @@ function CompareTownsPageContent() {
   const [timeAccessA, setTimeAccessA] = useState<TownTimeAccess | null>(null)
   const [timeAccessB, setTimeAccessB] = useState<TownTimeAccess | null>(null)
   const [timeAccessC, setTimeAccessC] = useState<TownTimeAccess | null>(null)
+  const [transportProfileA, setTransportProfileA] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
+  const [transportProfileB, setTransportProfileB] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
+  const [transportProfileC, setTransportProfileC] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [compareSummary, setCompareSummary] = useState<CompareSummary | null>(null)
@@ -153,17 +156,21 @@ function CompareTownsPageContent() {
         setLandscapeB(results[5] as SchoolLandscape | null)
         setTimeAccessA(results[6] as TownTimeAccess | null)
         setTimeAccessB(results[7] as TownTimeAccess | null)
+        setTransportProfileA(getTownTransportProfile(townA))
+        setTransportProfileB(getTownTransportProfile(townB))
         
         if (townC) {
           setProfileC(results[8] as TownProfile | null)
           setSpiC(results[9] as SchoolPressureIndex | null)
           setLandscapeC(results[10] as SchoolLandscape | null)
           setTimeAccessC(results[11] as TownTimeAccess | null)
+          setTransportProfileC(getTownTransportProfile(townC))
         } else {
           setProfileC(null)
           setSpiC(null)
           setLandscapeC(null)
           setTimeAccessC(null)
+          setTransportProfileC(null)
         }
         
         // Debug logging
@@ -886,8 +893,53 @@ function CompareTownsPageContent() {
                           </span>
                         </div>
                       )}
+                      {transportProfileA && transportProfileB && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Transport Burden:</span>
+                          <span className={`text-sm font-semibold ${
+                            (() => {
+                              const tbiA = calculateTBI(transportProfileA)
+                              const tbiB = calculateTBI(transportProfileB)
+                              const tbiDiff = tbiB - tbiA
+                              return tbiDiff > 0 ? 'text-red-600' : tbiDiff < 0 ? 'text-green-600' : 'text-gray-600'
+                            })()
+                          }`}>
+                            {(() => {
+                              const tbiA = calculateTBI(transportProfileA)
+                              const tbiB = calculateTBI(transportProfileB)
+                              const tbiDiff = tbiB - tbiA
+                              const levelA = getTBILevel(tbiA)
+                              const levelB = getTBILevel(tbiB)
+                              if (tbiDiff === 0) {
+                                return `No change (${getTBILevelLabel(levelA)})`
+                              }
+                              const arrow = tbiDiff > 0 ? '↑' : '↓'
+                              const levelChange = levelA !== levelB ? ` (${getTBILevelLabel(levelA)} → ${getTBILevelLabel(levelB)})` : ''
+                              return `${tbiDiff > 0 ? '+' : ''}${tbiDiff} TBI ${arrow}${levelChange}`
+                            })()}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
+                  {transportProfileA && transportProfileB && (() => {
+                    const tbiA = calculateTBI(transportProfileA)
+                    const tbiB = calculateTBI(transportProfileB)
+                    const tbiDiff = tbiB - tbiA
+                    if (Math.abs(tbiDiff) >= 5) {
+                      return (
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 mt-3">
+                          <p className="text-sm text-gray-800">
+                            {tbiDiff > 0 
+                              ? `Moving to ${townB} increases daily time burden, which compounds over long holding periods.`
+                              : `Moving to ${townB} reduces daily time burden, improving long-term commute sustainability.`
+                            }
+                          </p>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-sm text-gray-800 italic">
                       {(() => {

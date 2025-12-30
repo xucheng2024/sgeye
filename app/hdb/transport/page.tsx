@@ -1,9 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Clock, MapPin, Train, Navigation } from 'lucide-react'
+import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
+import { getTownTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { TOWNS } from '../compare-towns/constants'
+import type { TownTransportProfile } from '@/lib/hdb-data'
 
 export default function TransportPage() {
+  const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
+  const transportProfile = getTownTransportProfile(selectedTown)
+  const tbi = transportProfile ? calculateTBI(transportProfile) : null
+  const tbiLevel = tbi !== null ? getTBILevel(tbi) : null
+  const tbiLabel = tbiLevel ? getTBILevelLabel(tbiLevel) : null
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
@@ -21,6 +31,153 @@ export default function TransportPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Town Selector */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Select Town / Planning Area:
+          </label>
+          <select
+            value={selectedTown}
+            onChange={(e) => setSelectedTown(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all text-base"
+          >
+            {TOWNS.map(town => (
+              <option key={town} value={town}>{town}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Structural Indicators */}
+        {transportProfile && tbi !== null && tbiLevel && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Structural Transport Indicators</h2>
+            
+            {/* TBI Score */}
+            <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-semibold text-gray-900">Transport Burden Index (TBI)</span>
+                <span className={`text-3xl font-bold ${
+                  tbiLevel === 'low' ? 'text-green-600' :
+                  tbiLevel === 'moderate' ? 'text-yellow-600' :
+                  tbiLevel === 'high' ? 'text-orange-600' :
+                  'text-red-600'
+                }`}>
+                  {tbi}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+                  tbiLevel === 'low' ? 'bg-green-100 text-green-800' :
+                  tbiLevel === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                  tbiLevel === 'high' ? 'bg-orange-100 text-orange-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {tbiLabel}
+                </span>
+                <span className="text-sm text-gray-600">
+                  (0-100 scale, lower is better)
+                </span>
+              </div>
+            </div>
+
+            {/* Structural Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Train className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-gray-900">Number of MRT lines</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{transportProfile.mrtLinesCount}</p>
+                <p className="text-sm text-gray-600 mt-1">Lines serving this town</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Navigation className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-gray-900">Average transfers to CBD</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{transportProfile.averageTransfersToCBD}</p>
+                <p className="text-sm text-gray-600 mt-1">Transfers needed to reach CBD hubs</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-gray-900">Distance band</span>
+                </div>
+                <p className="text-lg font-bold text-gray-900 capitalize">
+                  {transportProfile.distanceBand.replace('_', ' ')}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">Structural distance category</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-gray-900">Commute category</span>
+                </div>
+                <p className="text-lg font-bold text-gray-900">{transportProfile.commuteCategory}</p>
+                <p className="text-sm text-gray-600 mt-1">Structural accessibility level</p>
+              </div>
+            </div>
+
+            {/* TBI Breakdown */}
+            <div className="mt-6 p-5 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-gray-900 mb-4">TBI Component Breakdown</h3>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-700">Central Access Burden (40%)</span>
+                    <span className="text-sm font-semibold text-gray-900">{transportProfile.centralAccessBurden}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${transportProfile.centralAccessBurden}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-700">Transfer Burden (25%)</span>
+                    <span className="text-sm font-semibold text-gray-900">{transportProfile.transferBurden}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${transportProfile.transferBurden}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-700">Network Redundancy (20%)</span>
+                    <span className="text-sm font-semibold text-gray-900">{transportProfile.networkRedundancy}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${transportProfile.networkRedundancy}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm text-gray-700">Daily Mobility Friction (15%)</span>
+                    <span className="text-sm font-semibold text-gray-900">{transportProfile.dailyMobilityFriction}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full" 
+                      style={{ width: `${transportProfile.dailyMobilityFriction}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 1: Why time burden matters */}
         <section className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
           <div className="flex items-center gap-3 mb-6">

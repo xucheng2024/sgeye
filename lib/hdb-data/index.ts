@@ -20,7 +20,10 @@ export type {
   TransferComplexity,
   RegionalHubAccess,
   ThreeTownCompareSummary,
+  TownTransportProfile,
 } from './types'
+export { calculateTBI, getTBILevel, getTBILevelLabel } from './types'
+export { getTownTransportProfile, TOWN_TRANSPORT_PROFILES } from './transport-data'
 
 export { getTimeBurdenLevel } from './types'
 

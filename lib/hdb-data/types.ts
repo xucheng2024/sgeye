@@ -138,6 +138,54 @@ export function getTimeBurdenLevel(timeAccess: TownTimeAccess | null): 'low' | '
   return 'low'
 }
 
+// Transport Burden Index (TBI) types
+export interface TownTransportProfile {
+  town: string
+  // Central Access Burden (0-100)
+  centralAccessBurden: number // Average transfers to CBD/Orchard/One-North
+  // Transfer Burden (0-100)
+  transferBurden: number // Line complexity and interchange crowding
+  // Network Redundancy (0-100)
+  networkRedundancy: number // Alternative route availability
+  // Daily Mobility Friction (0-100)
+  dailyMobilityFriction: number // Non-commute accessibility
+  // Structural indicators
+  mrtLinesCount: number // Number of MRT lines serving town
+  averageTransfersToCBD: number // Average transfers to CBD hubs
+  distanceBand: 'central' | 'well_connected' | 'peripheral' // Distance category
+  commuteCategory: 'Central' | 'Well-connected' | 'Peripheral'
+}
+
+// Calculate TBI from transport profile
+export function calculateTBI(profile: TownTransportProfile): number {
+  const tbi = 
+    0.40 * profile.centralAccessBurden +
+    0.25 * profile.transferBurden +
+    0.20 * profile.networkRedundancy +
+    0.15 * profile.dailyMobilityFriction
+  
+  return Math.round(tbi)
+}
+
+// Get TBI level from score
+export function getTBILevel(tbi: number): 'low' | 'moderate' | 'high' | 'very_high' {
+  if (tbi <= 25) return 'low'
+  if (tbi <= 50) return 'moderate'
+  if (tbi <= 75) return 'high'
+  return 'very_high'
+}
+
+// Get TBI level label
+export function getTBILevelLabel(level: 'low' | 'moderate' | 'high' | 'very_high'): string {
+  const labels = {
+    low: 'Low burden',
+    moderate: 'Moderate',
+    high: 'High',
+    very_high: 'Very High',
+  }
+  return labels[level]
+}
+
 // Compare Summary output
 export interface CompareSummary {
   // Bottom Line (new top section)

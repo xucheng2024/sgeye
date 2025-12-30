@@ -20,8 +20,9 @@ import {
   SCORING_CONSTANTS,
 } from '../constants'
 import { getAggregatedMonthly, getMedianRent, getTownTimeAccess } from './fetch'
+import { getTownTransportProfile } from './transport-data'
 import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess, ThreeTownCompareSummary } from './types'
-import { getTimeBurdenLevel } from './types'
+import { getTimeBurdenLevel, calculateTBI, getTBILevel } from './types'
 
 // Generate standardized scores (0-100) for each dimension
 function generateStandardizedScores(
@@ -526,8 +527,32 @@ export async function generateCompareSummary(
       }
     }
     
-    // Time burden change (Phase 2 v1)
-    if (timeAccessA && timeAccessB) {
+    // Time burden change (Phase 2 v1) - using TBI for more precise assessment
+    const transportProfileA = getTownTransportProfile(A.town)
+    const transportProfileB = getTownTransportProfile(B.town)
+    if (transportProfileA && transportProfileB) {
+      const tbiA = calculateTBI(transportProfileA)
+      const tbiB = calculateTBI(transportProfileB)
+      const tbiDiff = tbiB - tbiA
+      
+      if (Math.abs(tbiDiff) >= 5) { // Significant change threshold
+        if (tbiDiff > 0) {
+          parts.push('increases daily time burden')
+        } else {
+          parts.push('reduces daily time burden')
+        }
+      } else if (timeAccessA && timeAccessB) {
+        // Fallback to qualitative assessment if TBI difference is small
+        const burdenLevels = { low: 1, medium: 2, high: 3 }
+        const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
+        if (burdenDiff > 0) {
+          parts.push('increases daily time burden')
+        } else if (burdenDiff < 0) {
+          parts.push('reduces daily time burden')
+        }
+      }
+    } else if (timeAccessA && timeAccessB) {
+      // Fallback if transport profiles not available
       const burdenLevels = { low: 1, medium: 2, high: 3 }
       const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
       if (burdenDiff > 0) {
@@ -543,10 +568,36 @@ export async function generateCompareSummary(
   }
   
   // ============================================
-  // Generate Time & Access Moving Impact
+  // Generate Time & Access Moving Impact (using TBI)
   // ============================================
   let timeAccessMovingImpact: string | null = null
-  if (timeAccessA && timeAccessB) {
+  const transportProfileA = getTownTransportProfile(A.town)
+  const transportProfileB = getTownTransportProfile(B.town)
+  
+  if (transportProfileA && transportProfileB) {
+    const tbiA = calculateTBI(transportProfileA)
+    const tbiB = calculateTBI(transportProfileB)
+    const tbiDiff = tbiB - tbiA
+    
+    if (Math.abs(tbiDiff) >= 5) {
+      if (tbiDiff > 0) {
+        if (planningHorizon === 'long') {
+          timeAccessMovingImpact = `Moving to ${B.town} increases daily time burden, which compounds over long holding periods.`
+        } else {
+          timeAccessMovingImpact = `Likely increases daily commuting time`
+        }
+      } else {
+        if (planningHorizon === 'long') {
+          timeAccessMovingImpact = `Moving to ${B.town} reduces daily time burden, improving long-term commute sustainability.`
+        } else {
+          timeAccessMovingImpact = `Likely reduces daily commuting time`
+        }
+      }
+    } else {
+      timeAccessMovingImpact = `Similar daily time burden`
+    }
+  } else if (timeAccessA && timeAccessB) {
+    // Fallback to qualitative assessment
     const burdenLevels = { low: 1, medium: 2, high: 3 }
     const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
     
