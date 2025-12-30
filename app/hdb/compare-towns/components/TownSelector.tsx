@@ -10,10 +10,12 @@ import { TOWNS, FLAT_TYPES, RECOMMENDED_PAIRS } from '../constants'
 interface TownSelectorProps {
   townA: string
   townB: string
+  townC?: string | null
   flatType: string
   holdingPeriod: 'short' | 'medium' | 'long'
   onTownAChange: (town: string) => void
   onTownBChange: (town: string) => void
+  onTownCChange?: (town: string | null) => void
   onFlatTypeChange: (type: string) => void
   onHoldingPeriodChange: (period: 'short' | 'medium' | 'long') => void
   showQuickStart?: boolean
@@ -22,10 +24,12 @@ interface TownSelectorProps {
 export default function TownSelector({
   townA,
   townB,
+  townC,
   flatType,
   holdingPeriod,
   onTownAChange,
   onTownBChange,
+  onTownCChange,
   onFlatTypeChange,
   onHoldingPeriodChange,
   showQuickStart = false,
@@ -57,7 +61,7 @@ export default function TownSelector({
       {/* My Situation */}
       <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
         <h3 className="text-base font-semibold text-gray-900 mb-4">My situation</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Town A</label>
             <select
@@ -82,6 +86,38 @@ export default function TownSelector({
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
+          </div>
+          <div className="text-center text-gray-400 font-semibold text-lg">vs</div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-700">Town C</label>
+              {townC && onTownCChange && (
+                <button
+                  onClick={() => onTownCChange(null)}
+                  className="text-xs text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {townC ? (
+              <select
+                value={townC}
+                onChange={(e) => onTownCChange?.(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                {TOWNS.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            ) : (
+              <button
+                onClick={() => onTownCChange?.('')}
+                className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all text-sm"
+              >
+                + Add another town
+              </button>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

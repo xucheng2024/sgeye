@@ -20,7 +20,7 @@ import {
   SCORING_CONSTANTS,
 } from '../constants'
 import { getAggregatedMonthly, getMedianRent, getTownTimeAccess } from './fetch'
-import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess } from './types'
+import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess, ThreeTownCompareSummary } from './types'
 import { getTimeBurdenLevel } from './types'
 
 // Generate standardized scores (0-100) for each dimension
@@ -88,32 +88,76 @@ function generateStandardizedScores(
   }
 }
 
-// Calculate overall score based on lens weights
+// Calculate overall score based on lens weights and planning horizon
 function calculateOverallScore(
   scores: CompareSummary['scores'],
   lens: PreferenceLens,
-  longTerm: boolean
+  longTerm: boolean,
+  planningHorizon: 'short' | 'medium' | 'long' = 'medium'
 ): CompareSummary['scores'] {
   if (!scores) return null
   
-  // Define weights for each lens
-  let weights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
+  // Define base weights for each lens
+  let baseWeights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
   
   if (lens === 'lower_cost') {
-    weights = { entryCost: 0.45, cashFlow: 0.20, leaseSafety: 0.20, schoolPressure: 0.10, stability: 0.05 }
+    baseWeights = { entryCost: 0.45, cashFlow: 0.20, leaseSafety: 0.20, schoolPressure: 0.10, stability: 0.05 }
   } else if (lens === 'lease_safety') {
-    weights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.45, schoolPressure: 0.10, stability: 0.20 }
+    baseWeights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.45, schoolPressure: 0.10, stability: 0.20 }
   } else if (lens === 'school_pressure') {
-    weights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.10, schoolPressure: 0.45, stability: 0.20 }
+    baseWeights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.10, schoolPressure: 0.45, stability: 0.20 }
   } else { // balanced
-    weights = { entryCost: 0.25, cashFlow: 0.20, leaseSafety: 0.25, schoolPressure: 0.20, stability: 0.10 }
+    baseWeights = { entryCost: 0.25, cashFlow: 0.20, leaseSafety: 0.25, schoolPressure: 0.20, stability: 0.10 }
   }
   
-  // Adjust for long-term holding
-  if (longTerm) {
-    weights.leaseSafety += 0.10
-    weights.entryCost -= 0.05
-    weights.cashFlow -= 0.05
+  // Adjust for long-term holding (legacy, keep for backward compatibility)
+  if (longTerm && planningHorizon === 'medium') {
+    baseWeights.leaseSafety += 0.10
+    baseWeights.entryCost -= 0.05
+    baseWeights.cashFlow -= 0.05
+  }
+  
+  // Reorder weights based on Planning Horizon priority
+  // Priority order determines weight redistribution (keeping total = 1.0)
+  let weights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
+  
+  if (planningHorizon === 'short') {
+    // Short-term: Entry cost, Cash flow, School pressure, Lease, Time burden (stability)
+    weights = {
+      entryCost: baseWeights.entryCost * 1.2 + 0.10,  // Boost entry cost
+      cashFlow: baseWeights.cashFlow * 1.2 + 0.05,    // Boost cash flow
+      schoolPressure: baseWeights.schoolPressure * 1.1,
+      leaseSafety: baseWeights.leaseSafety * 0.7,     // Reduce lease importance
+      stability: baseWeights.stability * 0.8
+    }
+  } else if (planningHorizon === 'long') {
+    // Long-term: Lease, Time burden (stability), School pressure, Entry cost, Cash flow
+    weights = {
+      leaseSafety: baseWeights.leaseSafety * 1.3 + 0.15,  // Boost lease
+      stability: baseWeights.stability * 1.5 + 0.10,       // Boost time burden (via stability)
+      schoolPressure: baseWeights.schoolPressure * 1.0,
+      entryCost: baseWeights.entryCost * 0.7,             // Reduce entry cost importance
+      cashFlow: baseWeights.cashFlow * 0.7                 // Reduce cash flow importance
+    }
+  } else {
+    // Medium-term: Entry cost, Lease, School pressure, Time burden, Cash flow
+    weights = {
+      entryCost: baseWeights.entryCost * 1.1,
+      leaseSafety: baseWeights.leaseSafety * 1.1,
+      schoolPressure: baseWeights.schoolPressure * 1.0,
+      stability: baseWeights.stability * 1.2,
+      cashFlow: baseWeights.cashFlow * 0.9
+    }
+  }
+  
+  // Normalize weights to sum to 1.0
+  const total = weights.entryCost + weights.cashFlow + weights.leaseSafety + weights.schoolPressure + weights.stability
+  if (total > 0) {
+    weights.entryCost /= total
+    weights.cashFlow /= total
+    weights.leaseSafety /= total
+    weights.schoolPressure /= total
+    weights.stability /= total
   }
   
   // Calculate overall scores
@@ -148,7 +192,8 @@ export async function generateCompareSummary(
   landscapeB?: { schoolCount: number; highDemandSchools: number } | null,
   lens: PreferenceLens = 'balanced',
   longTerm: boolean = false,
-  familyProfile?: FamilyProfile | null
+  familyProfile?: FamilyProfile | null,
+  planningHorizon: 'short' | 'medium' | 'long' = 'medium'
 ): Promise<CompareSummary> {
   const badges: CompareSummary['badges'] = []
   
@@ -195,7 +240,7 @@ export async function generateCompareSummary(
   
   // Generate standardized scores
   const scores = generateStandardizedScores(A, B, spiA ?? null, spiB ?? null, landscapeA ?? null, landscapeB ?? null)
-  const scoresWithOverall = calculateOverallScore(scores, lens, longTerm)
+  const scoresWithOverall = calculateOverallScore(scores, lens, longTerm, planningHorizon)
   
   // Helper function to get SPI label
   const getSPILabel = (level: 'low' | 'medium' | 'high'): string => {
@@ -536,23 +581,29 @@ export async function generateCompareSummary(
     const winner = overallDiff > 0 ? B.town : A.town
     const winnerIsB = overallDiff > 0
     
-    // Generate headline using fixed templates based on family profile
+    // Generate headline using fixed templates based on planning horizon and family profile
     let headline = ''
     const preferenceId = preferenceMode.id
     const overallDiffAbs = Math.abs(overallDiff)
     
-    // Fixed templates by profile type
-    if (preferenceId === 'balanced') {
-      headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
-    } else if (preferenceId === 'low_entry') {
-      headline = `If keeping upfront and monthly costs low matters most, ${winner} offers a clearer affordability advantage.`
-    } else if (preferenceId === 'long_term') {
-      headline = `For families planning to stay long-term, ${winner} offers stronger lease safety despite higher entry cost.`
-    } else if (preferenceId === 'low_school_pressure') {
-      headline = `For families sensitive to school competition, ${winner} offers lower structural primary school pressure.`
+    // Planning Horizon-aware opening (takes priority over profile type)
+    if (planningHorizon === 'short') {
+      headline = `For families planning a shorter stay, upfront cost and flexibility matter more than long-term lease decay. ${winner} offers a better fit for your timeline.`
+    } else if (planningHorizon === 'long') {
+      headline = `For families planning to stay long-term, lease profile and daily time burden matter more than entry price. ${winner} offers stronger long-term stability.`
     } else {
-      // Fallback
-      headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
+      // Medium-term: use profile-based templates
+      if (preferenceId === 'balanced') {
+        headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
+      } else if (preferenceId === 'low_entry') {
+        headline = `If keeping upfront and monthly costs low matters most, ${winner} offers a clearer affordability advantage.`
+      } else if (preferenceId === 'long_term') {
+        headline = `For families prioritizing lease safety, ${winner} offers stronger lease profile despite higher entry cost.`
+      } else if (preferenceId === 'low_school_pressure') {
+        headline = `For families sensitive to school competition, ${winner} offers lower structural primary school pressure.`
+      } else {
+        headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
+      }
     }
     
     // Generate exactly 3 trade-off bullets (fixed template)
@@ -571,11 +622,18 @@ export async function generateCompareSummary(
       tradeoffs.push(`Entry cost: Both towns have similar entry prices`)
     }
     
-    // 2. Lease profile
+    // 2. Lease profile (lifecycle-aware phrasing)
     const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
+    const shorter = metrics.deltaLeaseYears < 0 ? B.town : A.town
     const leaseDiff = Math.abs(metrics.deltaLeaseYears)
     if (leaseDiff >= 1) {
-      tradeoffs.push(`Lease profile: ${healthier} has ~${Math.round(leaseDiff)} more remaining years`)
+      if (planningHorizon === 'short') {
+        tradeoffs.push(`Lease profile: Lease decay is less critical over a short holding period. ${healthier} has ~${Math.round(leaseDiff)} more remaining years.`)
+      } else if (planningHorizon === 'long') {
+        tradeoffs.push(`Lease profile: ${shorter} has shorter remaining lease (~${Math.round(leaseDiff)} years less), which significantly limits long-term flexibility.`)
+      } else {
+        tradeoffs.push(`Lease profile: ${healthier} has ~${Math.round(leaseDiff)} more remaining years`)
+      }
     } else {
       tradeoffs.push(`Lease profile: Both towns have similar remaining lease`)
     }
@@ -872,5 +930,121 @@ export async function getTownComparisonData(
   }
 
   return null
+}
+
+// Generate 3 Town Compare Summary (no ranking, just suitability)
+export async function generateThreeTownCompareSummary(
+  A: TownProfile,
+  B: TownProfile,
+  C: TownProfile,
+  spiA?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  spiC?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  landscapeA?: { schoolCount: number; highDemandSchools: number } | null,
+  landscapeB?: { schoolCount: number; highDemandSchools: number } | null,
+  landscapeC?: { schoolCount: number; highDemandSchools: number } | null,
+  planningHorizon: 'short' | 'medium' | 'long' = 'medium'
+): Promise<ThreeTownCompareSummary> {
+  // Fetch Time & Access data for all 3 towns
+  const [timeAccessA, timeAccessB, timeAccessC] = await Promise.all([
+    getTownTimeAccess(A.town),
+    getTownTimeAccess(B.town),
+    getTownTimeAccess(C.town),
+  ])
+  
+  const timeBurdenA = getTimeBurdenLevel(timeAccessA)
+  const timeBurdenB = getTimeBurdenLevel(timeAccessB)
+  const timeBurdenC = getTimeBurdenLevel(timeAccessC)
+  
+  // Determine overall tendencies (no ranking, just "who is better for what")
+  const tendencies = {
+    townA: '',
+    townB: '',
+    townC: '',
+  }
+  
+  // Affordability comparison
+  const prices = [A.medianResalePrice, B.medianResalePrice, C.medianResalePrice]
+  const cheapestIndex = prices.indexOf(Math.min(...prices))
+  const cheapestTown = cheapestIndex === 0 ? A.town : cheapestIndex === 1 ? B.town : C.town
+  
+  // Lease comparison
+  const leases = [A.medianRemainingLease, B.medianRemainingLease, C.medianRemainingLease]
+  const healthiestLeaseIndex = leases.indexOf(Math.max(...leases))
+  const healthiestLeaseTown = healthiestLeaseIndex === 0 ? A.town : healthiestLeaseIndex === 1 ? B.town : C.town
+  
+  // School pressure comparison
+  const spis = [
+    spiA?.spi ?? 50,
+    spiB?.spi ?? 50,
+    spiC?.spi ?? 50,
+  ]
+  const lowestSPIIndex = spis.indexOf(Math.min(...spis))
+  const lowestSPITown = lowestSPIIndex === 0 ? A.town : lowestSPIIndex === 1 ? B.town : C.town
+  
+  // Time burden comparison
+  const timeBurdens = [timeBurdenA, timeBurdenB, timeBurdenC]
+  const burdenLevels = { low: 1, medium: 2, high: 3 }
+  const burdenScores = timeBurdens.map(tb => burdenLevels[tb])
+  const lowestBurdenIndex = burdenScores.indexOf(Math.min(...burdenScores))
+  const lowestBurdenTown = lowestBurdenIndex === 0 ? A.town : lowestBurdenIndex === 1 ? B.town : C.town
+  
+  // Assign tendencies based on strengths (no ranking, just suitability)
+  if (A.town === cheapestTown) {
+    tendencies.townA = 'Best affordability & flexibility'
+  } else if (A.town === healthiestLeaseTown) {
+    tendencies.townA = 'Strongest lease safety'
+  } else if (A.town === lowestSPITown) {
+    tendencies.townA = 'Lowest school pressure'
+  } else {
+    tendencies.townA = 'Balanced option'
+  }
+  
+  if (B.town === cheapestTown) {
+    tendencies.townB = 'Best affordability & flexibility'
+  } else if (B.town === healthiestLeaseTown) {
+    tendencies.townB = 'Strongest lease safety'
+  } else if (B.town === lowestSPITown) {
+    tendencies.townB = 'Lowest school pressure'
+  } else {
+    tendencies.townB = 'Most balanced long-term option'
+  }
+  
+  if (C.town === cheapestTown) {
+    tendencies.townC = 'Best affordability & flexibility'
+  } else if (C.town === healthiestLeaseTown) {
+    tendencies.townC = 'Strongest lease safety'
+  } else if (C.town === lowestSPITown) {
+    tendencies.townC = 'Lowest school pressure'
+  } else {
+    tendencies.townC = 'Balanced option'
+  }
+  
+  // Key differences (aggregated, not pairwise)
+  const keyDifferences: ThreeTownCompareSummary['keyDifferences'] = {
+    affordability: `${cheapestTown} has the lowest entry cost`,
+    lease: `${healthiestLeaseTown} shows the healthiest lease profile`,
+    schoolPressure: `${lowestSPITown} has consistently lower SPI`,
+  }
+  
+  // Add time burden if significant difference
+  if (timeBurdens[0] !== timeBurdens[1] || timeBurdens[1] !== timeBurdens[2]) {
+    keyDifferences.timeBurden = `${lowestBurdenTown} has the lowest daily time burden`
+  }
+  
+  // Recommendation (no winner, just scenarios)
+  const recommendation: ThreeTownCompareSummary['recommendation'] = {
+    ifLongTerm: planningHorizon === 'long' 
+      ? `For long-term planning: ${healthiestLeaseTown} is structurally safer, while ${lowestSPITown} trades stability for lower school pressure.`
+      : `If long-term stability matters most, ${healthiestLeaseTown} stands out.`,
+    ifAffordability: `If affordability matters more, ${cheapestTown} remains attractive.`,
+  }
+  
+  return {
+    planningHorizon,
+    overallTendencies: tendencies,
+    keyDifferences,
+    recommendation,
+  }
 }
 

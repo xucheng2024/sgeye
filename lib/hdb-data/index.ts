@@ -19,6 +19,7 @@ export type {
   MrtDensity,
   TransferComplexity,
   RegionalHubAccess,
+  ThreeTownCompareSummary,
 } from './types'
 
 export { getTimeBurdenLevel } from './types'
@@ -45,5 +46,5 @@ export {
 export { getTownProfile } from './town-profile'
 
 // Comparison functions
-export { generateCompareSummary, getTownComparisonData } from './comparison'
+export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './comparison'
 

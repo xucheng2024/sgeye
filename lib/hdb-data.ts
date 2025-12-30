@@ -24,6 +24,12 @@ export type {
   TownComparisonData,
   CompareSummary,
   PreferenceLens,
+  TownTimeAccess,
+  Centrality,
+  MrtDensity,
+  TransferComplexity,
+  RegionalHubAccess,
+  ThreeTownCompareSummary,
 } from './hdb-data/types'
 
 // Re-export fetch functions from new structure
@@ -34,6 +40,7 @@ export {
   getBinnedLeasePriceData,
   getMedianRent,
   findAffordableProperties,
+  getTownTimeAccess,
 } from './hdb-data/fetch'
 
 // Re-export calculation functions from new structure
@@ -47,6 +54,9 @@ export {
 export { getTownProfile } from './hdb-data/town-profile'
 
 // Re-export comparison functions from new structure
-export { generateCompareSummary, getTownComparisonData } from './hdb-data/comparison'
+export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './hdb-data/comparison'
+
+// Re-export helper functions
+export { getTimeBurdenLevel } from './hdb-data/types'
 
 // Re-exported above for backward compatibility

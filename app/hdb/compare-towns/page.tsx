@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary, PreferenceLens } from '@/lib/hdb-data'
+import { getTownProfile, generateCompareSummary, generateThreeTownCompareSummary, TownProfile, CompareSummary, PreferenceLens, ThreeTownCompareSummary, getTownTimeAccess, TownTimeAccess, getTimeBurdenLevel } from '@/lib/hdb-data'
 import { FamilyProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
@@ -27,16 +27,36 @@ function CompareTownsPageContent() {
   const defaultPair = RECOMMENDED_PAIRS[0]
   const [townA, setTownA] = useState(searchParams.get('townA') || defaultPair.townA)
   const [townB, setTownB] = useState(searchParams.get('townB') || defaultPair.townB)
+  const [townC, setTownC] = useState<string | null>(searchParams.get('townC') || null)
+  
+  // Helper to handle Town C change (empty string means "add", null means "remove")
+  const handleTownCChange = (value: string | null) => {
+    if (value === '') {
+      // User clicked "Add another town", set to first available town (not A or B)
+      const availableTowns = TOWNS.filter(t => t !== townA && t !== townB)
+      setTownC(availableTowns[0] || null)
+    } else {
+      setTownC(value)
+    }
+  }
+  
   const [flatType, setFlatType] = useState(searchParams.get('flatType') || '4 ROOM')
   const [profileA, setProfileA] = useState<TownProfile | null>(null)
   const [profileB, setProfileB] = useState<TownProfile | null>(null)
+  const [profileC, setProfileC] = useState<TownProfile | null>(null)
   const [spiA, setSpiA] = useState<SchoolPressureIndex | null>(null)
   const [spiB, setSpiB] = useState<SchoolPressureIndex | null>(null)
+  const [spiC, setSpiC] = useState<SchoolPressureIndex | null>(null)
   const [landscapeA, setLandscapeA] = useState<SchoolLandscape | null>(null)
   const [landscapeB, setLandscapeB] = useState<SchoolLandscape | null>(null)
+  const [landscapeC, setLandscapeC] = useState<SchoolLandscape | null>(null)
+  const [timeAccessA, setTimeAccessA] = useState<TownTimeAccess | null>(null)
+  const [timeAccessB, setTimeAccessB] = useState<TownTimeAccess | null>(null)
+  const [timeAccessC, setTimeAccessC] = useState<TownTimeAccess | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [compareSummary, setCompareSummary] = useState<CompareSummary | null>(null)
+  const [threeTownSummary, setThreeTownSummary] = useState<ThreeTownCompareSummary | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [preferenceLens, setPreferenceLens] = useState<'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'>('balanced')
   const [holdingPeriod, setHoldingPeriod] = useState<'short' | 'medium' | 'long'>('medium')
@@ -52,6 +72,10 @@ function CompareTownsPageContent() {
   // Family profile type mapping
   type FamilyProfileType = 'long_term' | 'budget_first' | 'education_sensitive' | 'balanced'
   const [familyProfileType, setFamilyProfileType] = useState<FamilyProfileType>('balanced')
+  
+  // Planning Horizon (independent from family profile)
+  type PlanningHorizon = 'short' | 'medium' | 'long'
+  const [planningHorizon, setPlanningHorizon] = useState<PlanningHorizon>('medium')
 
   // Map family profile type to decision rules
   useEffect(() => {
@@ -98,29 +122,58 @@ function CompareTownsPageContent() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const [resultA, resultB, spiResultA, spiResultB, landscapeResultA, landscapeResultB] = await Promise.all([
-          getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
+        const fetchPromises = [
+          getTownProfile(townA, flatType, 24),
           getTownProfile(townB, flatType, 24),
           calculateSchoolPressureIndex(townA),
           calculateSchoolPressureIndex(townB),
           getSchoolLandscape(townA),
           getSchoolLandscape(townB),
-        ])
-        setProfileA(resultA)
-        setProfileB(resultB)
-        setSpiA(spiResultA)
-        setSpiB(spiResultB)
-        setLandscapeA(landscapeResultA)
-        setLandscapeB(landscapeResultB)
+          getTownTimeAccess(townA),
+          getTownTimeAccess(townB),
+        ]
+        
+        // Add Town C data if selected
+        if (townC) {
+          fetchPromises.push(
+            getTownProfile(townC, flatType, 24),
+            calculateSchoolPressureIndex(townC),
+            getSchoolLandscape(townC),
+            getTownTimeAccess(townC)
+          )
+        }
+        
+        const results = await Promise.all(fetchPromises)
+        
+        setProfileA(results[0] as TownProfile | null)
+        setProfileB(results[1] as TownProfile | null)
+        setSpiA(results[2] as SchoolPressureIndex | null)
+        setSpiB(results[3] as SchoolPressureIndex | null)
+        setLandscapeA(results[4] as SchoolLandscape | null)
+        setLandscapeB(results[5] as SchoolLandscape | null)
+        setTimeAccessA(results[6] as TownTimeAccess | null)
+        setTimeAccessB(results[7] as TownTimeAccess | null)
+        
+        if (townC) {
+          setProfileC(results[8] as TownProfile | null)
+          setSpiC(results[9] as SchoolPressureIndex | null)
+          setLandscapeC(results[10] as SchoolLandscape | null)
+          setTimeAccessC(results[11] as TownTimeAccess | null)
+        } else {
+          setProfileC(null)
+          setSpiC(null)
+          setLandscapeC(null)
+          setTimeAccessC(null)
+        }
         
         // Debug logging
         console.log('SPI Data:', {
           townA,
           townB,
-          spiA: spiResultA,
-          spiB: spiResultB,
-          landscapeA: landscapeResultA,
-          landscapeB: landscapeResultB,
+          townC,
+          spiA: results[2],
+          spiB: results[3],
+          spiC: townC ? results[7] : null,
         })
       } catch (error) {
         console.error('Error fetching comparison data:', error)
@@ -129,7 +182,7 @@ function CompareTownsPageContent() {
       }
     }
     fetchData()
-  }, [townA, townB, flatType])
+  }, [townA, townB, townC, flatType])
 
   // Generate Compare Summary from Town Profiles (with SPI, Lens, and Family Profile)
   // Convert holdingPeriod to FamilyProfile format if familyProfile doesn't exist
@@ -142,7 +195,25 @@ function CompareTownsPageContent() {
   
   useEffect(() => {
     const generateSummary = async () => {
-      if (profileA && profileB) {
+      // 3 Town Compare
+      if (profileA && profileB && profileC && townC) {
+        const summary = await generateThreeTownCompareSummary(
+          profileA,
+          profileB,
+          profileC,
+          spiA,
+          spiB,
+          spiC,
+          landscapeA,
+          landscapeB,
+          landscapeC,
+          planningHorizon
+        )
+        setThreeTownSummary(summary)
+        setCompareSummary(null)
+      }
+      // 2 Town Compare
+      else if (profileA && profileB) {
         const isLongTerm = holdingPeriod === 'long'
         
         const summary = await generateCompareSummary(
@@ -155,15 +226,18 @@ function CompareTownsPageContent() {
           landscapeB,
           preferenceLens,
           isLongTerm,
-          effectiveFamilyProfile
+          effectiveFamilyProfile,
+          planningHorizon
         )
         setCompareSummary(summary)
+        setThreeTownSummary(null)
       } else {
         setCompareSummary(null)
+        setThreeTownSummary(null)
       }
     }
     generateSummary()
-  }, [profileA, profileB, spiA, spiB, landscapeA, landscapeB, preferenceLens, holdingPeriod, familyProfile, userBudget, effectiveFamilyProfile])
+  }, [profileA, profileB, profileC, townC, spiA, spiB, spiC, landscapeA, landscapeB, landscapeC, preferenceLens, holdingPeriod, familyProfile, userBudget, effectiveFamilyProfile, planningHorizon])
 
 
   // Debug: Log compareSummary when evidence is opened
@@ -277,6 +351,62 @@ function CompareTownsPageContent() {
           </div>
         </div>
 
+        {/* Planning Horizon Selector (independent from family profile) */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Planning horizon</h3>
+          <p className="text-sm text-gray-600 mb-4">How long do you plan to stay here?</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              planningHorizon === 'short' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="planningHorizon"
+                value="short"
+                checked={planningHorizon === 'short'}
+                onChange={(e) => setPlanningHorizon(e.target.value as PlanningHorizon)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Short-term (≤5 years)</div>
+                <div className="text-xs text-gray-600">Upfront cost and flexibility matter more</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              planningHorizon === 'medium' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="planningHorizon"
+                value="medium"
+                checked={planningHorizon === 'medium'}
+                onChange={(e) => setPlanningHorizon(e.target.value as PlanningHorizon)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Medium-term (5–10 years)</div>
+                <div className="text-xs text-gray-600">Balanced consideration of all factors</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              planningHorizon === 'long' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="planningHorizon"
+                value="long"
+                checked={planningHorizon === 'long'}
+                onChange={(e) => setPlanningHorizon(e.target.value as PlanningHorizon)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Long-term (10–15+ years)</div>
+                <div className="text-xs text-gray-600">Lease profile and time burden matter more</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Family Profile Display Bar */}
         {effectiveFamilyProfile && (
           <FamilyProfileDisplay
@@ -301,10 +431,12 @@ function CompareTownsPageContent() {
         <TownSelector
           townA={townA}
           townB={townB}
+          townC={townC}
           flatType={flatType}
           holdingPeriod={holdingPeriod}
           onTownAChange={setTownA}
           onTownBChange={setTownB}
+          onTownCChange={handleTownCChange}
           onFlatTypeChange={setFlatType}
           onHoldingPeriodChange={setHoldingPeriod}
           showQuickStart={!searchParams.get('townA') && !searchParams.get('townB')}
@@ -388,8 +520,45 @@ function CompareTownsPageContent() {
           </div>
         </div>
 
-        {/* Recommendation (new format) */}
-        {compareSummary && compareSummary.recommendation && (
+        {/* 3 Town Compare Summary */}
+        {threeTownSummary && profileA && profileB && profileC && townC ? (
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Overall Tendencies</h3>
+            <div className="space-y-3 mb-8">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-1">{townA}:</p>
+                <p className="text-gray-700">{threeTownSummary.overallTendencies.townA}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-1">{townB}:</p>
+                <p className="text-gray-700">{threeTownSummary.overallTendencies.townB}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="font-semibold text-gray-900 mb-1">{townC}:</p>
+                <p className="text-gray-700">{threeTownSummary.overallTendencies.townC}</p>
+              </div>
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Key Differences</h3>
+            <div className="space-y-2 mb-6">
+              <p className="text-gray-800"><strong>Affordability:</strong> {threeTownSummary.keyDifferences.affordability}</p>
+              <p className="text-gray-800"><strong>Lease:</strong> {threeTownSummary.keyDifferences.lease}</p>
+              <p className="text-gray-800"><strong>School pressure:</strong> {threeTownSummary.keyDifferences.schoolPressure}</p>
+              {threeTownSummary.keyDifferences.timeBurden && (
+                <p className="text-gray-800"><strong>Time burden:</strong> {threeTownSummary.keyDifferences.timeBurden}</p>
+              )}
+            </div>
+            
+            <div className="p-5 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-gray-900 mb-3">Decision Guidance</h4>
+              <p className="text-gray-800 mb-2">{threeTownSummary.recommendation.ifLongTerm}</p>
+              <p className="text-gray-800">{threeTownSummary.recommendation.ifAffordability}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Recommendation (new format) - Only show for 2 Town Compare */}
+        {compareSummary && compareSummary.recommendation && !threeTownSummary && (
           <RecommendationCard
             compareSummary={compareSummary}
             preferenceLens={preferenceLens}
@@ -406,8 +575,8 @@ function CompareTownsPageContent() {
           />
         )}
 
-        {/* Evidence (expandable) - Right after Recommendation */}
-        {compareSummary && evidenceOpen && (
+        {/* Evidence (expandable) - Right after Recommendation - Only for 2 towns */}
+        {compareSummary && evidenceOpen && !townC && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Evidence</h3>
             
@@ -585,8 +754,8 @@ function CompareTownsPageContent() {
           </div>
         )}
 
-        {/* Moving Education Pressure: What Changes (Second Screen) */}
-        {compareSummary && compareSummary.movingEducationImpact && spiA && spiB && (
+        {/* Moving Education Pressure: What Changes (Second Screen) - Only for 2 towns */}
+        {compareSummary && compareSummary.movingEducationImpact && spiA && spiB && !townC && (
           <ChartCard
             title="Moving Education Pressure: What Changes"
             description="Understand how moving affects primary school competition and choice"
@@ -670,8 +839,8 @@ function CompareTownsPageContent() {
           </div>
         ) : profileA && profileB ? (
           <>
-            {/* Moving Pressure: What Changes (Second Screen - Most Important) */}
-            {spiA && spiB && profileA && profileB && (
+            {/* Moving Pressure: What Changes (Second Screen - Most Important) - Only for 2 towns */}
+            {!townC && spiA && spiB && profileA && profileB && (
               <ChartCard
                 title="Moving Pressure: What Changes"
                 description="Compare the impact of moving from one town to another"
@@ -769,6 +938,7 @@ function CompareTownsPageContent() {
                       <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                      {townC && profileC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -776,11 +946,13 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-gray-700 font-medium">Median resale price</td>
                       <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(profileA.medianResalePrice)}</td>
                       <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(profileB.medianResalePrice)}</td>
+                      {townC && profileC && <td className="py-4 px-4 text-right font-bold text-gray-900">{formatCurrency(profileC.medianResalePrice)}</td>}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Estimated monthly mortgage</td>
                       <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileA.estimatedMonthlyMortgage)}</td>
                       <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileB.estimatedMonthlyMortgage)}</td>
+                      {townC && profileC && <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileC.estimatedMonthlyMortgage)}</td>}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Median rent (same flat)</td>
@@ -790,6 +962,11 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">
                         {profileB.medianRent ? formatCurrency(profileB.medianRent) : <span className="text-gray-400">N/A</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          {profileC.medianRent ? formatCurrency(profileC.medianRent) : <span className="text-gray-400">N/A</span>}
+                        </td>
+                      )}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Rent vs Buy gap</td>
@@ -807,6 +984,15 @@ function CompareTownsPageContent() {
                           </span>
                         ) : <span className="text-gray-400">N/A</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right">
+                          {profileC.medianRent ? (
+                            <span className={`font-semibold ${profileC.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {profileC.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileC.rentBuyGapMonthly)}
+                            </span>
+                          ) : <span className="text-gray-400">N/A</span>}
+                        </td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
@@ -820,7 +1006,7 @@ function CompareTownsPageContent() {
                   When rents exceed mortgage payments, buying builds equity while renting does not. The larger the gap, the stronger the ownership advantage.
                 </p>
               </div>
-              {profileA.medianRent && profileB.medianRent && (
+              {!townC && profileA.medianRent && profileB.medianRent && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                   {profileA.rentBuyGapMonthly > profileB.rentBuyGapMonthly ? (
                     <>Renting in {townA} costs significantly more than buying, widening the ownership advantage.</>
@@ -858,6 +1044,7 @@ function CompareTownsPageContent() {
                       <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                      {townC && profileC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -871,11 +1058,18 @@ function CompareTownsPageContent() {
                         <span className="font-semibold">{Math.round(profileB.medianRemainingLease)} yrs</span>
                         {(profileB.signals.leaseRisk === 'high' || profileB.signals.leaseRisk === 'critical') && <span className="ml-2 text-amber-600">⚠️</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          <span className="font-semibold">{Math.round(profileC.medianRemainingLease)} yrs</span>
+                          {(profileC.signals.leaseRisk === 'high' || profileC.signals.leaseRisk === 'critical') && <span className="ml-2 text-amber-600">⚠️</span>}
+                        </td>
+                      )}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">% of transactions &lt; 55 yrs</td>
                       <td className="py-4 px-4 text-right text-gray-800">{(profileA.pctTxBelow55 * 100).toFixed(0)}%</td>
                       <td className="py-4 px-4 text-right text-gray-800">{(profileB.pctTxBelow55 * 100).toFixed(0)}%</td>
+                      {townC && profileC && <td className="py-4 px-4 text-right text-gray-800">{(profileC.pctTxBelow55 * 100).toFixed(0)}%</td>}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Price per sqm trend</td>
@@ -885,10 +1079,16 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">
                         {profileB.signals.pricingResponse === 'early_discount' ? <span className="text-amber-600 font-medium">Early discount</span> : profileB.signals.pricingResponse === 'premium' ? <span className="text-green-600 font-medium">Premium</span> : <span className="text-green-600 font-medium">Stable</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          {profileC.signals.pricingResponse === 'early_discount' ? <span className="text-amber-600 font-medium">Early discount</span> : profileC.signals.pricingResponse === 'premium' ? <span className="text-green-600 font-medium">Premium</span> : <span className="text-green-600 font-medium">Stable</span>}
+                        </td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
               </div>
+              {!townC && (
               <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm text-gray-700">
                 {profileA.medianRemainingLease < profileB.medianRemainingLease - 5 ? (
                   <>{townA} shows earlier market discounting due to lease decay.</>
@@ -896,6 +1096,7 @@ function CompareTownsPageContent() {
                   <>{townB} shows earlier market discounting due to lease decay.</>
                 )}
               </div>
+              )}
               <div className="mt-3 text-xs text-gray-500 italic">
                 Flats with remaining lease below ~60 years may face tighter financing and resale constraints.
               </div>
@@ -924,6 +1125,7 @@ function CompareTownsPageContent() {
                           <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                           <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                           <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                          {townC && spiC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -949,11 +1151,23 @@ function CompareTownsPageContent() {
                               {spiB.level === 'low' ? '🟢 Low' : spiB.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
                             </span>
                           </td>
+                          {townC && spiC && (
+                            <td className="py-4 px-4 text-right">
+                              <span className="font-bold text-gray-900">{spiC.spi}</span>
+                              <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
+                                spiC.level === 'low' ? 'bg-green-100 text-green-700' :
+                                spiC.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {spiC.level === 'low' ? '🟢 Low' : spiC.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                              </span>
+                            </td>
+                          )}
                         </tr>
                       </tbody>
                     </table>
                   </div>
-                  {spiA.spi !== spiB.spi && (
+                  {!townC && spiA.spi !== spiB.spi && (
                     <div className="p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                       Moving from {spiA.spi < spiB.spi ? townA : townB} → {spiA.spi < spiB.spi ? townB : townA} {spiA.spi < spiB.spi ? 'increases' : 'decreases'} school pressure.
                     </div>
@@ -991,6 +1205,7 @@ function CompareTownsPageContent() {
                       <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                       <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                      {townC && profileC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -1002,6 +1217,11 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">
                         {profileB.volumeRecent > profileA.volumeRecent * 1.2 ? <span className="font-semibold text-green-600">High</span> : profileB.volumeRecent < profileA.volumeRecent * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          {profileC.volumeRecent > Math.max(profileA.volumeRecent, profileB.volumeRecent) * 1.2 ? <span className="font-semibold text-green-600">High</span> : profileC.volumeRecent < Math.min(profileA.volumeRecent, profileB.volumeRecent) * 0.8 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold">Moderate</span>}
+                        </td>
+                      )}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Price volatility (12m)</td>
@@ -1011,6 +1231,11 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">
                         {profileB.volatility12m > profileA.volatility12m * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          {profileC.volatility12m > Math.max(profileA.volatility12m, profileB.volatility12m) * 1.2 ? <span className="font-semibold text-amber-600">Higher</span> : <span className="font-semibold text-green-600">Lower</span>}
+                        </td>
+                      )}
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="py-4 px-4 text-gray-700 font-medium">Liquidity risk</td>
@@ -1020,11 +1245,16 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">
                         {profileB.volumeRecent < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
                       </td>
+                      {townC && profileC && (
+                        <td className="py-4 px-4 text-right text-gray-800">
+                          {profileC.volumeRecent < 50 ? <span className="font-semibold text-amber-600">Moderate</span> : <span className="font-semibold text-green-600">Low</span>}
+                        </td>
+                      )}
                     </tr>
                   </tbody>
                 </table>
               </div>
-              {(profileA.volumeRecent < 50 || profileB.volumeRecent < 50) && (
+              {!townC && (profileA.volumeRecent < 50 || profileB.volumeRecent < 50) && (
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                   Lower volume towns may show larger price swings.
                 </div>
@@ -1066,6 +1296,7 @@ function CompareTownsPageContent() {
                           <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                           <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                           <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                          {townC && landscapeC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -1073,6 +1304,7 @@ function CompareTownsPageContent() {
                           <td className="py-4 px-4 text-gray-700 font-medium">Number of primary schools</td>
                           <td className="py-4 px-4 text-right font-bold text-gray-900">{landscapeA.schoolCount}</td>
                           <td className="py-4 px-4 text-right font-bold text-gray-900">{landscapeB.schoolCount}</td>
+                          {townC && landscapeC && <td className="py-4 px-4 text-right font-bold text-gray-900">{landscapeC.schoolCount}</td>}
                         </tr>
                         <tr className="hover:bg-gray-50">
                           <td className="py-4 px-4 text-gray-700 font-medium">High-demand schools (≥251)</td>
@@ -1082,6 +1314,11 @@ function CompareTownsPageContent() {
                           <td className="py-4 px-4 text-right text-gray-800">
                             {landscapeB.highDemandSchools === 0 ? '—' : landscapeB.highDemandSchools}
                           </td>
+                          {townC && landscapeC && (
+                            <td className="py-4 px-4 text-right text-gray-800">
+                              {landscapeC.highDemandSchools === 0 ? '—' : landscapeC.highDemandSchools}
+                            </td>
+                          )}
                         </tr>
                         <tr className="hover:bg-gray-50">
                           <td className="py-4 px-4 text-gray-700 font-medium">Low cut-off schools (≤230)</td>
@@ -1091,6 +1328,11 @@ function CompareTownsPageContent() {
                           <td className="py-4 px-4 text-right text-gray-800">
                             {landscapeB.cutoffDistribution.low === 0 ? '—' : landscapeB.cutoffDistribution.low}
                           </td>
+                          {townC && landscapeC && (
+                            <td className="py-4 px-4 text-right text-gray-800">
+                              {landscapeC.cutoffDistribution.low === 0 ? '—' : landscapeC.cutoffDistribution.low}
+                            </td>
+                          )}
                         </tr>
                         <tr className="hover:bg-gray-50">
                           <td className="py-4 px-4 text-gray-700 font-medium">Mid cut-off schools (231-250)</td>
@@ -1100,10 +1342,16 @@ function CompareTownsPageContent() {
                           <td className="py-4 px-4 text-right text-gray-800">
                             {landscapeB.cutoffDistribution.mid === 0 ? '—' : landscapeB.cutoffDistribution.mid}
                           </td>
+                          {townC && landscapeC && (
+                            <td className="py-4 px-4 text-right text-gray-800">
+                              {landscapeC.cutoffDistribution.mid === 0 ? '—' : landscapeC.cutoffDistribution.mid}
+                            </td>
+                          )}
                         </tr>
                       </tbody>
                     </table>
                   </div>
+                  {!townC && (
                   <div className="p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                     {landscapeA.schoolCount > landscapeB.schoolCount ? (
                       <>{townA} offers more primary school options ({landscapeA.schoolCount} vs {landscapeB.schoolCount}), providing greater flexibility in school selection.</>
@@ -1113,6 +1361,7 @@ function CompareTownsPageContent() {
                       <>Both towns offer similar numbers of primary schools ({landscapeA.schoolCount} each).</>
                     )}
                   </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -1141,7 +1390,7 @@ function CompareTownsPageContent() {
                   description="Daily commuting time and accessibility structure"
                   icon={<Clock className="w-6 h-6" />}
                 >
-                  {compareSummary && compareSummary.timeAccess ? (
+                  {((compareSummary && compareSummary.timeAccess) || (timeAccessA && timeAccessB)) ? (
                     <div className="space-y-4">
                       <div className="overflow-x-auto">
                         <table className="w-full">
@@ -1150,6 +1399,7 @@ function CompareTownsPageContent() {
                               <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
                               <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
                               <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                              {townC && timeAccessC && <th className="text-right py-4 px-4 font-bold text-gray-900">{townC}</th>}
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-200">
@@ -1157,67 +1407,98 @@ function CompareTownsPageContent() {
                               <td className="py-4 px-4 text-gray-700 font-medium">Daily time burden</td>
                               <td className="py-4 px-4 text-right">
                                 <span className={`font-semibold ${
-                                  compareSummary.timeAccess.timeBurdenA === 'high' ? 'text-red-600' :
-                                  compareSummary.timeAccess.timeBurdenA === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                                  (compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'high' ? 'text-red-600' :
+                                  (compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'medium' ? 'text-yellow-600' : 'text-green-600'
                                 }`}>
-                                  {compareSummary.timeAccess.timeBurdenA === 'high' ? 'High' :
-                                   compareSummary.timeAccess.timeBurdenA === 'medium' ? 'Medium' : 'Low'}
+                                  {(compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'high' ? 'High' :
+                                   (compareSummary?.timeAccess?.timeBurdenA || getTimeBurdenLevel(timeAccessA)) === 'medium' ? 'Medium' : 'Low'}
                                 </span>
                               </td>
                               <td className="py-4 px-4 text-right">
                                 <span className={`font-semibold ${
-                                  compareSummary.timeAccess.timeBurdenB === 'high' ? 'text-red-600' :
-                                  compareSummary.timeAccess.timeBurdenB === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                                  (compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'high' ? 'text-red-600' :
+                                  (compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'medium' ? 'text-yellow-600' : 'text-green-600'
                                 }`}>
-                                  {compareSummary.timeAccess.timeBurdenB === 'high' ? 'High' :
-                                   compareSummary.timeAccess.timeBurdenB === 'medium' ? 'Medium' : 'Low'}
+                                  {(compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'high' ? 'High' :
+                                   (compareSummary?.timeAccess?.timeBurdenB || getTimeBurdenLevel(timeAccessB)) === 'medium' ? 'Medium' : 'Low'}
                                 </span>
                               </td>
+                              {townC && timeAccessC && (
+                                <td className="py-4 px-4 text-right">
+                                  <span className={`font-semibold ${
+                                    getTimeBurdenLevel(timeAccessC) === 'high' ? 'text-red-600' :
+                                    getTimeBurdenLevel(timeAccessC) === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                                  }`}>
+                                    {getTimeBurdenLevel(timeAccessC) === 'high' ? 'High' :
+                                     getTimeBurdenLevel(timeAccessC) === 'medium' ? 'Medium' : 'Low'}
+                                  </span>
+                                </td>
+                              )}
                             </tr>
-                            {compareSummary.timeAccess.townA && compareSummary.timeAccess.townB && (
+                            {((compareSummary?.timeAccess?.townA && compareSummary?.timeAccess?.townB) || (timeAccessA && timeAccessB)) && (
                               <>
                                 <tr className="hover:bg-gray-50">
                                   <td className="py-4 px-4 text-gray-700 font-medium">Centrality</td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townA.centrality.replace('_', ' ')}
+                                    {(compareSummary?.timeAccess?.townA || timeAccessA)?.centrality.replace('_', ' ') || 'N/A'}
                                   </td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townB.centrality.replace('_', ' ')}
+                                    {(compareSummary?.timeAccess?.townB || timeAccessB)?.centrality.replace('_', ' ') || 'N/A'}
                                   </td>
+                                  {townC && timeAccessC && (
+                                    <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                      {timeAccessC.centrality.replace('_', ' ')}
+                                    </td>
+                                  )}
                                 </tr>
                                 <tr className="hover:bg-gray-50">
                                   <td className="py-4 px-4 text-gray-700 font-medium">MRT Density</td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townA.mrtDensity}
+                                    {(compareSummary?.timeAccess?.townA || timeAccessA)?.mrtDensity || 'N/A'}
                                   </td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townB.mrtDensity}
+                                    {(compareSummary?.timeAccess?.townB || timeAccessB)?.mrtDensity || 'N/A'}
                                   </td>
+                                  {townC && timeAccessC && (
+                                    <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                      {timeAccessC.mrtDensity}
+                                    </td>
+                                  )}
                                 </tr>
                                 <tr className="hover:bg-gray-50">
                                   <td className="py-4 px-4 text-gray-700 font-medium">Transfer Complexity</td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townA.transferComplexity.replace('_', ' ')}
+                                    {(compareSummary?.timeAccess?.townA || timeAccessA)?.transferComplexity.replace('_', ' ') || 'N/A'}
                                   </td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townB.transferComplexity.replace('_', ' ')}
+                                    {(compareSummary?.timeAccess?.townB || timeAccessB)?.transferComplexity.replace('_', ' ') || 'N/A'}
                                   </td>
+                                  {townC && timeAccessC && (
+                                    <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                      {timeAccessC.transferComplexity.replace('_', ' ')}
+                                    </td>
+                                  )}
                                 </tr>
                                 <tr className="hover:bg-gray-50">
                                   <td className="py-4 px-4 text-gray-700 font-medium">Regional Hub Access</td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townA.regionalHubAccess}
+                                    {(compareSummary?.timeAccess?.townA || timeAccessA)?.regionalHubAccess || 'N/A'}
                                   </td>
                                   <td className="py-4 px-4 text-right text-gray-800 capitalize">
-                                    {compareSummary.timeAccess.townB.regionalHubAccess}
+                                    {(compareSummary?.timeAccess?.townB || timeAccessB)?.regionalHubAccess || 'N/A'}
                                   </td>
+                                  {townC && timeAccessC && (
+                                    <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                      {timeAccessC.regionalHubAccess}
+                                    </td>
+                                  )}
                                 </tr>
                               </>
                             )}
                           </tbody>
                         </table>
                       </div>
-                      {compareSummary.timeAccess.movingImpact && (
+                      {compareSummary?.timeAccess?.movingImpact && (
                         <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                           <p className="text-sm font-semibold text-gray-900 mb-2">
                             Moving from {townA} → {townB}:
@@ -1244,8 +1525,8 @@ function CompareTownsPageContent() {
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       Time & Access data not available for one or both towns.
-                    </div>
-                  )}
+                </div>
+              )}
                 </ChartCard>
               )}
             </div>

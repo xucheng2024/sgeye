@@ -236,3 +236,23 @@ export interface CompareSummary {
   } | null
 }
 
+// 3 Town Compare Summary (no ranking, just suitability)
+export interface ThreeTownCompareSummary {
+  planningHorizon: 'short' | 'medium' | 'long'
+  overallTendencies: {
+    townA: string // e.g., "Best affordability & flexibility"
+    townB: string // e.g., "Most balanced long-term option"
+    townC: string // e.g., "Lowest school pressure"
+  }
+  keyDifferences: {
+    affordability: string // e.g., "Town A has the lowest entry cost"
+    lease: string // e.g., "Town B shows the healthiest lease profile"
+    schoolPressure: string // e.g., "Town C has consistently lower SPI"
+    timeBurden?: string // Optional
+  }
+  recommendation: {
+    ifLongTerm: string // e.g., "If long-term stability matters most, Town B stands out."
+    ifAffordability: string // e.g., "If affordability matters more, Town A remains attractive."
+  }
+}
+
