@@ -568,6 +568,29 @@ export default function CompareTownsPage() {
               </div>
             </div>
 
+            {/* Bottom Line (Top Section) */}
+            {compareSummary.bottomLine && (
+              <div className="mb-6 p-5 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">🧭</span>
+                  <h4 className="text-lg font-bold text-gray-900">Bottom Line</h4>
+                </div>
+                <p className="text-sm font-semibold text-gray-800 mb-3">
+                  If you move from {townA} → {townB}:
+                </p>
+                <ul className="space-y-2 mb-4">
+                  {compareSummary.bottomLine.changes.map((change, idx) => (
+                    <li key={idx} className="text-sm text-gray-800">
+                      {change}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm font-semibold text-gray-900 border-t border-gray-200 pt-3">
+                  {compareSummary.bottomLine.bestFor}
+                </p>
+              </div>
+            )}
+
             {/* Block 1: Headline Verdict */}
             <div className="mb-6">
               <p className="text-lg font-bold text-gray-900 leading-relaxed">
@@ -587,9 +610,22 @@ export default function CompareTownsPage() {
                 <div className="text-sm text-gray-800 whitespace-pre-line mb-2">
                   {compareSummary.educationPressure.comparison}
                 </div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 mb-2">
                   {compareSummary.educationPressure.explanation}
                 </p>
+                {compareSummary.educationPressure.pressureRangeNote && (
+                  <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-xs font-semibold text-gray-900 mb-1">Pressure scale:</p>
+                    <div className="text-xs text-gray-700 space-y-1 mb-2">
+                      <div>0–20 🟢 Low pressure</div>
+                      <div>20–40 🟡 Moderate pressure</div>
+                      <div>40+ 🔴 High pressure</div>
+                    </div>
+                    <p className="text-xs text-gray-800 italic">
+                      {compareSummary.educationPressure.pressureRangeNote}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -711,6 +747,80 @@ export default function CompareTownsPage() {
           </div>
         ) : profileA && profileB ? (
           <>
+            {/* Moving Pressure: What Changes (Second Screen - Most Important) */}
+            {spiA && spiB && profileA && profileB && (
+              <ChartCard
+                title="Moving Pressure: What Changes"
+                description="Compare the impact of moving from one town to another"
+                icon={<Map className="w-6 h-6" />}
+              >
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">
+                      Move from: <span className="font-bold">{townA}</span> → <span className="font-bold">{townB}</span>
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Education Pressure:</span>
+                        <span className={`text-sm font-semibold ${
+                          spiB.spi > spiA.spi ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {spiB.spi > spiA.spi ? '+' : ''}{Math.round((spiB.spi - spiA.spi) * 10) / 10} {spiB.spi > spiA.spi ? '🔺' : '🔻'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Entry Price:</span>
+                        <span className={`text-sm font-semibold ${
+                          profileB.medianResalePrice > profileA.medianResalePrice ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {profileB.medianResalePrice > profileA.medianResalePrice ? '+' : ''}{formatCurrency(Math.abs(profileB.medianResalePrice - profileA.medianResalePrice))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Remaining Lease:</span>
+                        <span className={`text-sm font-semibold ${
+                          profileB.medianRemainingLease > profileA.medianRemainingLease ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {profileB.medianRemainingLease > profileA.medianRemainingLease ? '+' : ''}{Math.round(Math.abs(profileB.medianRemainingLease - profileA.medianRemainingLease))} years
+                        </span>
+                      </div>
+                      {profileA.medianRent && profileB.medianRent && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Rent vs Buy Gap:</span>
+                          <span className={`text-sm font-semibold ${
+                            profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? '' : '+'}{formatCurrency(profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly)} / month
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-800 italic">
+                      {(() => {
+                        const priceHigher = profileB.medianResalePrice > profileA.medianResalePrice
+                        const leaseBetter = profileB.medianRemainingLease > profileA.medianRemainingLease
+                        const spiHigher = spiB.spi > spiA.spi
+                        
+                        if (priceHigher && leaseBetter && spiHigher) {
+                          return `You pay more upfront to reduce lease risk, but face higher school competition.`
+                        } else if (priceHigher && leaseBetter && !spiHigher) {
+                          return `You pay more upfront to reduce lease risk and enjoy lower school pressure.`
+                        } else if (!priceHigher && !leaseBetter && spiHigher) {
+                          return `You save on entry cost but face higher lease risk and school competition.`
+                        } else if (!priceHigher && !leaseBetter && !spiHigher) {
+                          return `You save on entry cost and enjoy lower school pressure, but face higher lease risk.`
+                        } else {
+                          return `This move presents a balance between housing costs, lease security, and school environment.`
+                        }
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </ChartCard>
+            )}
+
             {/* Module A: Price & Cash Flow */}
             <ChartCard
               title="Price & Cash Flow"
@@ -904,80 +1014,6 @@ export default function CompareTownsPage() {
                 </div>
               )}
             </ChartCard>
-
-            {/* Module D: Moving Pressure Visualization */}
-            {spiA && spiB && profileA && profileB && (
-              <ChartCard
-                title="Moving Pressure: What Changes"
-                description="Compare the impact of moving from one town to another"
-                icon={<Map className="w-6 h-6" />}
-              >
-                <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                    <p className="text-sm font-semibold text-gray-900 mb-3">
-                      Move from: <span className="font-bold">{townA}</span> → <span className="font-bold">{townB}</span>
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Education Pressure:</span>
-                        <span className={`text-sm font-semibold ${
-                          spiB.spi > spiA.spi ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {spiB.spi > spiA.spi ? '+' : ''}{Math.round((spiB.spi - spiA.spi) * 10) / 10} {spiB.spi > spiA.spi ? '🔺' : '🔻'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Entry Price:</span>
-                        <span className={`text-sm font-semibold ${
-                          profileB.medianResalePrice > profileA.medianResalePrice ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {profileB.medianResalePrice > profileA.medianResalePrice ? '+' : ''}{formatCurrency(Math.abs(profileB.medianResalePrice - profileA.medianResalePrice))}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-700">Remaining Lease:</span>
-                        <span className={`text-sm font-semibold ${
-                          profileB.medianRemainingLease > profileA.medianRemainingLease ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {profileB.medianRemainingLease > profileA.medianRemainingLease ? '+' : ''}{Math.round(Math.abs(profileB.medianRemainingLease - profileA.medianRemainingLease))} years
-                        </span>
-                      </div>
-                      {profileA.medianRent && profileB.medianRent && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">Rent vs Buy Gap:</span>
-                          <span className={`text-sm font-semibold ${
-                            profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? 'text-red-600' : 'text-green-600'
-                          }`}>
-                            {profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? '' : '+'}{formatCurrency(profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly)} / month
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-800 italic">
-                      {(() => {
-                        const priceHigher = profileB.medianResalePrice > profileA.medianResalePrice
-                        const leaseBetter = profileB.medianRemainingLease > profileA.medianRemainingLease
-                        const spiHigher = spiB.spi > spiA.spi
-                        
-                        if (priceHigher && leaseBetter && spiHigher) {
-                          return `You pay more upfront to reduce lease risk, but face higher school competition.`
-                        } else if (priceHigher && leaseBetter && !spiHigher) {
-                          return `You pay more upfront to reduce lease risk and enjoy lower school pressure.`
-                        } else if (!priceHigher && !leaseBetter && spiHigher) {
-                          return `You save on entry cost but face higher lease risk and school competition.`
-                        } else if (!priceHigher && !leaseBetter && !spiHigher) {
-                          return `You save on entry cost and enjoy lower school pressure, but face higher lease risk.`
-                        } else {
-                          return `This move presents a balance between housing costs, lease security, and school environment.`
-                        }
-                      })()}
-                    </p>
-                  </div>
-                </div>
-              </ChartCard>
-            )}
 
             {/* Module E: Market Stability */}
             <ChartCard

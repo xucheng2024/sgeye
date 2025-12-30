@@ -691,11 +691,18 @@ export interface TownProfile {
 
 // Compare Summary output
 export interface CompareSummary {
+  // Bottom Line (new top section)
+  bottomLine: {
+    changes: string[] // List of changes (👍, ⚠, 💰)
+    bestFor: string // Best for statement
+  } | null
+  
   // Fixed 5-block structure
   headlineVerdict: string // Block 1: Headline Verdict
   educationPressure: {
     comparison: string // SPI comparison text
     explanation: string // Additional explanation
+    pressureRangeNote?: string // Pressure range explanation
   } | null // Block 2: Education Pressure Comparison
   housingTradeoff: {
     price: string | null
@@ -966,6 +973,71 @@ export function generateCompareSummary(
   }
   
   // ============================================
+  // Bottom Line (Top Section)
+  // ============================================
+  let bottomLine: CompareSummary['bottomLine'] = null
+  if (profileA && profileB) {
+    const changes: string[] = []
+    
+    // Lease security change
+    if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
+      if (leaseDiff < 0) {
+        changes.push('👍 Lease security improves significantly')
+      } else {
+        changes.push('⚠ Lease security decreases')
+      }
+    }
+    
+    // School pressure change
+    if (spiA && spiB && Math.abs(spiDiff) >= SPI_SIGNIFICANT) {
+      if (spiDiff < 0) {
+        changes.push('👍 School pressure decreases')
+      } else {
+        changes.push('⚠ School pressure increases slightly')
+      }
+    } else if (spiA && spiB && Math.abs(spiDiff) > 0) {
+      if (spiDiff < 0) {
+        changes.push('👍 School pressure decreases slightly')
+      } else {
+        changes.push('⚠ School pressure increases slightly')
+      }
+    }
+    
+    // Price change
+    if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
+      if (priceDiff < 0) {
+        changes.push('💰 Lower upfront price')
+      } else {
+        changes.push('💰 Higher upfront price')
+      }
+    }
+    
+    // Monthly affordability (rent vs buy gap)
+    if (profileA.medianRent && profileB.medianRent) {
+      const rentGapDiff = profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly
+      if (Math.abs(rentGapDiff) < 200) {
+        changes.push('💰 Similar monthly affordability')
+      }
+    }
+    
+    // Generate "Best for" statement
+    let bestFor = ''
+    if (spiA && spiB && leaseDiff < -LEASE_SIGNIFICANT) {
+      bestFor = `Best for families planning long-term ownership and prioritising lease stability.`
+    } else if (spiA && spiB && spiDiff < -SPI_SIGNIFICANT) {
+      bestFor = `Best for families prioritising lower primary school pressure.`
+    } else if (priceDiff < -PRICE_SIGNIFICANT) {
+      bestFor = `Best for buyers prioritising lower upfront cost.`
+    } else {
+      bestFor = `Both towns offer viable options — choose based on your priorities.`
+    }
+    
+    if (changes.length > 0) {
+      bottomLine = { changes, bestFor }
+    }
+  }
+  
+  // ============================================
   // Block 2: Education Pressure Comparison
   // ============================================
   let educationPressure: CompareSummary['educationPressure'] = null
@@ -981,7 +1053,19 @@ export function generateCompareSummary(
       explanation = `Both towns offer similar school competition levels.`
     }
     
-    educationPressure = { comparison, explanation }
+    // Add pressure range note
+    let pressureRangeNote = ''
+    if (spiA.spi <= 20 && spiB.spi <= 20) {
+      pressureRangeNote = `Both towns fall within the Low pressure range (0–20), meaning primary school competition is generally manageable.`
+    } else if (spiA.spi <= 40 && spiB.spi <= 40 && spiA.spi > 20 && spiB.spi > 20) {
+      pressureRangeNote = `Both towns fall within the Moderate pressure range (20–40), with moderate competition levels.`
+    } else if (spiA.spi > 40 || spiB.spi > 40) {
+      pressureRangeNote = `One or both towns have higher pressure (40+), indicating more concentrated competition.`
+    } else {
+      pressureRangeNote = `Both towns fall within manageable pressure ranges, meaning primary school competition is generally manageable.`
+    }
+    
+    educationPressure = { comparison, explanation, pressureRangeNote }
   } else if (spiA || spiB) {
     // Show partial data if only one town has SPI data
     const availableTown = spiA ? A.town : B.town
@@ -1142,6 +1226,8 @@ export function generateCompareSummary(
   else badges.push({ town: 'B', label: 'Lease healthier', tone: 'good' })
 
   return {
+    // Bottom Line (top section)
+    bottomLine,
     // New 5-block structure
     headlineVerdict,
     educationPressure,
