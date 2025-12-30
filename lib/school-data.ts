@@ -547,10 +547,27 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
 // Get school landscape for a town
 export async function getSchoolLandscape(town: string): Promise<SchoolLandscape | null> {
   try {
-    const { data: schools, error: schoolsError } = await supabase
+    // Clean town name - remove quotes if present
+    const cleanTown = town.replace(/^["']|["']$/g, '').trim()
+    
+    // Fetch schools in this town - try exact match first (without quotes)
+    let { data: schools, error: schoolsError } = await supabase
       .from('primary_schools')
       .select('*')
-      .eq('town', town)
+      .eq('town', cleanTown)
+    
+    // If no results, try with quotes (in case data was imported with quotes)
+    if ((!schools || schools.length === 0) && !schoolsError) {
+      const { data: schoolsWithQuotes, error: quotesError } = await supabase
+        .from('primary_schools')
+        .select('*')
+        .eq('town', `"${cleanTown}"`)
+      
+      if (!quotesError && schoolsWithQuotes && schoolsWithQuotes.length > 0) {
+        schools = schoolsWithQuotes
+        schoolsError = null
+      }
+    }
 
     if (schoolsError) throw schoolsError
     if (!schools || schools.length === 0) return null

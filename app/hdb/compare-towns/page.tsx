@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary } from '@/lib/hdb-data'
-import { calculateSchoolPressureIndex, SchoolPressureIndex } from '@/lib/school-data'
+import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
 import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
@@ -391,6 +391,8 @@ export default function CompareTownsPage() {
   const [profileB, setProfileB] = useState<TownProfile | null>(null)
   const [spiA, setSpiA] = useState<SchoolPressureIndex | null>(null)
   const [spiB, setSpiB] = useState<SchoolPressureIndex | null>(null)
+  const [landscapeA, setLandscapeA] = useState<SchoolLandscape | null>(null)
+  const [landscapeB, setLandscapeB] = useState<SchoolLandscape | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -399,16 +401,20 @@ export default function CompareTownsPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const [resultA, resultB, spiResultA, spiResultB] = await Promise.all([
+        const [resultA, resultB, spiResultA, spiResultB, landscapeResultA, landscapeResultB] = await Promise.all([
           getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
           getTownProfile(townB, flatType, 24),
           calculateSchoolPressureIndex(townA),
           calculateSchoolPressureIndex(townB),
+          getSchoolLandscape(townA),
+          getSchoolLandscape(townB),
         ])
         setProfileA(resultA)
         setProfileB(resultB)
         setSpiA(spiResultA)
         setSpiB(spiResultB)
+        setLandscapeA(landscapeResultA)
+        setLandscapeB(landscapeResultB)
         
         // Debug logging
         console.log('SPI Data:', {
@@ -416,6 +422,8 @@ export default function CompareTownsPage() {
           townB,
           spiA: spiResultA,
           spiB: spiResultB,
+          landscapeA: landscapeResultA,
+          landscapeB: landscapeResultB,
         })
       } catch (error) {
         console.error('Error fetching comparison data:', error)
@@ -1030,15 +1038,74 @@ export default function CompareTownsPage() {
               </div>
             </ChartCard>
 
-            {/* Module D: School Access (Coming soon) */}
+            {/* Module D: School Access */}
             <ChartCard
               title="School Access"
               description="Primary school proximity and options"
               icon={<Map className="w-6 h-6" />}
             >
-              <div className="flex items-center justify-center h-32 text-gray-400">
-                <p>Coming soon</p>
-              </div>
+              {landscapeA && landscapeB ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-300 bg-gray-50">
+                          <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
+                          <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
+                          <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-4 px-4 text-gray-700 font-medium">Number of primary schools</td>
+                          <td className="py-4 px-4 text-right font-bold text-gray-900">{landscapeA.schoolCount}</td>
+                          <td className="py-4 px-4 text-right font-bold text-gray-900">{landscapeB.schoolCount}</td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-4 px-4 text-gray-700 font-medium">High-demand schools (≥251)</td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeA.highDemandSchools === 0 ? '—' : landscapeA.highDemandSchools}
+                          </td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeB.highDemandSchools === 0 ? '—' : landscapeB.highDemandSchools}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-4 px-4 text-gray-700 font-medium">Low cut-off schools (≤230)</td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeA.cutoffDistribution.low === 0 ? '—' : landscapeA.cutoffDistribution.low}
+                          </td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeB.cutoffDistribution.low === 0 ? '—' : landscapeB.cutoffDistribution.low}
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-4 px-4 text-gray-700 font-medium">Mid cut-off schools (231-250)</td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeA.cutoffDistribution.mid === 0 ? '—' : landscapeA.cutoffDistribution.mid}
+                          </td>
+                          <td className="py-4 px-4 text-right text-gray-800">
+                            {landscapeB.cutoffDistribution.mid === 0 ? '—' : landscapeB.cutoffDistribution.mid}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
+                    {landscapeA.schoolCount > landscapeB.schoolCount ? (
+                      <>{townA} offers more primary school options ({landscapeA.schoolCount} vs {landscapeB.schoolCount}), providing greater flexibility in school selection.</>
+                    ) : landscapeB.schoolCount > landscapeA.schoolCount ? (
+                      <>{townB} offers more primary school options ({landscapeB.schoolCount} vs {landscapeA.schoolCount}), providing greater flexibility in school selection.</>
+                    ) : (
+                      <>Both towns offer similar numbers of primary schools ({landscapeA.schoolCount} each).</>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  School access data not available for one or both towns.
+                </div>
+              )}
             </ChartCard>
 
             {/* Decision Guidance */}
