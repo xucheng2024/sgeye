@@ -234,6 +234,13 @@ export async function generateCompareSummary(
   // ============================================
   // Fetch Time & Access data
   // ============================================
+  // IMPORTANT: Transport/Time & Access rules (Phase 2 v1):
+  // 1. Transport does NOT participate in scoring (not in generateStandardizedScores)
+  // 2. Transport does NOT influence recommendation (not in recommendation headline/decision)
+  // 3. Transport ONLY appears in trade-offs (bottomLine.changes, movingPhrase)
+  // 
+  // Allowed: "This move improves lease safety, but increases daily time burden."
+  // NOT allowed: "Therefore choose A instead of B" (based on transport)
   const [timeAccessA, timeAccessB] = await Promise.all([
     getTownTimeAccess(A.town),
     getTownTimeAccess(B.town),

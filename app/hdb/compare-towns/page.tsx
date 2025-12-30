@@ -1233,6 +1233,13 @@ function CompareTownsPageContent() {
                           This helps you understand long-term daily time burden differences between towns.
                         </p>
                       </div>
+                      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 mt-3">
+                        <p className="text-xs font-semibold text-gray-900 mb-1">⚠️ Important:</p>
+                        <p className="text-xs text-gray-700">
+                          Transport differences are shown as trade-offs only. They do not affect the recommendation or scoring. 
+                          Transport rarely changes which flat you buy, but often determines how long you can comfortably stay.
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
