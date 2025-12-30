@@ -399,6 +399,10 @@ export default function CompareTownsPage() {
   const [preferenceLens, setPreferenceLens] = useState<'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'>('balanced')
   const [holdingPeriod, setHoldingPeriod] = useState<'short' | 'medium' | 'long'>('medium')
   const [evidenceOpen, setEvidenceOpen] = useState(false)
+  const [priceOpen, setPriceOpen] = useState(true)
+  const [leaseOpen, setLeaseOpen] = useState(true)
+  const [marketOpen, setMarketOpen] = useState(false)
+  const [schoolAccessOpen, setSchoolAccessOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -456,8 +460,8 @@ export default function CompareTownsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live?</h1>
-          <p className="text-lg text-gray-600 mb-2">Compare towns by price, lease risk, rent pressure, and primary school pressure.</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live — given our priorities?</h1>
+          <p className="text-lg text-gray-600 mb-2">Compare towns by cost, lease safety, rent pressure, and primary school competition — and see what changes when you move.</p>
         </div>
       </header>
 
@@ -603,6 +607,9 @@ export default function CompareTownsPage() {
               </div>
             </label>
           </div>
+          <p className="text-xs text-gray-500 italic mb-4 text-center">
+            This does not change the data — only how the recommendation is framed.
+          </p>
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <input
               type="checkbox"
@@ -639,20 +646,65 @@ export default function CompareTownsPage() {
               )}
             </div>
 
-            {/* Recommendation Headline */}
-            <div className="mb-6">
-              <p className="text-xl font-bold text-gray-900 leading-relaxed">
-                {compareSummary.recommendation.headline}
-              </p>
-            </div>
-
-            {/* Trade-off bullets (3 fixed format) */}
-            <div className="mb-6 space-y-2">
-              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => (
-                <div key={idx} className="text-sm text-gray-800">
-                  {tradeoff}
+            {/* Verdict-style Recommendation */}
+            <div className="space-y-6">
+              {/* Main recommendation */}
+              <div className="p-5 bg-white rounded-lg border-2 border-blue-300">
+                <p className="text-sm font-semibold text-gray-600 mb-3">
+                  {preferenceLens === 'balanced' 
+                    ? 'If you value a balanced trade-off:'
+                    : preferenceLens === 'lower_cost'
+                    ? 'If you prioritise lower upfront cost:'
+                    : preferenceLens === 'lease_safety'
+                    ? 'If you prioritise long-term lease safety:'
+                    : 'If you prioritise lower school pressure:'}
+                </p>
+                <p className="text-xl font-bold text-gray-900 mb-4">
+                  → {(() => {
+                    const headline = compareSummary.recommendation.headline
+                    if (headline.includes('Choose ')) {
+                      const town = headline.match(/Choose ([^ ]+)/)?.[1] || ''
+                      return `${town} is the better overall choice.`
+                    }
+                    return headline
+                  })()}
+                </p>
+                
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Why:</p>
+                  <ul className="space-y-1.5">
+                    {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => {
+                      // Extract key points from tradeoffs
+                      const point = tradeoff.replace(/💰 |🧱 |🎓 /, '').replace(/^[^:]+: /, '')
+                      return (
+                        <li key={idx} className="text-sm text-gray-800 flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>{point}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 </div>
-              ))}
+              </div>
+
+              {/* Alternative recommendation (if long-term holding) */}
+              {holdingPeriod === 'long' && compareSummary.recommendation.tradeoffs.some(t => t.includes('Lease')) && (
+                <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm font-semibold text-gray-600 mb-3">
+                    If you plan to hold long-term (15+ years):
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 mb-2">
+                    → Consider {compareSummary.recommendation.headline.includes(townA) ? townB : townA} for stronger lease safety.
+                  </p>
+                </div>
+              )}
+
+              {/* Final note */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-gray-700 italic">
+                  This is not a &quot;right vs wrong&quot; choice — it depends on what you optimize for.
+                </p>
+              </div>
             </div>
 
             {/* See the evidence button */}
@@ -693,13 +745,18 @@ export default function CompareTownsPage() {
               {/* Four-line changes */}
               <div className="space-y-3">
                 {/* SPI Change */}
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">SPI change:</span>
-                  <span className={`text-sm font-semibold ${
-                    compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChangeText}
-                  </span>
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">SPI change:</span>
+                    <span className={`text-sm font-semibold ${
+                      compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChangeText}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 italic mt-1">
+                    In practice: unlikely to change daily study stress unless targeting specific elite schools.
+                  </p>
                 </div>
 
                 {/* High-demand schools */}
@@ -1002,11 +1059,23 @@ export default function CompareTownsPage() {
             )}
 
             {/* Module A: Price & Cash Flow */}
-            <ChartCard
-              title="Price & Cash Flow"
-              description="Monthly costs and rental comparison"
-              icon={<Scale className="w-6 h-6" />}
-            >
+            <div className="mb-8">
+              <button
+                onClick={() => setPriceOpen(!priceOpen)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all mb-2"
+              >
+                <div className="flex items-center gap-3">
+                  <Scale className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Price & Cash Flow</h3>
+                </div>
+                {priceOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {priceOpen && (
+                <ChartCard
+                  title="Price & Cash Flow"
+                  description="Monthly costs and rental comparison"
+                  icon={<Scale className="w-6 h-6" />}
+                >
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -1074,14 +1143,28 @@ export default function CompareTownsPage() {
                   )}
                 </div>
               )}
-            </ChartCard>
+                </ChartCard>
+              )}
+            </div>
 
             {/* Module B: Lease & Risk */}
-            <ChartCard
-              title="Lease & Risk"
-              description="Long-term value and financing considerations"
-              icon={<AlertTriangle className="w-6 h-6" />}
-            >
+            <div className="mb-8">
+              <button
+                onClick={() => setLeaseOpen(!leaseOpen)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all mb-2"
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Lease & Risk</h3>
+                </div>
+                {leaseOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {leaseOpen && (
+                <ChartCard
+                  title="Lease & Risk"
+                  description="Long-term value and financing considerations"
+                  icon={<AlertTriangle className="w-6 h-6" />}
+                >
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -1136,7 +1219,9 @@ export default function CompareTownsPage() {
                   Flats below ~60 years remaining may face tighter financing and weaker resale demand over time. This becomes more critical if you plan to stay long-term or need to refinance.
                 </p>
               </div>
-            </ChartCard>
+                </ChartCard>
+              )}
+            </div>
 
             {/* Module C: Education Pressure (Primary) */}
             <ChartCard
@@ -1252,14 +1337,28 @@ export default function CompareTownsPage() {
                   Higher transaction volume means easier resale and more stable prices. Lower volume can mean longer selling time and greater price volatility when you need to move.
                 </p>
               </div>
-            </ChartCard>
+                </ChartCard>
+              )}
+            </div>
 
             {/* Module D: School Access */}
-            <ChartCard
-              title="School Access"
-              description="Primary school proximity and options"
-              icon={<Map className="w-6 h-6" />}
-            >
+            <div className="mb-8">
+              <button
+                onClick={() => setSchoolAccessOpen(!schoolAccessOpen)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all mb-2"
+              >
+                <div className="flex items-center gap-3">
+                  <Map className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">School Access</h3>
+                </div>
+                {schoolAccessOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {schoolAccessOpen && (
+                <ChartCard
+                  title="School Access"
+                  description="Primary school proximity and options"
+                  icon={<Map className="w-6 h-6" />}
+                >
               {landscapeA && landscapeB ? (
                 <div className="space-y-4">
                   <div className="overflow-x-auto">
@@ -1322,7 +1421,9 @@ export default function CompareTownsPage() {
                   School access data not available for one or both towns.
                 </div>
               )}
-            </ChartCard>
+                </ChartCard>
+              )}
+            </div>
 
             {/* Decision Guidance */}
             {guidance && (
