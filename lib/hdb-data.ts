@@ -725,6 +725,18 @@ export interface CompareSummary {
     }
   } | null
   
+  // Moving Education Impact
+  movingEducationImpact: {
+    spiChange: number // SPI difference (B - A)
+    spiChangeText: string // e.g., "+4.3 (still Low)"
+    highDemandSchoolsChange: number // Change in high-demand schools count
+    highDemandSchoolsText: string // e.g., "+0 / +1"
+    schoolCountChange: number // Change in number of primary schools
+    schoolCountText: string // e.g., "7 → 6"
+    choiceFlexibility: 'Similar' | 'Better' | 'Worse'
+    explanation: string // Auto-generated explanation sentence
+  } | null
+  
   // Fixed 5-block structure
   headlineVerdict: string // Block 1: Headline Verdict
   educationPressure: {
@@ -1417,6 +1429,135 @@ export function generateCompareSummary(
   }
   
   // ============================================
+  // Moving Education Impact
+  // ============================================
+  let movingEducationImpact: CompareSummary['movingEducationImpact'] = null
+  if (spiA && spiB && landscapeA && landscapeB && 
+      typeof landscapeA.schoolCount === 'number' && 
+      typeof landscapeB.schoolCount === 'number' &&
+      typeof landscapeA.highDemandSchools === 'number' &&
+      typeof landscapeB.highDemandSchools === 'number') {
+    const spiChange = spiB.spi - spiA.spi
+    const spiChangeAbs = Math.abs(spiChange)
+    
+    // Determine SPI change text with level
+    const higherSPI = spiChange > 0 ? spiB : spiA
+    const lowerSPI = spiChange > 0 ? spiA : spiB
+    const finalLevel = higherSPI.level
+    const levelText = finalLevel === 'low' ? 'still Low' : finalLevel === 'medium' ? 'Moderate' : 'High'
+    const spiChangeText = `${spiChange > 0 ? '+' : ''}${spiChangeAbs.toFixed(1)} (${levelText})`
+    
+    // High-demand schools change
+    const highDemandChange = landscapeB.highDemandSchools - landscapeA.highDemandSchools
+    const highDemandSchoolsText = highDemandChange > 0 ? `+${highDemandChange}` : highDemandChange < 0 ? `${highDemandChange}` : '+0'
+    
+    // School count change
+    const schoolCountChange = landscapeB.schoolCount - landscapeA.schoolCount
+    const schoolCountText = `${landscapeA.schoolCount} → ${landscapeB.schoolCount}`
+    
+    // Choice flexibility (based on school count and cutoff distribution)
+    let choiceFlexibility: 'Similar' | 'Better' | 'Worse'
+    if (schoolCountChange > 2 && highDemandChange <= 0) {
+      choiceFlexibility = 'Better'
+    } else if (schoolCountChange < -2 || (schoolCountChange <= 0 && highDemandChange > 0)) {
+      choiceFlexibility = 'Worse'
+    } else {
+      choiceFlexibility = 'Similar'
+    }
+    
+    // Generate explanation sentence
+    let explanation = ''
+    if (spiChangeAbs < 3) {
+      explanation = `Pressure remains similar — moving is unlikely to materially change day-to-day stress.`
+    } else if (spiChangeAbs >= 3 && spiChangeAbs < 8) {
+      if (spiChange > 0) {
+        explanation = `Pressure increases slightly, but stays within ${finalLevel === 'low' ? 'Low' : 'Moderate'} range — moving is unlikely to materially change day-to-day stress unless you target specific elite schools.`
+      } else {
+        explanation = `Pressure decreases slightly — moving may reduce competition, especially if you're targeting mid-tier schools.`
+      }
+    } else if (spiChangeAbs >= 8) {
+      if (spiChange > 0) {
+        const levelChange = spiA.level !== spiB.level
+        if (levelChange) {
+          explanation = `Pressure increases significantly and crosses into ${finalLevel === 'medium' ? 'Moderate' : 'High'} range — moving may meaningfully increase competition, especially for popular schools.`
+        } else {
+          explanation = `Pressure increases significantly — moving may meaningfully increase competition, especially for popular schools.`
+        }
+      } else {
+        explanation = `Pressure decreases significantly — moving may meaningfully reduce competition and increase your school options.`
+      }
+    }
+    
+    movingEducationImpact = {
+      spiChange,
+      spiChangeText,
+      highDemandSchoolsChange: highDemandChange,
+      highDemandSchoolsText,
+      schoolCountChange,
+      schoolCountText,
+      choiceFlexibility,
+      explanation
+    }
+  }
+  
+  // ============================================
+  // Update Recommendation based on Education Impact (when lens = school_pressure)
+  // ============================================
+  if (recommendation && movingEducationImpact && lens === 'school_pressure') {
+    const spiChangeAbs = Math.abs(movingEducationImpact.spiChange)
+    
+    // If SPI difference > 8: Education dimension can override price/lease
+    if (spiChangeAbs > 8) {
+      // Education becomes primary factor in headline
+      if (movingEducationImpact.spiChange < 0) {
+        recommendation.headline = `Choose ${A.town} if you prioritise significantly lower primary school pressure.`
+      } else {
+        recommendation.headline = `Choose ${B.town} if you prioritise significantly lower primary school pressure.`
+      }
+    } else if (spiChangeAbs >= 3 && spiChangeAbs <= 8) {
+      // Write as trade-off
+      if (movingEducationImpact.spiChange < 0) {
+        recommendation.headline = `Choose ${A.town} for lower school pressure, but consider trade-offs with price and lease.`
+      } else {
+        recommendation.headline = `Choose ${B.town} for lower school pressure, but consider trade-offs with price and lease.`
+      }
+    }
+    // If SPI difference < 3: Keep existing headline (education mentioned in trade-offs)
+  }
+  
+  // ============================================
+  // Force education mention when lens ≠ school_pressure but education difference is significant
+  // ============================================
+  if (recommendation && movingEducationImpact && lens !== 'school_pressure') {
+    const spiChangeAbs = Math.abs(movingEducationImpact.spiChange)
+    const levelChange = spiA && spiB && spiA.level !== spiB.level
+    const highDemandDiff = Math.abs(movingEducationImpact.highDemandSchoolsChange)
+    const schoolCountDiff = Math.abs(movingEducationImpact.schoolCountChange)
+    
+    // Force education mention if:
+    // 1. SPI crosses level (Low → Moderate or Moderate → High)
+    // 2. High-demand schools difference ≥ 2
+    // 3. Primary school count difference ≥ 4
+    if (levelChange || highDemandDiff >= 2 || schoolCountDiff >= 4) {
+      // Add education to trade-offs if not already there
+      const hasEducation = recommendation.tradeoffs.some(t => t.includes('School') || t.includes('🎓'))
+      if (!hasEducation && recommendation.tradeoffs.length < 3) {
+        const spiChange = movingEducationImpact.spiChange
+        const lowerSPI = spiChange < 0 ? A.town : B.town
+        const diff = spiChangeAbs
+        const level = (spiChange < 0 ? spiA : spiB)?.level
+        const levelText = level === 'low' ? 'still Low' : level === 'medium' ? 'Moderate' : 'High'
+        recommendation.tradeoffs.push(`🎓 School: Moving to ${lowerSPI === A.town ? B.town : A.town} ${spiChange < 0 ? 'decreases' : 'increases'} SPI by +${diff.toFixed(1)} (${levelText})`)
+      }
+      
+      // Update headline to mention education if significant
+      if (levelChange && recommendation.headline && !recommendation.headline.includes('school')) {
+        recommendation.headline = recommendation.headline.replace('.', ', but note the school pressure difference.')
+      }
+    }
+  }
+  
+  // ============================================
   // Legacy fields (for backward compatibility)
   // ============================================
   const oneLiner = headlineVerdict
@@ -1453,6 +1594,8 @@ export function generateCompareSummary(
     recommendation,
     // Standardized scores
     scores: scoresWithOverall,
+    // Moving Education Impact
+    movingEducationImpact,
     // New 5-block structure
     headlineVerdict,
     educationPressure,

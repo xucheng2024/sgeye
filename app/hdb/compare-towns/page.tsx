@@ -675,6 +675,74 @@ export default function CompareTownsPage() {
           </div>
         )}
 
+        {/* Moving Education Pressure: What Changes (Second Screen) */}
+        {compareSummary && compareSummary.movingEducationImpact && spiA && spiB && (
+          <ChartCard
+            title="Moving Education Pressure: What Changes"
+            description="Understand how moving affects primary school competition and choice"
+            icon={<GraduationCap className="w-6 h-6" />}
+          >
+            <div className="space-y-4">
+              {/* SPI Explanation */}
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs text-gray-700 italic">
+                  SPI measures structural pressure (competition + choice constraints), not your child&apos;s score.
+                </p>
+              </div>
+
+              {/* Four-line changes */}
+              <div className="space-y-3">
+                {/* SPI Change */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">SPI change:</span>
+                  <span className={`text-sm font-semibold ${
+                    compareSummary.movingEducationImpact.spiChange > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {compareSummary.movingEducationImpact.spiChange > 0 ? '+' : ''}{compareSummary.movingEducationImpact.spiChangeText}
+                  </span>
+                </div>
+
+                {/* High-demand schools */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">High-demand schools:</span>
+                  <span className={`text-sm font-semibold ${
+                    compareSummary.movingEducationImpact.highDemandSchoolsChange > 0 ? 'text-red-600' : 
+                    compareSummary.movingEducationImpact.highDemandSchoolsChange < 0 ? 'text-green-600' : 'text-gray-600'
+                  }`}>
+                    {compareSummary.movingEducationImpact.highDemandSchoolsText}
+                  </span>
+                </div>
+
+                {/* Number of primary schools */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">Number of primary schools:</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {compareSummary.movingEducationImpact.schoolCountText}
+                  </span>
+                </div>
+
+                {/* Choice flexibility */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <span className="text-sm font-medium text-gray-700">Choice flexibility:</span>
+                  <span className={`text-sm font-semibold ${
+                    compareSummary.movingEducationImpact.choiceFlexibility === 'Better' ? 'text-green-600' :
+                    compareSummary.movingEducationImpact.choiceFlexibility === 'Worse' ? 'text-red-600' : 'text-gray-600'
+                  }`}>
+                    {compareSummary.movingEducationImpact.choiceFlexibility}
+                  </span>
+                </div>
+              </div>
+
+              {/* Explanation sentence */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {compareSummary.movingEducationImpact.explanation}
+                </p>
+              </div>
+            </div>
+          </ChartCard>
+        )}
+
         {/* Evidence (expandable) */}
         {compareSummary && evidenceOpen && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
