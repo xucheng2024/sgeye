@@ -398,41 +398,21 @@ export function generateCompareSummary(
   }
   
   // ============================================
-  // Block 5: Decision Hint (using Decision Rules)
+  // Block 5: Decision Hint (fixed templates)
   // ============================================
   let decisionHint: string = ''
   const preferenceId = preferenceMode.id
   
-  // Apply decision hint rules
-  for (const condition of SUMMARY_TEXT_RULES.decisionHint.conditions) {
-    if (condition.condition === 'preference == long_term' && preferenceId === 'long_term') {
-      decisionHint = condition.text
-      break
-    } else if (condition.condition === 'preference == low_entry && delta_price > 30000' && 
-               preferenceId === 'low_entry' && metrics.deltaPrice > COMPARISON_THRESHOLDS.PRICE_SIGNIFICANT) {
-      decisionHint = condition.text
-      break
-    } else if (condition.condition === 'preference == low_school_pressure && abs(delta_spi) >= 8' && 
-               preferenceId === 'low_school_pressure' && Math.abs(metrics.deltaSPI) >= COMPARISON_THRESHOLDS.SPI_MODERATE) {
-      decisionHint = condition.text
-      break
-    } else if (condition.condition === 'default') {
-      decisionHint = condition.text
-    }
-  }
-  
-  // Fallback if no rule matched
-  if (!decisionHint) {
-    const spiImportance = spiA && spiB ? Math.abs(metrics.deltaSPI) : 0
-    const leaseImportance = Math.abs(metrics.deltaLeaseYears)
-    
-    if (spiImportance > leaseImportance && spiA && spiB) {
-      decisionHint = `If primary school pressure matters more to you, location choice may outweigh price differences.`
-    } else if (leaseImportance > 0) {
-      decisionHint = `If you plan to hold long-term, lease profile may matter more than short-term school pressure.`
-    } else {
-      decisionHint = `Both options are viable — choose based on your timeline and risk tolerance.`
-    }
+  // Fixed decision hint templates
+  if (preferenceId === 'long_term') {
+    decisionHint = `Over long holding periods, lease profile tends to matter more than upfront price.`
+  } else if (preferenceId === 'low_school_pressure') {
+    decisionHint = `Structural pressure matters more than individual outcomes.`
+  } else if (preferenceId === 'low_entry') {
+    decisionHint = `Monthly cash flow constraints often dominate long-term considerations.`
+  } else {
+    // Balanced
+    decisionHint = `Both options are viable — choose based on your timeline and risk tolerance.`
   }
   
   // ============================================
@@ -491,95 +471,64 @@ export function generateCompareSummary(
     const winner = overallDiff > 0 ? B.town : A.town
     const winnerIsB = overallDiff > 0
     
-    // Generate headline using rules (personalized if family profile exists)
+    // Generate headline using fixed templates based on family profile
     let headline = ''
     const preferenceId = preferenceMode.id
     const overallDiffAbs = Math.abs(overallDiff)
     
-    if (ruleProfile && familyProfile) {
-      // Personalized headline based on family profile
-      const stageDesc = ruleProfile.personalizedContext.stageDescription
-      const holdingDesc = ruleProfile.personalizedContext.holdingDescription
-      
-      if (preferenceId === 'long_term' || familyProfile.costVsValue === 'value') {
-        if (metrics.deltaLeaseYears > 0) {
-          headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, lease security matters more than upfront price. ${B.town} offers a healthier lease profile, even though entry cost is higher.`
-        } else {
-          headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, ${A.town} offers better lease security, though entry cost may be higher.`
-        }
-      } else if (preferenceId === 'low_entry' || familyProfile.costVsValue === 'cost') {
-        if (metrics.deltaPrice > 0) {
-          headline = `For a ${stageDesc.toLowerCase()} prioritizing lower upfront & monthly cost, ${B.town} offers better affordability, though lease profile may be shorter.`
-        } else {
-          headline = `For a ${stageDesc.toLowerCase()} prioritizing lower upfront & monthly cost, ${A.town} offers better affordability, though lease profile may be shorter.`
-        }
-      } else if (preferenceId === 'low_school_pressure' || familyProfile.schoolSensitivity === 'high') {
-        if (metrics.deltaSPI > 0) {
-          headline = `For a ${stageDesc.toLowerCase()} sensitive to school competition, ${B.town} offers lower primary school pressure, making it a better fit for your priorities.`
-        } else {
-          headline = `For a ${stageDesc.toLowerCase()} sensitive to school competition, ${A.town} offers lower primary school pressure, making it a better fit for your priorities.`
-        }
-      } else {
-        headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, ${winner} offers a better overall balance for your situation.`
-      }
+    // Fixed templates by profile type
+    if (preferenceId === 'balanced') {
+      headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
+    } else if (preferenceId === 'low_entry') {
+      headline = `If keeping upfront and monthly costs low matters most, ${winner} offers a clearer affordability advantage.`
+    } else if (preferenceId === 'long_term') {
+      headline = `For families planning to stay long-term, ${winner} offers stronger lease safety despite higher entry cost.`
+    } else if (preferenceId === 'low_school_pressure') {
+      headline = `For families sensitive to school competition, ${winner} offers lower structural primary school pressure.`
     } else {
-      // Fallback to non-personalized headlines
-      if (preferenceId === 'balanced') {
-        headline = overallDiffAbs > 12
-          ? `Choose ${winner} based on balanced factors.`
-          : `Both towns are viable — ${winner} has a slight edge.`
-      } else if (preferenceId === 'low_entry') {
-        headline = metrics.deltaPrice > 0
-          ? `Choose ${B.town} if you prioritise lower entry price.`
-          : `Choose ${A.town} if you prioritise lower entry price.`
-      } else if (preferenceId === 'long_term') {
-        headline = metrics.deltaLeaseYears > 0
-          ? `Choose ${B.town} if you prioritise long-term lease safety.`
-          : `Choose ${A.town} if you prioritise long-term lease safety.`
-      } else if (preferenceId === 'low_school_pressure') {
-        headline = metrics.deltaSPI > 0
-          ? `Choose ${B.town} if you prioritise lower primary school pressure.`
-          : `Choose ${A.town} if you prioritise lower primary school pressure.`
-      }
+      // Fallback
+      headline = `Based on a balanced trade-off, ${winner} is the better overall choice.`
     }
     
-    // Generate 3 trade-off bullets using rules
+    // Generate exactly 3 trade-off bullets (fixed template)
     const tradeoffs: string[] = []
     
-    // Price tradeoff
-    if (Math.abs(metrics.deltaPrice) >= PRICE_SIGNIFICANT) {
-      const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
-      const diff = Math.abs(metrics.deltaPrice)
-      tradeoffs.push(`💰 Upfront: ${cheaper} is cheaper by ~${formatCurrency(diff)}`)
+    // Always show 3 bullets: Entry cost, Lease profile, School pressure
+    // 1. Entry cost
+    const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
+    const priceDiff = Math.abs(metrics.deltaPrice)
+    if (priceDiff >= 1000) {
+      const priceDiffK = Math.round(priceDiff / 1000)
+      tradeoffs.push(`Entry cost: ${cheaper} is lower by ~S$${priceDiffK}k`)
+    } else if (priceDiff > 0) {
+      tradeoffs.push(`Entry cost: ${cheaper} is lower by ~S$${Math.round(priceDiff)}`)
+    } else {
+      tradeoffs.push(`Entry cost: Both towns have similar entry prices`)
     }
     
-    // Lease tradeoff
-    if (Math.abs(metrics.deltaLeaseYears) >= LEASE_SIGNIFICANT) {
-      const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
-      const diff = Math.abs(metrics.deltaLeaseYears)
-      if (diff >= 20) {
-        tradeoffs.push(`🧱 Lease: ${healthier} has significantly healthier lease profile (+${Math.round(diff)} yrs)`)
-      } else {
-        tradeoffs.push(`🧱 Lease: ${healthier} has healthier lease profile (+${Math.round(diff)} yrs)`)
-      }
+    // 2. Lease profile
+    const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
+    const leaseDiff = Math.abs(metrics.deltaLeaseYears)
+    if (leaseDiff >= 1) {
+      tradeoffs.push(`Lease profile: ${healthier} has ~${Math.round(leaseDiff)} more remaining years`)
+    } else {
+      tradeoffs.push(`Lease profile: Both towns have similar remaining lease`)
     }
     
-    // School tradeoff (with rules-based messaging)
+    // 3. School pressure
     if (spiA && spiB) {
-      const spiChangeAbs = Math.abs(metrics.deltaSPI)
-      const levelChange = spiA.level !== spiB.level
-      const finalLevel = metrics.deltaSPI > 0 ? spiB.level : spiA.level
+      const spiChange = metrics.deltaSPI
+      const spiChangeAbs = Math.abs(spiChange)
+      const finalLevel = spiChange > 0 ? spiB.level : spiA.level
       const levelText = finalLevel === 'low' ? 'still Low' : finalLevel === 'medium' ? 'Moderate' : 'High'
-      const direction = metrics.deltaSPI > 0 ? 'decreases' : 'increases'
-      const targetTown = metrics.deltaSPI > 0 ? B.town : A.town
-      
-      if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MODERATE && levelChange) {
-        tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI significantly (${levelText})`)
-      } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MINOR) {
-        tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI slightly (${levelText})`)
-      } else if (spiChangeAbs > 0) {
-        tradeoffs.push(`🎓 School: School pressure remains similar`)
+      const direction = spiChange > 0 ? 'decreases' : 'increases'
+      if (spiChangeAbs > 0.1) {
+        tradeoffs.push(`School pressure: Moving ${direction} SPI by +${spiChangeAbs.toFixed(1)} (${levelText})`)
+      } else {
+        tradeoffs.push(`School pressure: Similar pressure levels (${levelText})`)
       }
+    } else {
+      tradeoffs.push(`School pressure: Data not available for comparison`)
     }
     
     // Confidence badge
@@ -592,7 +541,7 @@ export function generateCompareSummary(
       confidence = 'depends_on_preference'
     }
     
-    recommendation = { headline, tradeoffs: tradeoffs.slice(0, SCORING_CONSTANTS.MAX_TRADEOFF_BULLETS), confidence }
+    recommendation = { headline, tradeoffs: tradeoffs.slice(0, 3), confidence }
   }
   
   // ============================================

@@ -102,18 +102,14 @@ export default function RecommendationCard({
           </p>
           
           <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Why:</p>
+            <p className="text-sm font-semibold text-gray-700 mb-2">Key trade-offs:</p>
             <ul className="space-y-1.5">
-              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => {
-                // Extract key points from tradeoffs
-                const point = tradeoff.replace(/💰 |🧱 |🎓 /, '').replace(/^[^:]+: /, '')
-                return (
-                  <li key={idx} className="text-sm text-gray-800 flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{point}</span>
-                  </li>
-                )
-              })}
+              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => (
+                <li key={idx} className="text-sm text-gray-800 flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{tradeoff}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -130,10 +126,21 @@ export default function RecommendationCard({
           </div>
         )}
 
-        {/* Final note */}
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-xs text-gray-700 italic">
-            This is not a &quot;right vs wrong&quot; choice — it depends on what you optimize for.
+        {/* Decision Hint */}
+        {compareSummary.decisionHint && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-800">
+              {compareSummary.decisionHint}
+            </p>
+          </div>
+        )}
+
+        {/* Completion message */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center leading-relaxed">
+            This comparison helps you narrow down locations — not choose a specific flat.
+            <br />
+            Use it to decide where to focus your search next.
           </p>
         </div>
       </div>

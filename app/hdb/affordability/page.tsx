@@ -576,7 +576,7 @@ export default function HDBAffordabilityPage() {
               Ready to decide?
             </p>
             <p className="text-sm text-gray-600 mb-4">
-              Compare towns with your budget →
+              Compare rent vs buy trade-offs between towns →
             </p>
             <Link
               href="/hdb/compare-towns"

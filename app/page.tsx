@@ -12,7 +12,7 @@ export default function Home() {
               Where should my family live in Singapore?
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
-              Compare towns and see real trade-offs — cost, lease risk, rent pressure, and school competition.
+              Compare towns and understand real trade-offs — cost, lease risk, rent pressure, and school competition.
             </p>
             <div className="flex flex-col items-center justify-center">
               <Link
@@ -105,7 +105,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section 4: Other Modules (Optional) */}
+      {/* Section 4: Other Modules (Capability Showcase - All link to Compare) */}
       <section className="bg-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-gray-400 text-center mb-8">
@@ -113,25 +113,25 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
-              href="/hdb/affordability"
+              href="/hdb/compare-towns"
               className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Price trends
             </Link>
             <Link
-              href="/hdb/heatmap"
+              href="/hdb/compare-towns"
               className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Heatmap
             </Link>
             <Link
-              href="/hdb/lease-price"
+              href="/hdb/compare-towns"
               className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Lease & risk
             </Link>
             <Link
-              href="/family/psle-school"
+              href="/hdb/compare-towns"
               className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               PSLE overview
