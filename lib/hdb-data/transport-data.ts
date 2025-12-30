@@ -4,7 +4,6 @@
  */
 
 import { TownTransportProfile } from './types'
-import { TOWNS } from '../compare-towns/constants'
 
 // Town Transport Profile mapping (first version - structural data)
 export const TOWN_TRANSPORT_PROFILES: Record<string, TownTransportProfile> = {
