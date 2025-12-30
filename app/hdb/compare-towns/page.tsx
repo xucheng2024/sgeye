@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary } from '@/lib/hdb-data'
+import { calculateSchoolPressureIndex, SchoolPressureIndex } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
-import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp } from 'lucide-react'
+import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
@@ -388,6 +389,8 @@ export default function CompareTownsPage() {
   const [flatType, setFlatType] = useState(searchParams.get('flatType') || '4 ROOM')
   const [profileA, setProfileA] = useState<TownProfile | null>(null)
   const [profileB, setProfileB] = useState<TownProfile | null>(null)
+  const [spiA, setSpiA] = useState<SchoolPressureIndex | null>(null)
+  const [spiB, setSpiB] = useState<SchoolPressureIndex | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -395,20 +398,24 @@ export default function CompareTownsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      const [resultA, resultB] = await Promise.all([
+      const [resultA, resultB, spiResultA, spiResultB] = await Promise.all([
         getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
         getTownProfile(townB, flatType, 24),
+        calculateSchoolPressureIndex(townA),
+        calculateSchoolPressureIndex(townB),
       ])
       setProfileA(resultA)
       setProfileB(resultB)
+      setSpiA(spiResultA)
+      setSpiB(spiResultB)
       setLoading(false)
     }
     fetchData()
   }, [townA, townB, flatType])
 
-  // Generate Compare Summary from Town Profiles
+  // Generate Compare Summary from Town Profiles (with SPI)
   const compareSummary: CompareSummary | null = profileA && profileB 
-    ? generateCompareSummary(profileA, profileB, userBudget)
+    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB)
     : null
 
   // Generate suitability from profiles
@@ -499,10 +506,10 @@ export default function CompareTownsPage() {
           </div>
         </div>
 
-        {/* Auto-generated Summary - 4-layer structure */}
+        {/* Auto-generated Summary - Fixed 5-block structure */}
         {compareSummary && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-gray-900">Summary</h3>
               <div className="flex items-center gap-2">
                 {compareSummary.badges
@@ -540,66 +547,75 @@ export default function CompareTownsPage() {
               </div>
             </div>
 
-            {/* Layer 1: One-liner conclusion */}
-            <p className="text-base font-semibold text-gray-900 mb-4 leading-relaxed">
-              {compareSummary.oneLiner}
-            </p>
-
-            {/* Layer 2: Best for / Be cautious */}
-            <div className="space-y-3 mb-4">
-              {(compareSummary.bestFor.townA.length > 0 || compareSummary.bestFor.townB.length > 0) && (
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 mb-2">✅ Best for:</p>
-                  <div className="space-y-1">
-                    {compareSummary.bestFor.townA.map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-800">
-                        <span className="font-medium">{townA}</span> → {item}
-                      </p>
-                    ))}
-                    {compareSummary.bestFor.townB.map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-800">
-                        <span className="font-medium">{townB}</span> → {item}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {(compareSummary.beCautious.townA.length > 0 || compareSummary.beCautious.townB.length > 0) && (
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 mb-2">⚠️ Be cautious if:</p>
-                  <div className="space-y-1">
-                    {compareSummary.beCautious.townA.map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-800">
-                        <span className="font-medium">{townA}</span> → {item}
-                      </p>
-                    ))}
-                    {compareSummary.beCautious.townB.map((item, idx) => (
-                      <p key={idx} className="text-sm text-gray-800">
-                        <span className="font-medium">{townB}</span> → {item}
-                      </p>
-                    ))}
-                  </div>
-                </div>
+            {/* Block 1: Headline Verdict */}
+            <div className="mb-6">
+              <p className="text-lg font-bold text-gray-900 leading-relaxed">
+                {compareSummary.headlineVerdict}
+              </p>
+              {compareSummary.movingPhrase && (
+                <p className="text-sm text-gray-700 italic mt-2">
+                  {compareSummary.movingPhrase}
+                </p>
               )}
             </div>
 
-            {/* Layer 3: Key differences (max 3 bullets) */}
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-gray-900 mb-2">Key differences:</p>
-              <ul className="space-y-1">
-                {compareSummary.keyDifferences.map((diff, index) => (
-                  <li key={index} className="text-sm text-gray-800 flex items-start">
-                    <span className="text-blue-600 mr-2 font-bold">•</span>
-                    <span>{diff}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Block 2: Education Pressure Comparison */}
+            {compareSummary.educationPressure && (
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Education Pressure Comparison</p>
+                <div className="text-sm text-gray-800 whitespace-pre-line mb-2">
+                  {compareSummary.educationPressure.comparison}
+                </div>
+                <p className="text-sm text-gray-700">
+                  {compareSummary.educationPressure.explanation}
+                </p>
+              </div>
+            )}
 
-            {/* Layer 4: Decision hint */}
-            <div className="mb-4 p-3 bg-gray-100 rounded-lg border border-gray-300">
-              <p className="text-xs font-semibold text-gray-700 mb-1">Decision hint:</p>
-              <p className="text-xs text-gray-600">{compareSummary.decisionHint}</p>
+            {/* Block 3: Housing Trade-off */}
+            {(compareSummary.housingTradeoff.price || compareSummary.housingTradeoff.lease) && (
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Housing Trade-off</p>
+                <div className="space-y-1">
+                  {compareSummary.housingTradeoff.price && (
+                    <p className="text-sm text-gray-800">
+                      <strong>Entry Price:</strong> {compareSummary.housingTradeoff.price}
+                    </p>
+                  )}
+                  {compareSummary.housingTradeoff.lease && (
+                    <p className="text-sm text-gray-800">
+                      <strong>Lease:</strong> {compareSummary.housingTradeoff.lease}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Block 4: Who Each Town Is Better For */}
+            {(compareSummary.bestSuitedFor.townA.length > 0 || compareSummary.bestSuitedFor.townB.length > 0) && (
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold text-gray-900 mb-3">Best suited for:</p>
+                <div className="space-y-2">
+                  {compareSummary.bestSuitedFor.townA.map((item, idx) => (
+                    <p key={idx} className="text-sm text-gray-800">
+                      <span className="mr-2 text-green-600">✔</span>
+                      <span className="font-medium">{townA}:</span> {item}
+                    </p>
+                  ))}
+                  {compareSummary.bestSuitedFor.townB.map((item, idx) => (
+                    <p key={idx} className="text-sm text-gray-800">
+                      <span className="mr-2 text-green-600">✔</span>
+                      <span className="font-medium">{townB}:</span> {item}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Block 5: Decision Hint */}
+            <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
+              <p className="text-sm font-semibold text-gray-900 mb-1">Decision hint:</p>
+              <p className="text-sm text-gray-800">{compareSummary.decisionHint}</p>
             </div>
 
             {/* Advanced details (collapsible) */}
@@ -804,7 +820,138 @@ export default function CompareTownsPage() {
               </div>
             </ChartCard>
 
-            {/* Module C: Market Stability */}
+            {/* Module C: Education Pressure (Primary) */}
+            <ChartCard
+              title="Education Pressure (Primary)"
+              description="School competition and pressure index for primary school stage"
+              icon={<GraduationCap className="w-6 h-6" />}
+            >
+              {spiA && spiB ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-300 bg-gray-50">
+                          <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
+                          <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
+                          <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-4 px-4 text-gray-700 font-medium">School Pressure Index</td>
+                          <td className="py-4 px-4 text-right">
+                            <span className="font-bold text-gray-900">{spiA.spi}</span>
+                            <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
+                              spiA.level === 'low' ? 'bg-green-100 text-green-700' :
+                              spiA.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {spiA.level === 'low' ? '🟢 Low' : spiA.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-right">
+                            <span className="font-bold text-gray-900">{spiB.spi}</span>
+                            <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${
+                              spiB.level === 'low' ? 'bg-green-100 text-green-700' :
+                              spiB.level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {spiB.level === 'low' ? '🟢 Low' : spiB.level === 'medium' ? '🟡 Moderate' : '🔴 High'}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {spiA.spi !== spiB.spi && (
+                    <div className="p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
+                      Moving from {spiA.spi < spiB.spi ? townA : townB} → {spiA.spi < spiB.spi ? townB : townA} {spiA.spi < spiB.spi ? 'increases' : 'decreases'} school pressure.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  School pressure data not available for one or both towns.
+                </div>
+              )}
+            </ChartCard>
+
+            {/* Module D: Moving Pressure Visualization */}
+            {spiA && spiB && profileA && profileB && (
+              <ChartCard
+                title="Moving Pressure: What Changes"
+                description="Compare the impact of moving from one town to another"
+                icon={<Map className="w-6 h-6" />}
+              >
+                <div className="space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">
+                      Move from: <span className="font-bold">{townA}</span> → <span className="font-bold">{townB}</span>
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Education Pressure:</span>
+                        <span className={`text-sm font-semibold ${
+                          spiB.spi > spiA.spi ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {spiB.spi > spiA.spi ? '+' : ''}{Math.round((spiB.spi - spiA.spi) * 10) / 10} {spiB.spi > spiA.spi ? '🔺' : '🔻'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Entry Price:</span>
+                        <span className={`text-sm font-semibold ${
+                          profileB.medianResalePrice > profileA.medianResalePrice ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {profileB.medianResalePrice > profileA.medianResalePrice ? '+' : ''}{formatCurrency(Math.abs(profileB.medianResalePrice - profileA.medianResalePrice))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-700">Remaining Lease:</span>
+                        <span className={`text-sm font-semibold ${
+                          profileB.medianRemainingLease > profileA.medianRemainingLease ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {profileB.medianRemainingLease > profileA.medianRemainingLease ? '+' : ''}{Math.round(Math.abs(profileB.medianRemainingLease - profileA.medianRemainingLease))} years
+                        </span>
+                      </div>
+                      {profileA.medianRent && profileB.medianRent && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-700">Rent vs Buy Gap:</span>
+                          <span className={`text-sm font-semibold ${
+                            profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? '' : '+'}{formatCurrency(profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly)} / month
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-800 italic">
+                      {(() => {
+                        const priceHigher = profileB.medianResalePrice > profileA.medianResalePrice
+                        const leaseBetter = profileB.medianRemainingLease > profileA.medianRemainingLease
+                        const spiHigher = spiB.spi > spiA.spi
+                        
+                        if (priceHigher && leaseBetter && spiHigher) {
+                          return `You pay more upfront to reduce lease risk, but face higher school competition.`
+                        } else if (priceHigher && leaseBetter && !spiHigher) {
+                          return `You pay more upfront to reduce lease risk and enjoy lower school pressure.`
+                        } else if (!priceHigher && !leaseBetter && spiHigher) {
+                          return `You save on entry cost but face higher lease risk and school competition.`
+                        } else if (!priceHigher && !leaseBetter && !spiHigher) {
+                          return `You save on entry cost and enjoy lower school pressure, but face higher lease risk.`
+                        } else {
+                          return `This move presents a balance between housing costs, lease security, and school environment.`
+                        }
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </ChartCard>
+            )}
+
+            {/* Module E: Market Stability */}
             <ChartCard
               title="Market Stability"
               description="Transaction volume and price volatility"

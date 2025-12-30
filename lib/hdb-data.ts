@@ -691,9 +691,25 @@ export interface TownProfile {
 
 // Compare Summary output
 export interface CompareSummary {
-  oneLiner: string // 一句话结论
-  keyDifferences: string[] // 最多3条
-  decisionHint: string // 一条决策提示
+  // Fixed 5-block structure
+  headlineVerdict: string // Block 1: Headline Verdict
+  educationPressure: {
+    comparison: string // SPI comparison text
+    explanation: string // Additional explanation
+  } | null // Block 2: Education Pressure Comparison
+  housingTradeoff: {
+    price: string | null
+    lease: string | null
+  } // Block 3: Housing Trade-off
+  bestSuitedFor: {
+    townA: string[]
+    townB: string[]
+  } // Block 4: Who Each Town Is Better For
+  decisionHint: string // Block 5: Decision Hint
+  
+  // Legacy fields (kept for compatibility)
+  oneLiner: string
+  keyDifferences: string[]
   bestFor: {
     townA: string[]
     townB: string[]
@@ -711,6 +727,9 @@ export interface CompareSummary {
     leaseRiskReasonsB: string[]
   }
   badges: Array<{ town: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
+  
+  // Killer phrase: Moving from A to B
+  movingPhrase?: string | null
 }
 
 // Get detailed town comparison data (legacy, kept for compatibility)
@@ -892,76 +911,216 @@ export async function getTownProfile(
   return null
 }
 
-// Generate Compare Summary from Town Profiles (simplified 4-layer structure)
+// Generate Compare Summary from Town Profiles (Fixed 5-block structure)
 export function generateCompareSummary(
   A: TownProfile,
   B: TownProfile,
-  userBudget?: number
+  userBudget?: number,
+  spiA?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null
 ): CompareSummary {
   const badges: CompareSummary['badges'] = []
-  const leaseRiskLevels = { low: 0, moderate: 1, high: 2, critical: 3 }
-  const leaseA = leaseRiskLevels[A.signals.leaseRisk]
-  const leaseB = leaseRiskLevels[B.signals.leaseRisk]
-  const cheaper = A.medianResalePrice <= B.medianResalePrice ? 'A' : 'B'
-
-  // 1) One-liner conclusion
-  let oneLiner: string
-  if (leaseA > leaseB) {
-    oneLiner = `${A.town} offers lower upfront cost but comes with higher lease risk. ${B.town} is more expensive, but offers stronger long-term lease security.`
-  } else if (leaseB > leaseA) {
-    oneLiner = `${B.town} offers lower upfront cost but comes with higher lease risk. ${A.town} is more expensive, but offers stronger long-term lease security.`
-  } else {
-    oneLiner = `${cheaper === 'A' ? A.town : B.town} offers lower upfront cost. Both towns have similar lease profiles.`
+  
+  // Thresholds
+  const SPI_SIGNIFICANT = 15
+  const PRICE_SIGNIFICANT = 30000 // S$30k
+  const LEASE_SIGNIFICANT = 15 // years
+  
+  // Calculate differences
+  const spiDiff = spiA && spiB ? spiA.spi - spiB.spi : 0 // >0 means A has higher pressure
+  const priceDiff = A.medianResalePrice - B.medianResalePrice // >0 means A is more expensive
+  const leaseDiff = A.medianRemainingLease - B.medianRemainingLease // >0 means A has healthier lease
+  
+  // Helper function to get SPI label
+  const getSPILabel = (level: 'low' | 'medium' | 'high'): string => {
+    return level.charAt(0).toUpperCase() + level.slice(1)
   }
-
-  // 2) Key differences (max 3 bullets, no numbers)
+  
+  // ============================================
+  // Block 1: Headline Verdict
+  // ============================================
+  let headlineVerdict: string
+  if (spiA && spiB && Math.abs(spiDiff) >= SPI_SIGNIFICANT) {
+    // Education pressure difference is significant
+    if (spiDiff < 0) {
+      headlineVerdict = `${A.town} offers significantly lower primary school pressure than ${B.town}.`
+    } else {
+      headlineVerdict = `${B.town} offers significantly lower primary school pressure than ${A.town}.`
+    }
+  } else if (spiA && spiB) {
+    // Education pressure is similar
+    headlineVerdict = `Both towns face similar levels of primary school competition.`
+  } else {
+    // No SPI data - fallback to price/lease
+    if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
+      headlineVerdict = priceDiff > 0 
+        ? `${A.town} commands higher entry prices than ${B.town}.`
+        : `${B.town} commands higher entry prices than ${A.town}.`
+    } else {
+      headlineVerdict = `Both towns offer similar housing profiles.`
+    }
+  }
+  
+  // ============================================
+  // Block 2: Education Pressure Comparison
+  // ============================================
+  let educationPressure: CompareSummary['educationPressure'] = null
+  if (spiA && spiB) {
+    const comparison = `Primary school pressure:\n• ${A.town}: SPI ${spiA.spi} (${getSPILabel(spiA.level)})\n• ${B.town}: SPI ${spiB.spi} (${getSPILabel(spiB.level)})`
+    
+    let explanation = ''
+    if (spiDiff >= SPI_SIGNIFICANT) {
+      explanation = `Families in ${A.town} face more concentrated competition and fewer lower-risk options.`
+    } else if (spiDiff <= -SPI_SIGNIFICANT) {
+      explanation = `${A.town} offers a wider range of lower-pressure school options.`
+    } else {
+      explanation = `Both towns offer similar school competition levels.`
+    }
+    
+    educationPressure = { comparison, explanation }
+  }
+  
+  // ============================================
+  // Block 3: Housing Trade-off
+  // ============================================
+  const housingTradeoff: CompareSummary['housingTradeoff'] = {
+    price: null,
+    lease: null
+  }
+  
+  if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
+    housingTradeoff.price = priceDiff > 0
+      ? `Entry cost is higher in ${A.town}.`
+      : `Entry cost is lower in ${A.town}.`
+  }
+  
+  if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
+    housingTradeoff.lease = leaseDiff > 0
+      ? `Remaining lease is healthier in ${A.town}.`
+      : `Remaining lease is healthier in ${B.town}.`
+  }
+  
+  // ============================================
+  // Block 4: Who Each Town Is Better For
+  // ============================================
+  const bestSuitedFor: CompareSummary['bestSuitedFor'] = {
+    townA: [],
+    townB: []
+  }
+  
+  // Education pressure tags
+  if (spiA && spiB) {
+    if (spiDiff < -SPI_SIGNIFICANT) {
+      bestSuitedFor.townA.push('Families prioritizing lower primary school pressure')
+    }
+    if (spiDiff > SPI_SIGNIFICANT) {
+      bestSuitedFor.townB.push('Families prioritizing lower primary school pressure')
+    }
+  }
+  
+  // Price tags
+  if (priceDiff < -PRICE_SIGNIFICANT) {
+    bestSuitedFor.townA.push('Buyers prioritizing lower upfront cost')
+  }
+  if (priceDiff > PRICE_SIGNIFICANT) {
+    bestSuitedFor.townB.push('Buyers prioritizing lower upfront cost')
+  }
+  
+  // Lease tags
+  if (leaseDiff > LEASE_SIGNIFICANT) {
+    bestSuitedFor.townA.push('Long-term owners valuing lease security')
+  }
+  if (leaseDiff < -LEASE_SIGNIFICANT) {
+    bestSuitedFor.townB.push('Long-term owners valuing lease security')
+  }
+  
+  // Additional tags for buyers less sensitive to school competition
+  if (spiA && spiB) {
+    if (spiDiff > SPI_SIGNIFICANT) {
+      bestSuitedFor.townB.push('Buyers less sensitive to school competition')
+    }
+    if (spiDiff < -SPI_SIGNIFICANT) {
+      bestSuitedFor.townA.push('Buyers less sensitive to school competition')
+    }
+  }
+  
+  // ============================================
+  // Block 5: Decision Hint
+  // ============================================
+  let decisionHint: string
+  const spiImportance = spiA && spiB ? Math.abs(spiDiff) : 0
+  const leaseImportance = Math.abs(leaseDiff)
+  
+  if (spiImportance > leaseImportance && spiA && spiB) {
+    decisionHint = `If primary school pressure matters more to you, location choice may outweigh price differences.`
+  } else if (leaseImportance > 0) {
+    decisionHint = `If you plan to hold long-term, lease profile may matter more than short-term school pressure.`
+  } else {
+    decisionHint = `Both options are viable — choose based on your timeline and risk tolerance.`
+  }
+  
+  // ============================================
+  // Killer Phrase: Moving from A to B
+  // ============================================
+  let movingPhrase: string | null = null
+  if (spiA && spiB) {
+    const parts: string[] = []
+    const fromTown = A.town
+    const toTown = B.town
+    
+    // School pressure change
+    if (Math.abs(spiDiff) >= SPI_SIGNIFICANT) {
+      if (spiDiff < 0) {
+        parts.push('reduces school pressure')
+      } else {
+        parts.push('increases school pressure')
+      }
+    }
+    
+    // Price change
+    if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
+      if (priceDiff < 0) {
+        parts.push('reduces entry cost')
+      } else {
+        parts.push('increases entry cost')
+      }
+    }
+    
+    // Lease change
+    if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
+      if (leaseDiff < 0) {
+        parts.push('improves lease security')
+      } else {
+        parts.push('reduces lease security')
+      }
+    }
+    
+    if (parts.length > 0) {
+      movingPhrase = `Moving from ${fromTown} to ${toTown} ${parts.join(', but ')}.`
+    }
+  }
+  
+  // ============================================
+  // Legacy fields (for backward compatibility)
+  // ============================================
+  const oneLiner = headlineVerdict
   const keyDifferences: string[] = []
-  keyDifferences.push(`Entry price: ${cheaper === 'A' ? A.town : B.town} lower, ${cheaper === 'A' ? B.town : A.town} higher`)
+  if (educationPressure) {
+    keyDifferences.push(educationPressure.comparison.replace(/\n/g, ' '))
+  }
+  if (housingTradeoff.price) keyDifferences.push(housingTradeoff.price)
+  if (housingTradeoff.lease) keyDifferences.push(housingTradeoff.lease)
   
-  const leaseTextA = leaseA >= 2 ? 'shorter (<60 yrs common)' : 'healthier'
-  const leaseTextB = leaseB >= 2 ? 'shorter (<60 yrs common)' : 'healthier'
-  keyDifferences.push(`Lease profile: ${A.town} ${leaseTextA}, ${B.town} ${leaseTextB}`)
+  const bestFor = {
+    townA: bestSuitedFor.townA,
+    townB: bestSuitedFor.townB
+  }
   
-  const bothRentAdvantage = A.rentBuyGapMonthly > 0 && B.rentBuyGapMonthly > 0
-  if (bothRentAdvantage) {
-    keyDifferences.push(`Rent vs Buy: Buying beats renting in both towns`)
-  } else {
-    keyDifferences.push(`Rent vs Buy: ${A.rentBuyGapMonthly > 0 ? A.town : B.town} shows stronger buy advantage`)
+  const beCautious = {
+    townA: [] as string[],
+    townB: [] as string[]
   }
-
-  // 3) Decision hint (one line)
-  const decisionHint = leaseA !== leaseB
-    ? 'If you plan to stay long-term, lease profile matters more than entry price.'
-    : 'Both options are viable — choose based on your timeline and risk tolerance.'
-
-  // 4) Best for / Be cautious (only most differentiating)
-  const bestForA: string[] = []
-  const bestForB: string[] = []
-  const beCautiousA: string[] = []
-  const beCautiousB: string[] = []
-
-  // Best for - only show differentiating factors
-  if (A.medianResalePrice < B.medianResalePrice) {
-    bestForA.push('buyers prioritizing lower upfront price or short-term holding')
-  }
-  if (leaseB < leaseA) {
-    bestForB.push('buyers planning long-term stay (15+ years)')
-  }
-  if (leaseA < leaseB) {
-    bestForA.push('buyers comfortable with lease trade-offs')
-  }
-
-  // Be cautious - only show differentiating risks
-  if (leaseA >= 2) {
-    beCautiousA.push('relying on future resale or tight financing')
-  }
-  if (B.medianResalePrice > A.medianResalePrice * 1.1) {
-    beCautiousB.push('highly sensitive to upfront cost')
-  }
-  if (leaseB >= 2) {
-    beCautiousB.push('relying on future resale or tight financing')
-  }
-
+  
   // Badges
   if (A.signals.leaseRisk === 'high' || A.signals.leaseRisk === 'critical')
     badges.push({ town: 'A', label: A.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
@@ -972,17 +1131,19 @@ export function generateCompareSummary(
   else badges.push({ town: 'B', label: 'Lease healthier', tone: 'good' })
 
   return {
+    // New 5-block structure
+    headlineVerdict,
+    educationPressure,
+    housingTradeoff,
+    bestSuitedFor,
+    decisionHint,
+    movingPhrase,
+    
+    // Legacy fields
     oneLiner,
     keyDifferences,
-    decisionHint,
-    bestFor: {
-      townA: bestForA,
-      townB: bestForB,
-    },
-    beCautious: {
-      townA: beCautiousA,
-      townB: beCautiousB,
-    },
+    bestFor,
+    beCautious,
     advanced: {
       rentBuyGapA: A.rentBuyGapMonthly,
       rentBuyGapB: B.rentBuyGapMonthly,

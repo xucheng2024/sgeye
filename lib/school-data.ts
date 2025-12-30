@@ -42,6 +42,7 @@ export interface SchoolPressureIndex {
   crowding: number // R: 0-100
   dominantFactor: 'demand' | 'choice' | 'uncertainty' | 'crowding'
   explanation: string
+  whyExplanations?: string[] // Parent-friendly explanations
 }
 
 // Sigmoid function
@@ -236,21 +237,91 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
     ]
     const dominant = factors.reduce((max, f) => f.value > max.value ? f : max)
 
-    // Generate explanation
+    // Generate explanation (matched to SPI level)
     let explanation = ''
-    switch (dominant.name) {
-      case 'demand':
-        explanation = 'High-demand schools are concentrated here, competition tends to be stronger.'
-        break
-      case 'choice':
-        explanation = 'Fewer nearby schools means fewer alternatives; distance bands matter more.'
-        break
-      case 'uncertainty':
-        explanation = 'Cut-off levels fluctuate more here, making outcomes less predictable.'
-        break
-      case 'crowding':
-        explanation = 'Higher demand indicators suggest tighter competition for popular schools.'
-        break
+    if (spi < 25) {
+      // Low pressure - emphasize positive aspects
+      switch (dominant.name) {
+        case 'demand':
+          explanation = 'A wide range of lower-demand schools keeps competition manageable.'
+          break
+        case 'choice':
+          explanation = 'Multiple school options provide flexibility and reduce pressure.'
+          break
+        case 'uncertainty':
+          explanation = 'Stable cut-off patterns make outcomes more predictable.'
+          break
+        case 'crowding':
+          explanation = 'Lower local demand keeps competition manageable.'
+          break
+      }
+    } else if (spi > 50) {
+      // High pressure - emphasize challenges
+      switch (dominant.name) {
+        case 'demand':
+          explanation = 'Competition is concentrated in a few high-demand schools.'
+          break
+        case 'choice':
+          explanation = 'Fewer nearby schools means fewer alternatives; distance bands matter more.'
+          break
+        case 'uncertainty':
+          explanation = 'Cut-off levels fluctuate more here, making outcomes less predictable.'
+          break
+        case 'crowding':
+          explanation = 'Higher demand indicators suggest tighter competition for popular schools.'
+          break
+      }
+    } else {
+      // Medium pressure - balanced
+      switch (dominant.name) {
+        case 'demand':
+          explanation = 'Moderate mix of school demand levels, with some competition for popular schools.'
+          break
+        case 'choice':
+          explanation = 'Adequate school options, but distance bands still matter.'
+          break
+        case 'uncertainty':
+          explanation = 'Cut-off patterns show moderate variability year to year.'
+          break
+        case 'crowding':
+          explanation = 'Moderate local demand suggests balanced competition levels.'
+          break
+      }
+    }
+
+    // Generate parent-friendly "Why" explanations
+    const whyExplanations: string[] = []
+    
+    // Demand pressure explanation
+    if (D < 30) {
+      whyExplanations.push('Few high-demand schools → less concentrated competition')
+    } else if (D > 70) {
+      whyExplanations.push('Many high-demand schools → more concentrated competition')
+    } else {
+      whyExplanations.push('Moderate mix of school demand levels')
+    }
+    
+    // Choice constraint explanation
+    if (C < 30) {
+      whyExplanations.push('Multiple school options → wider safety net')
+    } else if (C > 70) {
+      whyExplanations.push('Fewer school options → distance bands matter more')
+    } else {
+      whyExplanations.push('Moderate number of school choices available')
+    }
+    
+    // Uncertainty explanation
+    if (U < 30) {
+      whyExplanations.push('Stable cut-off patterns → outcomes more predictable')
+    } else if (U > 70) {
+      whyExplanations.push('Fluctuating cut-off patterns → outcomes less predictable')
+    } else {
+      whyExplanations.push('Moderate cut-off stability')
+    }
+    
+    // Crowding explanation (optional, only if significant)
+    if (R > 70) {
+      whyExplanations.push('Higher local demand → tighter competition for popular schools')
     }
 
     return {
@@ -262,7 +333,8 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
       uncertainty: Math.round(U * 10) / 10,
       crowding: Math.round(R * 10) / 10,
       dominantFactor: dominant.name,
-      explanation
+      explanation,
+      whyExplanations
     }
   } catch (error) {
     console.error('Error calculating School Pressure Index:', error)

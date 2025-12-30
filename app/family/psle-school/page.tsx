@@ -90,24 +90,27 @@ export default function PSLESchoolPage() {
     const price = profile.medianResalePrice
     const lease = profile.medianRemainingLease
     
-    let summary = ''
+    let summary = 'Housing:\n'
+    
     if (price < 400000) {
-      summary += 'Lower entry price'
+      summary += 'Prices are lower'
     } else if (price < 600000) {
-      summary += 'Moderate entry price'
+      summary += 'Prices are moderate'
     } else {
-      summary += 'Higher entry price'
+      summary += 'Prices are higher'
     }
     
-    summary += ', '
+    summary += ', and remaining lease is '
     
     if (lease < 60) {
-      summary += 'higher lease risk'
+      summary += 'shorter (higher risk)'
     } else if (lease < 70) {
-      summary += 'moderate lease risk'
+      summary += 'moderate'
     } else {
-      summary += 'healthier lease'
+      summary += 'relatively healthy'
     }
+    
+    summary += '.'
     
     return summary
   }
@@ -115,28 +118,30 @@ export default function PSLESchoolPage() {
   function getSchoolSummary(landscape: SchoolLandscape | null, spi: SchoolPressureIndex | null): string {
     if (!landscape && !spi) return 'No school data available'
     
-    let summary = ''
+    let summary = 'Schools:\n'
     
     if (spi) {
       if (spi.level === 'high') {
-        summary += 'Higher pressure'
+        summary += 'Higher competition pressure'
       } else if (spi.level === 'medium') {
-        summary += 'Moderate pressure'
+        summary += 'Moderate competition pressure'
       } else {
-        summary += 'Lower pressure'
+        summary += 'Lower competition pressure'
       }
     }
     
     if (landscape) {
       summary += ', '
-      if (landscape.schoolCount < 5) {
-        summary += 'fewer school options nearby'
-      } else if (landscape.schoolCount < 10) {
-        summary += 'moderate school options'
+      if (landscape.highDemandSchools === 0) {
+        summary += 'many lower-pressure options, fewer &quot;must-fight&quot; schools'
+      } else if (landscape.highDemandSchools <= 2) {
+        summary += 'some high-demand schools, but also many lower-pressure options'
       } else {
-        summary += 'broader school options'
+        summary += 'more high-demand schools, requiring more strategic planning'
       }
     }
+    
+    summary += '.'
     
     return summary
   }
@@ -228,6 +233,37 @@ export default function PSLESchoolPage() {
               )}
             </ChartCard>
 
+            {/* Module 2: Education Reality Conclusion Card */}
+            {spi && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Education Reality for {selectedTown}
+                </h3>
+                {spi.level === 'low' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🟢</span>
+                    <p className="text-base text-gray-800">
+                      <strong>Good news:</strong> Most families here face relatively low competition for primary schools.
+                    </p>
+                  </div>
+                ) : spi.level === 'high' ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🔴</span>
+                    <p className="text-base text-gray-800">
+                      <strong>Higher pressure:</strong> Competition for primary schools is more intense here, with fewer lower-risk options.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">🟡</span>
+                    <p className="text-base text-gray-800">
+                      <strong>Moderate pressure:</strong> School competition varies, with a mix of options available.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Module 2: School Pressure Index */}
             <ChartCard
               title="School Pressure Index"
@@ -250,22 +286,26 @@ export default function PSLESchoolPage() {
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <div className="text-xs text-gray-600 mb-1">Demand Pressure</div>
                       <div className="text-lg font-semibold">{spi.demandPressure}</div>
-                      <div className="text-xs text-gray-500">Weight: 40%</div>
+                      <div className="text-xs text-gray-500 mt-1">→ How many families are competing for top schools</div>
+                      <div className="text-xs text-gray-400 mt-1">Weight: 40%</div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <div className="text-xs text-gray-600 mb-1">Choice Constraint</div>
                       <div className="text-lg font-semibold">{spi.choiceConstraint}</div>
-                      <div className="text-xs text-gray-500">Weight: 30%</div>
+                      <div className="text-xs text-gray-500 mt-1">→ How many &quot;safe&quot; school options you have</div>
+                      <div className="text-xs text-gray-400 mt-1">Weight: 30%</div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <div className="text-xs text-gray-600 mb-1">Uncertainty</div>
                       <div className="text-lg font-semibold">{spi.uncertainty}</div>
-                      <div className="text-xs text-gray-500">Weight: 20%</div>
+                      <div className="text-xs text-gray-500 mt-1">→ How predictable outcomes are year to year</div>
+                      <div className="text-xs text-gray-400 mt-1">Weight: 20%</div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <div className="text-xs text-gray-600 mb-1">Crowding</div>
                       <div className="text-lg font-semibold">{spi.crowding}</div>
-                      <div className="text-xs text-gray-500">Weight: 10%</div>
+                      <div className="text-xs text-gray-500 mt-1">→ How stretched local schools may be</div>
+                      <div className="text-xs text-gray-400 mt-1">Weight: 10%</div>
                     </div>
                   </div>
 
@@ -294,6 +334,21 @@ export default function PSLESchoolPage() {
                       </p>
                     )}
                   </div>
+
+                  {/* Why section - parent-friendly translation */}
+                  {spi.whyExplanations && spi.whyExplanations.length > 0 && (
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm font-semibold text-gray-900 mb-3">Why:</p>
+                      <ul className="space-y-2">
+                        {spi.whyExplanations.map((item, idx) => (
+                          <li key={idx} className="text-sm text-gray-800 flex items-start">
+                            <span className="text-gray-500 mr-2">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -317,9 +372,9 @@ export default function PSLESchoolPage() {
                         <Home className="w-4 h-4 text-gray-600" />
                         <span className="text-sm font-medium text-gray-700">Housing</span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 mb-2 whitespace-pre-line">
                         {getHousingSummary(housingProfile)}
-                      </p>
+                      </div>
                       {housingProfile && (
                         <div className="text-xs text-gray-500 space-y-1">
                           <div>Median price: {formatCurrency(housingProfile.medianResalePrice)}</div>
@@ -333,9 +388,9 @@ export default function PSLESchoolPage() {
                         <GraduationCap className="w-4 h-4 text-gray-600" />
                         <span className="text-sm font-medium text-gray-700">Schools</span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <div className="text-sm text-gray-600 mb-2 whitespace-pre-line">
                         {getSchoolSummary(landscape, spi)}
-                      </p>
+                      </div>
                       {landscape && (
                         <div className="text-xs text-gray-500 space-y-1">
                           <div>Schools: {landscape.schoolCount} primary schools</div>
