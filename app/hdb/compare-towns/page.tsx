@@ -6,7 +6,7 @@ import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary, Pr
 import { FamilyProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
-import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
+import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap, Clock } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
 import { TOWNS, FLAT_TYPES, RECOMMENDED_PAIRS } from './constants'
 import {
@@ -36,6 +36,7 @@ function CompareTownsPageContent() {
   const [landscapeB, setLandscapeB] = useState<SchoolLandscape | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
+  const [compareSummary, setCompareSummary] = useState<CompareSummary | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [preferenceLens, setPreferenceLens] = useState<'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'>('balanced')
   const [holdingPeriod, setHoldingPeriod] = useState<'short' | 'medium' | 'long'>('medium')
@@ -44,6 +45,7 @@ function CompareTownsPageContent() {
   const [leaseOpen, setLeaseOpen] = useState(true)
   const [marketOpen, setMarketOpen] = useState(false)
   const [schoolAccessOpen, setSchoolAccessOpen] = useState(false)
+  const [timeAccessOpen, setTimeAccessOpen] = useState(false)
   const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
   
@@ -130,7 +132,6 @@ function CompareTownsPageContent() {
   }, [townA, townB, flatType])
 
   // Generate Compare Summary from Town Profiles (with SPI, Lens, and Family Profile)
-  const isLongTerm = holdingPeriod === 'long'
   // Convert holdingPeriod to FamilyProfile format if familyProfile doesn't exist
   const effectiveFamilyProfile: FamilyProfile | null = familyProfile || (holdingPeriod ? {
     stage: 'primary_family',  // Default
@@ -139,9 +140,31 @@ function CompareTownsPageContent() {
     schoolSensitivity: preferenceLens === 'school_pressure' ? 'high' : 'neutral'
   } : null)
   
-  const compareSummary: CompareSummary | null = profileA && profileB 
-    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB, landscapeA, landscapeB, preferenceLens, isLongTerm, effectiveFamilyProfile)
-    : null
+  useEffect(() => {
+    const generateSummary = async () => {
+      if (profileA && profileB) {
+        const isLongTerm = holdingPeriod === 'long'
+        
+        const summary = await generateCompareSummary(
+          profileA,
+          profileB,
+          userBudget,
+          spiA,
+          spiB,
+          landscapeA,
+          landscapeB,
+          preferenceLens,
+          isLongTerm,
+          effectiveFamilyProfile
+        )
+        setCompareSummary(summary)
+      } else {
+        setCompareSummary(null)
+      }
+    }
+    generateSummary()
+  }, [profileA, profileB, spiA, spiB, landscapeA, landscapeB, preferenceLens, holdingPeriod, familyProfile, userBudget, effectiveFamilyProfile])
+
 
   // Debug: Log compareSummary when evidence is opened
   useEffect(() => {
@@ -1096,6 +1119,126 @@ function CompareTownsPageContent() {
                   School access data not available for one or both towns.
                 </div>
               )}
+                </ChartCard>
+              )}
+            </div>
+
+            {/* Module F: Time & Access */}
+            <div className="mb-8">
+              <button
+                onClick={() => setTimeAccessOpen(!timeAccessOpen)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all mb-2"
+              >
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Time & Access</h3>
+                </div>
+                {timeAccessOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {timeAccessOpen && (
+                <ChartCard
+                  title="Time & Access"
+                  description="Daily commuting time and accessibility structure"
+                  icon={<Clock className="w-6 h-6" />}
+                >
+                  {compareSummary && compareSummary.timeAccess ? (
+                    <div className="space-y-4">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b-2 border-gray-300 bg-gray-50">
+                              <th className="text-left py-4 px-4 font-bold text-gray-900">Metric</th>
+                              <th className="text-right py-4 px-4 font-bold text-gray-900">{townA}</th>
+                              <th className="text-right py-4 px-4 font-bold text-gray-900">{townB}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            <tr className="hover:bg-gray-50">
+                              <td className="py-4 px-4 text-gray-700 font-medium">Daily time burden</td>
+                              <td className="py-4 px-4 text-right">
+                                <span className={`font-semibold ${
+                                  compareSummary.timeAccess.timeBurdenA === 'high' ? 'text-red-600' :
+                                  compareSummary.timeAccess.timeBurdenA === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                                }`}>
+                                  {compareSummary.timeAccess.timeBurdenA === 'high' ? 'High' :
+                                   compareSummary.timeAccess.timeBurdenA === 'medium' ? 'Medium' : 'Low'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <span className={`font-semibold ${
+                                  compareSummary.timeAccess.timeBurdenB === 'high' ? 'text-red-600' :
+                                  compareSummary.timeAccess.timeBurdenB === 'medium' ? 'text-yellow-600' : 'text-green-600'
+                                }`}>
+                                  {compareSummary.timeAccess.timeBurdenB === 'high' ? 'High' :
+                                   compareSummary.timeAccess.timeBurdenB === 'medium' ? 'Medium' : 'Low'}
+                                </span>
+                              </td>
+                            </tr>
+                            {compareSummary.timeAccess.townA && compareSummary.timeAccess.townB && (
+                              <>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-4 px-4 text-gray-700 font-medium">Centrality</td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townA.centrality.replace('_', ' ')}
+                                  </td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townB.centrality.replace('_', ' ')}
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-4 px-4 text-gray-700 font-medium">MRT Density</td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townA.mrtDensity}
+                                  </td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townB.mrtDensity}
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-4 px-4 text-gray-700 font-medium">Transfer Complexity</td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townA.transferComplexity.replace('_', ' ')}
+                                  </td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townB.transferComplexity.replace('_', ' ')}
+                                  </td>
+                                </tr>
+                                <tr className="hover:bg-gray-50">
+                                  <td className="py-4 px-4 text-gray-700 font-medium">Regional Hub Access</td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townA.regionalHubAccess}
+                                  </td>
+                                  <td className="py-4 px-4 text-right text-gray-800 capitalize">
+                                    {compareSummary.timeAccess.townB.regionalHubAccess}
+                                  </td>
+                                </tr>
+                              </>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      {compareSummary.timeAccess.movingImpact && (
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm font-semibold text-gray-900 mb-2">
+                            Moving from {townA} → {townB}:
+                          </p>
+                          <p className="text-sm text-gray-800">
+                            {compareSummary.timeAccess.movingImpact}
+                          </p>
+                        </div>
+                      )}
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-700 italic">
+                          Time & Access reflects structural accessibility attributes, not precise commute times. 
+                          This helps you understand long-term daily time burden differences between towns.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      Time & Access data not available for one or both towns.
+                    </div>
+                  )}
                 </ChartCard>
               )}
             </div>

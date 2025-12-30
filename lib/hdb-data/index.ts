@@ -14,7 +14,14 @@ export type {
   TownComparisonData,
   CompareSummary,
   PreferenceLens,
+  TownTimeAccess,
+  Centrality,
+  MrtDensity,
+  TransferComplexity,
+  RegionalHubAccess,
 } from './types'
+
+export { getTimeBurdenLevel } from './types'
 
 // Fetch functions
 export {
@@ -24,6 +31,7 @@ export {
   getBinnedLeasePriceData,
   getMedianRent,
   findAffordableProperties,
+  getTownTimeAccess,
 } from './fetch'
 
 // Calculation functions

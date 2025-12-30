@@ -98,6 +98,46 @@ export interface TownComparisonData {
 
 export type PreferenceLens = 'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'
 
+// Time & Access types
+export type Centrality = 'central' | 'non_central'
+export type MrtDensity = 'high' | 'medium' | 'low'
+export type TransferComplexity = 'direct' | '1_transfer' | '2_plus'
+export type RegionalHubAccess = 'yes' | 'partial' | 'no'
+
+export interface TownTimeAccess {
+  town: string
+  centrality: Centrality
+  mrtDensity: MrtDensity
+  transferComplexity: TransferComplexity
+  regionalHubAccess: RegionalHubAccess
+}
+
+// Helper function to determine time burden level
+export function getTimeBurdenLevel(timeAccess: TownTimeAccess | null): 'low' | 'medium' | 'high' {
+  if (!timeAccess) return 'medium'
+  
+  let score = 0
+  
+  // Centrality: central = lower burden, non_central = higher burden
+  if (timeAccess.centrality === 'non_central') score += 1
+  
+  // MRT Density: high = lower burden, low = higher burden
+  if (timeAccess.mrtDensity === 'low') score += 2
+  else if (timeAccess.mrtDensity === 'medium') score += 1
+  
+  // Transfer Complexity: direct = lower burden, 2_plus = higher burden
+  if (timeAccess.transferComplexity === '2_plus') score += 2
+  else if (timeAccess.transferComplexity === '1_transfer') score += 1
+  
+  // Regional Hub Access: yes = lower burden, no = higher burden
+  if (timeAccess.regionalHubAccess === 'no') score += 1
+  else if (timeAccess.regionalHubAccess === 'partial') score += 0.5
+  
+  if (score >= 4) return 'high'
+  if (score >= 2) return 'medium'
+  return 'low'
+}
+
 // Compare Summary output
 export interface CompareSummary {
   // Bottom Line (new top section)
@@ -185,5 +225,14 @@ export interface CompareSummary {
   
   // Killer phrase: Moving from A to B
   movingPhrase?: string | null
+  
+  // Time & Access comparison
+  timeAccess?: {
+    townA: TownTimeAccess | null
+    townB: TownTimeAccess | null
+    timeBurdenA: 'low' | 'medium' | 'high'
+    timeBurdenB: 'low' | 'medium' | 'high'
+    movingImpact: string | null // e.g., "Likely increases daily commuting time"
+  } | null
 }
 

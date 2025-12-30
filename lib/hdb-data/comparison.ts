@@ -19,8 +19,9 @@ import {
   LEASE_THRESHOLDS,
   SCORING_CONSTANTS,
 } from '../constants'
-import { getAggregatedMonthly, getMedianRent } from './fetch'
-import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens } from './types'
+import { getAggregatedMonthly, getMedianRent, getTownTimeAccess } from './fetch'
+import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess } from './types'
+import { getTimeBurdenLevel } from './types'
 
 // Generate standardized scores (0-100) for each dimension
 function generateStandardizedScores(
@@ -137,7 +138,7 @@ function calculateOverallScore(
 }
 
 // Generate Compare Summary from Town Profiles (Fixed 5-block structure)
-export function generateCompareSummary(
+export async function generateCompareSummary(
   A: TownProfile,
   B: TownProfile,
   userBudget?: number,
@@ -148,7 +149,7 @@ export function generateCompareSummary(
   lens: PreferenceLens = 'balanced',
   longTerm: boolean = false,
   familyProfile?: FamilyProfile | null
-): CompareSummary {
+): Promise<CompareSummary> {
   const badges: CompareSummary['badges'] = []
   
   // Calculate differences
@@ -231,6 +232,17 @@ export function generateCompareSummary(
   }
   
   // ============================================
+  // Fetch Time & Access data
+  // ============================================
+  const [timeAccessA, timeAccessB] = await Promise.all([
+    getTownTimeAccess(A.town),
+    getTownTimeAccess(B.town),
+  ])
+  
+  const timeBurdenA = getTimeBurdenLevel(timeAccessA)
+  const timeBurdenB = getTimeBurdenLevel(timeAccessB)
+  
+  // ============================================
   // Bottom Line (Top Section)
   // ============================================
   let bottomLine: CompareSummary['bottomLine'] = null
@@ -258,6 +270,17 @@ export function generateCompareSummary(
         changes.push('👍 School pressure decreases slightly')
       } else {
         changes.push('⚠ School pressure increases slightly')
+      }
+    }
+    
+    // Time burden change (Phase 2 v1: only add to tradeoffs, not scoring)
+    if (timeAccessA && timeAccessB) {
+      const burdenLevels = { low: 1, medium: 2, high: 3 }
+      const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
+      if (burdenDiff > 0) {
+        changes.push('⚠ Increases daily time burden')
+      } else if (burdenDiff < 0) {
+        changes.push('👍 Reduces daily time burden')
       }
     }
     
@@ -451,8 +474,43 @@ export function generateCompareSummary(
       }
     }
     
+    // Time burden change (Phase 2 v1)
+    if (timeAccessA && timeAccessB) {
+      const burdenLevels = { low: 1, medium: 2, high: 3 }
+      const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
+      if (burdenDiff > 0) {
+        parts.push('increases daily time burden')
+      } else if (burdenDiff < 0) {
+        parts.push('reduces daily time burden')
+      }
+    }
+    
     if (parts.length > 0) {
       movingPhrase = `Moving from ${fromTown} to ${toTown} ${parts.join(', but ')}.`
+    }
+  }
+  
+  // ============================================
+  // Generate Time & Access Moving Impact
+  // ============================================
+  let timeAccessMovingImpact: string | null = null
+  if (timeAccessA && timeAccessB) {
+    const burdenLevels = { low: 1, medium: 2, high: 3 }
+    const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
+    
+    if (burdenDiff > 0) {
+      timeAccessMovingImpact = `Likely increases daily commuting time`
+    } else if (burdenDiff < 0) {
+      timeAccessMovingImpact = `Likely reduces daily commuting time`
+    } else {
+      timeAccessMovingImpact = `Similar daily time burden`
+    }
+    
+    // Add transfer complexity info if different
+    if (timeAccessA.transferComplexity !== timeAccessB.transferComplexity) {
+      if (timeAccessB.transferComplexity === '2_plus' || timeAccessB.transferComplexity === '1_transfer') {
+        timeAccessMovingImpact += `; more transfers for work and school`
+      }
     }
   }
   
@@ -719,6 +777,15 @@ export function generateCompareSummary(
     bestSuitedFor,
     decisionHint,
     movingPhrase,
+    
+    // Time & Access comparison
+    timeAccess: timeAccessA || timeAccessB ? {
+      townA: timeAccessA,
+      townB: timeAccessB,
+      timeBurdenA,
+      timeBurdenB,
+      movingImpact: timeAccessMovingImpact,
+    } : null,
     
     // Legacy fields
     oneLiner,

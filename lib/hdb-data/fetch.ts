@@ -5,7 +5,7 @@
 import { supabase } from '../supabase'
 import { DATA_FETCHING, LEASE_BINS } from '../constants'
 import { paginateQuery } from '../utils/pagination'
-import type { AggregatedMonthly, BinnedLeaseData } from './types'
+import type { AggregatedMonthly, BinnedLeaseData, TownTimeAccess } from './types'
 
 // Parse remaining_lease string to decimal years
 // Handles formats like: "84 years 3 months", "61 years", "49 years 11 months"
@@ -499,5 +499,39 @@ export async function findAffordableProperties(
     txCount: Math.floor(Math.random() * 100) + 20,
     medianLeaseYears: 50 + Math.random() * 30,
   })).sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice))
+}
+
+// Get Time & Access data for a town
+export async function getTownTimeAccess(town: string): Promise<TownTimeAccess | null> {
+  try {
+    if (supabase) {
+      const normalizedTown = town.toUpperCase().trim()
+      
+      const { data, error } = await supabase
+        .from('town_time_access')
+        .select('*')
+        .eq('town', normalizedTown)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching time access data:', error)
+        return null
+      }
+      
+      if (data) {
+        return {
+          town: data.town,
+          centrality: data.centrality as TownTimeAccess['centrality'],
+          mrtDensity: data.mrt_density as TownTimeAccess['mrtDensity'],
+          transferComplexity: data.transfer_complexity as TownTimeAccess['transferComplexity'],
+          regionalHubAccess: data.regional_hub_access as TownTimeAccess['regionalHubAccess'],
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching town time access:', error)
+  }
+  
+  return null
 }
 
