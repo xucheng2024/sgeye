@@ -1,5 +1,15 @@
 import { supabase } from './supabase'
 import { formatCurrency } from './utils'
+import {
+  ComparisonMetrics,
+  getPreferenceMode,
+  calculateWeightedScore,
+  checkHardRules,
+  evaluateSchoolRules,
+  SUMMARY_TEXT_RULES,
+  SUITABILITY_RULES,
+  PREFERENCE_MODES
+} from './decision-rules'
 
 export interface RawResaleTransaction {
   month: string
@@ -1099,6 +1109,26 @@ export function generateCompareSummary(
   const priceDiff = A.medianResalePrice - B.medianResalePrice // >0 means A is more expensive
   const leaseDiff = A.medianRemainingLease - B.medianRemainingLease // >0 means A has healthier lease
   
+  // ============================================
+  // Decision Rules System: Build Comparison Metrics (early)
+  // ============================================
+  const metrics: ComparisonMetrics = {
+    deltaPrice: -priceDiff,  // B - A (positive = B cheaper = better)
+    deltaLeaseYears: -leaseDiff,  // B - A (positive = B healthier = better)
+    deltaSPI: -spiDiff,  // B - A (positive = B lower pressure = better)
+    deltaRentGap: B.rentBuyGapMonthly - A.rentBuyGapMonthly,  // B - A (positive = B better cash flow = better)
+    deltaStability: 0,  // Placeholder for now
+    leaseA: A.medianRemainingLease,
+    leaseB: B.medianRemainingLease,
+    spiLevelA: spiA?.level ?? null,
+    spiLevelB: spiB?.level ?? null,
+    pctTxBelow55A: A.pctTxBelow55,
+    pctTxBelow55B: B.pctTxBelow55
+  }
+  
+  // Get preference mode based on lens and long-term flag
+  const preferenceMode = getPreferenceMode(lens, longTerm)
+  
   // Generate standardized scores
   const scores = generateStandardizedScores(A, B, spiA ?? null, spiB ?? null, landscapeA ?? null, landscapeB ?? null)
   const scoresWithOverall = calculateOverallScore(scores, lens, longTerm)
@@ -1305,18 +1335,41 @@ export function generateCompareSummary(
   }
   
   // ============================================
-  // Block 5: Decision Hint
+  // Block 5: Decision Hint (using Decision Rules)
   // ============================================
-  let decisionHint: string
-  const spiImportance = spiA && spiB ? Math.abs(spiDiff) : 0
-  const leaseImportance = Math.abs(leaseDiff)
+  let decisionHint: string = ''
+  const preferenceId = preferenceMode.id
   
-  if (spiImportance > leaseImportance && spiA && spiB) {
-    decisionHint = `If primary school pressure matters more to you, location choice may outweigh price differences.`
-  } else if (leaseImportance > 0) {
-    decisionHint = `If you plan to hold long-term, lease profile may matter more than short-term school pressure.`
-  } else {
-    decisionHint = `Both options are viable — choose based on your timeline and risk tolerance.`
+  // Apply decision hint rules
+  for (const condition of SUMMARY_TEXT_RULES.decisionHint.conditions) {
+    if (condition.condition === 'preference == long_term' && preferenceId === 'long_term') {
+      decisionHint = condition.text
+      break
+    } else if (condition.condition === 'preference == low_entry && delta_price > 30000' && 
+               preferenceId === 'low_entry' && metrics.deltaPrice > 30000) {
+      decisionHint = condition.text
+      break
+    } else if (condition.condition === 'preference == low_school_pressure && abs(delta_spi) >= 8' && 
+               preferenceId === 'low_school_pressure' && Math.abs(metrics.deltaSPI) >= 8) {
+      decisionHint = condition.text
+      break
+    } else if (condition.condition === 'default') {
+      decisionHint = condition.text
+    }
+  }
+  
+  // Fallback if no rule matched
+  if (!decisionHint) {
+    const spiImportance = spiA && spiB ? Math.abs(metrics.deltaSPI) : 0
+    const leaseImportance = Math.abs(metrics.deltaLeaseYears)
+    
+    if (spiImportance > leaseImportance && spiA && spiB) {
+      decisionHint = `If primary school pressure matters more to you, location choice may outweigh price differences.`
+    } else if (leaseImportance > 0) {
+      decisionHint = `If you plan to hold long-term, lease profile may matter more than short-term school pressure.`
+    } else {
+      decisionHint = `Both options are viable — choose based on your timeline and risk tolerance.`
+    }
   }
   
   // ============================================
@@ -1360,66 +1413,88 @@ export function generateCompareSummary(
     }
   }
   
+  // Check hard rules (warnings, penalties, overrides)
+  const hardRuleWarnings = checkHardRules(metrics, preferenceMode)
+  
+  // Evaluate school-specific rules
+  const schoolRulesResult = evaluateSchoolRules(metrics, preferenceMode)
+  
   // ============================================
-  // Lens-based Recommendation (new format)
+  // Lens-based Recommendation (using Decision Rules)
   // ============================================
   let recommendation: CompareSummary['recommendation'] = null
   if (scoresWithOverall) {
     const overallDiff = scoresWithOverall.townB.overall - scoresWithOverall.townA.overall
     const winner = overallDiff > 0 ? B.town : A.town
-    const loser = overallDiff > 0 ? A.town : B.town
+    const winnerIsB = overallDiff > 0
     
-    // Generate headline based on lens
+    // Generate headline using rules
     let headline = ''
-    if (lens === 'lower_cost') {
-      headline = priceDiff < 0 
-        ? `Choose ${A.town} if you prioritise lower entry price.`
-        : `Choose ${B.town} if you prioritise lower entry price.`
-    } else if (lens === 'lease_safety') {
-      headline = leaseDiff > 0
-        ? `Choose ${A.town} if you prioritise long-term lease safety.`
-        : `Choose ${B.town} if you prioritise long-term lease safety.`
-    } else if (lens === 'school_pressure') {
-      headline = spiDiff < 0
-        ? `Choose ${A.town} if you prioritise lower primary school pressure.`
-        : `Choose ${B.town} if you prioritise lower primary school pressure.`
-    } else {
-      headline = Math.abs(overallDiff) > 12
+    const preferenceId = preferenceMode.id
+    const overallDiffAbs = Math.abs(overallDiff)
+    
+    if (preferenceId === 'balanced') {
+      headline = overallDiffAbs > 12
         ? `Choose ${winner} based on balanced factors.`
         : `Both towns are viable — ${winner} has a slight edge.`
+    } else if (preferenceId === 'low_entry') {
+      headline = metrics.deltaPrice > 0
+        ? `Choose ${B.town} if you prioritise lower entry price.`
+        : `Choose ${A.town} if you prioritise lower entry price.`
+    } else if (preferenceId === 'long_term') {
+      headline = metrics.deltaLeaseYears > 0
+        ? `Choose ${B.town} if you prioritise long-term lease safety.`
+        : `Choose ${A.town} if you prioritise long-term lease safety.`
+    } else if (preferenceId === 'low_school_pressure') {
+      headline = metrics.deltaSPI > 0
+        ? `Choose ${B.town} if you prioritise lower primary school pressure.`
+        : `Choose ${A.town} if you prioritise lower primary school pressure.`
     }
     
-    // Generate 3 trade-off bullets (fixed format)
+    // Generate 3 trade-off bullets using rules
     const tradeoffs: string[] = []
     
-    // Upfront cost
-    if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
-      const cheaper = priceDiff < 0 ? A.town : B.town
-      const diff = Math.abs(priceDiff)
+    // Price tradeoff
+    if (Math.abs(metrics.deltaPrice) >= PRICE_SIGNIFICANT) {
+      const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
+      const diff = Math.abs(metrics.deltaPrice)
       tradeoffs.push(`💰 Upfront: ${cheaper} is cheaper by ~${formatCurrency(diff)}`)
     }
     
-    // Lease
-    if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
-      const healthier = leaseDiff > 0 ? A.town : B.town
-      const diff = Math.abs(leaseDiff)
-      tradeoffs.push(`🧱 Lease: ${healthier} has +${Math.round(diff)} yrs healthier lease profile`)
+    // Lease tradeoff
+    if (Math.abs(metrics.deltaLeaseYears) >= LEASE_SIGNIFICANT) {
+      const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
+      const diff = Math.abs(metrics.deltaLeaseYears)
+      if (diff >= 20) {
+        tradeoffs.push(`🧱 Lease: ${healthier} has significantly healthier lease profile (+${Math.round(diff)} yrs)`)
+      } else {
+        tradeoffs.push(`🧱 Lease: ${healthier} has healthier lease profile (+${Math.round(diff)} yrs)`)
+      }
     }
     
-    // School
+    // School tradeoff (with rules-based messaging)
     if (spiA && spiB) {
-      const lowerSPI = spiDiff < 0 ? A.town : B.town
-      const diff = Math.abs(spiDiff)
-      const level = (spiDiff < 0 ? spiA : spiB).level
-      const levelText = level === 'low' ? 'still Low' : level === 'medium' ? 'Moderate' : 'High'
-      tradeoffs.push(`🎓 School: Moving to ${lowerSPI === A.town ? B.town : A.town} ${spiDiff < 0 ? 'decreases' : 'increases'} SPI by +${diff.toFixed(1)} (${levelText})`)
+      const spiChangeAbs = Math.abs(metrics.deltaSPI)
+      const levelChange = spiA.level !== spiB.level
+      const finalLevel = metrics.deltaSPI > 0 ? spiB.level : spiA.level
+      const levelText = finalLevel === 'low' ? 'still Low' : finalLevel === 'medium' ? 'Moderate' : 'High'
+      const direction = metrics.deltaSPI > 0 ? 'decreases' : 'increases'
+      const targetTown = metrics.deltaSPI > 0 ? B.town : A.town
+      
+      if (spiChangeAbs >= 8 && levelChange) {
+        tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI significantly (${levelText})`)
+      } else if (spiChangeAbs >= 3) {
+        tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI slightly (${levelText})`)
+      } else if (spiChangeAbs > 0) {
+        tradeoffs.push(`🎓 School: School pressure remains similar`)
+      }
     }
     
     // Confidence badge
     let confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
-    if (Math.abs(overallDiff) > 12) {
+    if (overallDiffAbs > 12) {
       confidence = 'clear_winner'
-    } else if (Math.abs(overallDiff) > 5) {
+    } else if (overallDiffAbs > 5) {
       confidence = 'balanced'
     } else {
       confidence = 'depends_on_preference'
