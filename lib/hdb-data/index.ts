@@ -51,3 +51,15 @@ export { getTownProfile } from './town-profile'
 // Comparison functions
 export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './comparison'
 
+// Block types and functions
+export type {
+  Block,
+  BlockMetric,
+  BlockWithMetrics,
+  BlockFilters,
+  SortOption,
+  MrtBandFilter,
+  PriceVsTownFilter,
+} from './block-types'
+export { getBlocksWithMetrics, getTownMedianPrice } from './block-fetch'
+

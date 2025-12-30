@@ -6,7 +6,8 @@ import { getTownProfile, generateCompareSummary, generateThreeTownCompareSummary
 import { FamilyProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
-import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap, Clock } from 'lucide-react'
+import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap, Clock, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import ChartCard from '@/components/ChartCard'
 import { TOWNS, FLAT_TYPES, RECOMMENDED_PAIRS } from './constants'
 import {
@@ -566,20 +567,33 @@ function CompareTownsPageContent() {
 
         {/* Recommendation (new format) - Only show for 2 Town Compare */}
         {compareSummary && compareSummary.recommendation && !threeTownSummary && (
-          <RecommendationCard
-            compareSummary={compareSummary}
-            preferenceLens={preferenceLens}
-            holdingPeriod={holdingPeriod}
-            townA={townA}
-            townB={townB}
-            evidenceOpen={evidenceOpen}
-            onToggleEvidence={() => setEvidenceOpen(!evidenceOpen)}
-            familyProfileType={familyProfileType}
-            onFamilyProfileChange={() => {
-              // Scroll to family profile selector
-              document.querySelector('[name="familyProfile"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }}
-          />
+          <>
+            <RecommendationCard
+              compareSummary={compareSummary}
+              preferenceLens={preferenceLens}
+              holdingPeriod={holdingPeriod}
+              townA={townA}
+              townB={townB}
+              evidenceOpen={evidenceOpen}
+              onToggleEvidence={() => setEvidenceOpen(!evidenceOpen)}
+              familyProfileType={familyProfileType}
+              onFamilyProfileChange={() => {
+                // Scroll to family profile selector
+                document.querySelector('[name="familyProfile"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }}
+            />
+            
+            {/* Refine by Blocks Button */}
+            <div className="mb-8">
+              <Link
+                href={`/hdb/blocks?towns=${encodeURIComponent([townA, townB, townC].filter(Boolean).join(','))}&flatType=${encodeURIComponent(flatType)}&window=10`}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                Refine by Blocks
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </>
         )}
 
         {/* Evidence Layer (Default Collapsed) - Second Layer: For users who want to verify */}

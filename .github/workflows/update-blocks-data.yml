@@ -1,0 +1,36 @@
+name: Update Blocks Data
+
+on:
+  schedule:
+    # Run weekly on Monday at 2 AM UTC (10 AM Singapore time)
+    - cron: '0 2 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-blocks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Populate Blocks Data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/populate-blocks-data.js
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Blocks data update completed"
+          echo "Check Supabase dashboard to verify data"
+
