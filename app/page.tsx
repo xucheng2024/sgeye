@@ -134,11 +134,11 @@ export default function Home() {
               <div className="text-xs text-gray-500">Lease & risk</div>
             </Link>
             <Link
-              href="/hdb/compare-towns"
+              href="/hdb/transport"
               className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              <div className="font-medium mb-1">What is school competition like here?</div>
-              <div className="text-xs text-gray-500">PSLE overview</div>
+              <div className="font-medium mb-1">How does location affect daily time burden?</div>
+              <div className="text-xs text-gray-500">Transport & accessibility</div>
             </Link>
           </div>
         </div>

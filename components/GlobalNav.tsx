@@ -180,30 +180,38 @@ export default function GlobalNav() {
               )}
             </div>
 
-            {/* Future: Transport / Healthcare (Disabled) */}
+            {/* More: Transport / Healthcare */}
             <div
               className="relative"
               onMouseEnter={() => setFutureOpen(true)}
               onMouseLeave={() => setFutureOpen(false)}
             >
               <button
-                disabled
-                className="flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed"
+                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/hdb/transport'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
                 More
                 <ChevronDown className={`w-4 h-4 transition-transform ${futureOpen ? 'rotate-180' : ''}`} />
               </button>
               {futureOpen && (
                 <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                  <div className="px-4 py-2 text-sm text-gray-400">
-                    <div className="flex items-center gap-3 py-2">
-                      <Train className="w-4 h-4" />
-                      Transport <span className="text-xs ml-auto">(Coming later)</span>
-                    </div>
-                    <div className="flex items-center gap-3 py-2">
-                      <Heart className="w-4 h-4" />
-                      Healthcare <span className="text-xs ml-auto">(Coming later)</span>
-                    </div>
+                  <Link
+                    href="/hdb/transport"
+                    className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                      pathname === '/hdb/transport'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Train className="w-4 h-4" />
+                    Transport
+                  </Link>
+                  <div className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400">
+                    <Heart className="w-4 h-4" />
+                    Healthcare <span className="text-xs ml-auto">(Coming later)</span>
                   </div>
                 </div>
               )}
