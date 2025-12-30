@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AlertTriangle, Scale, CheckCircle2, ArrowRight, GraduationCap, Users, Star, GitCompare } from 'lucide-react'
+import { AlertTriangle, Scale, CheckCircle2, ArrowRight, GraduationCap, Users, Star } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -88,13 +88,10 @@ export default function Home() {
           </Link>
 
           {/* Card 3: Compare Towns (Decision Tool - emphasized) */}
-          <Link href="/hdb/compare-towns" className="bg-white rounded-lg shadow-md border-2 border-blue-300 p-6 hover:shadow-lg transition-shadow group relative">
-            <div className="absolute top-3 right-3">
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-            </div>
+          <Link href="/hdb/compare-towns" className="bg-white rounded-lg shadow-md border-2 border-blue-300 p-6 hover:shadow-lg transition-shadow group">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <GitCompare className="w-6 h-6 text-blue-600" />
+                <Star className="w-6 h-6 text-amber-500 fill-amber-500" />
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold text-gray-900">Compare Towns</h3>
