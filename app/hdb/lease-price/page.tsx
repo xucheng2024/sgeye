@@ -334,7 +334,7 @@ export default function HDBLeasePricePage() {
                         const data = payload[0].payload
                         // Calculate percentage difference from 70-80 years bin if available
                         const referenceBin = pricePerSqmChartData.find(d => d.leaseRange.includes('70') || d.leaseRange.includes('80'))
-                        const percentDiff = referenceBin ? ((data.median - referenceBin.median) / referenceBin.median * 100).toFixed(1) : null
+                        const percentDiff = referenceBin ? ((data.median - referenceBin.median) / referenceBin.median * 100) : null
                         
                         return (
                           <div className="bg-white/95 backdrop-blur-sm p-4 border border-gray-200 rounded-lg shadow-xl">
@@ -346,9 +346,9 @@ export default function HDBLeasePricePage() {
                                 <span className="font-medium text-gray-700">Typical prices (median): </span>
                                 <span className="font-semibold text-gray-900">{formatCurrencyFull(data.median)}</span>
                               </div>
-                              {percentDiff && (
+                              {percentDiff !== null && (
                                 <div className="text-xs text-gray-600 mt-1">
-                                  {percentDiff < 0 ? `${Math.abs(percentDiff)}% lower` : `${percentDiff}% higher`} than 70–80 years range
+                                  {percentDiff < 0 ? `${Math.abs(percentDiff).toFixed(1)}% lower` : `${percentDiff.toFixed(1)}% higher`} than 70–80 years range
                                 </div>
                               )}
                               <div>

@@ -115,9 +115,9 @@ export default function GlobalNav() {
                             )}
                             {item.label}
                           </div>
-                          {item.badge && (
+                          {('badge' in item) && (item as any).badge && (
                             <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
-                              {item.badge}
+                              {(item as any).badge}
                             </span>
                           )}
                         </Link>

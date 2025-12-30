@@ -4,36 +4,44 @@ import { AlertTriangle, Scale, CheckCircle2, ArrowRight, GraduationCap, Users, S
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Section 1: Hero */}
+      {/* Section 1: Hero - Single Main CTA */}
       <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              Can You Really Afford to Live in Singapore?
+              Where should my family live in Singapore?
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
-              Data-driven insights into housing costs, rental pressure, and everyday affordability.
+              Compare towns by price, lease risk, rent pressure, and primary school pressure.
             </p>
-            <Link
-              href="/hdb/affordability"
-              className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
-            >
-              Check Your Housing Reality
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <p className="mt-4 text-sm text-blue-200">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/hdb/compare-towns"
+                className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
+              >
+                Start Comparison
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/hdb"
+                  className="text-white/80 hover:text-white text-sm underline"
+                >
+                  Explore trends
+                </Link>
+                <span className="text-white/40">|</span>
+                <Link
+                  href="/hdb/lease-price"
+                  className="text-white/80 hover:text-white text-sm underline"
+                >
+                  See heatmap
+                </Link>
+              </div>
+            </div>
+            <p className="mt-6 text-sm text-blue-200">
               Based on official public data. No sign-up required.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Section 2: Reality Hook (extended from Hero) */}
-      <section className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-2xl md:text-3xl text-center text-gray-800 font-medium">
-            For many households, renting now costs more per month than buying — without building equity.
-          </p>
         </div>
       </section>
 

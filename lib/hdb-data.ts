@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { formatCurrency } from './utils'
 
 export interface RawResaleTransaction {
   month: string
@@ -697,6 +698,33 @@ export interface CompareSummary {
     bestFor: string // Best for statement
   } | null
   
+  // Lens-based Recommendation (new format)
+  recommendation: {
+    headline: string // "Choose BUKIT BATOK if you prioritise..."
+    tradeoffs: string[] // 3 fixed format bullets
+    confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
+  } | null
+  
+  // Standardized scores (0-100)
+  scores: {
+    townA: {
+      entryCost: number
+      cashFlow: number
+      leaseSafety: number
+      schoolPressure: number
+      stability: number
+      overall: number
+    }
+    townB: {
+      entryCost: number
+      cashFlow: number
+      leaseSafety: number
+      schoolPressure: number
+      stability: number
+      overall: number
+    }
+  } | null
+  
   // Fixed 5-block structure
   headlineVerdict: string // Block 1: Headline Verdict
   educationPressure: {
@@ -918,13 +946,134 @@ export async function getTownProfile(
   return null
 }
 
+// Lens type definition
+export type PreferenceLens = 'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'
+
+// Generate standardized scores (0-100) for each dimension
+function generateStandardizedScores(
+  A: TownProfile,
+  B: TownProfile,
+  spiA: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  spiB: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  landscapeA: { schoolCount: number; highDemandSchools: number } | null,
+  landscapeB: { schoolCount: number; highDemandSchools: number } | null
+): CompareSummary['scores'] {
+  // Normalize to 0-100 scale (relative to A vs B comparison)
+  const minPrice = Math.min(A.medianResalePrice, B.medianResalePrice)
+  const maxPrice = Math.max(A.medianResalePrice, B.medianResalePrice)
+  const priceRange = maxPrice - minPrice || 1
+  
+  // Entry cost: lower is better, so invert (lower price = higher score)
+  const entryCostA = priceRange > 0 ? 100 - ((A.medianResalePrice - minPrice) / priceRange * 100) : 50
+  const entryCostB = priceRange > 0 ? 100 - ((B.medianResalePrice - minPrice) / priceRange * 100) : 50
+  
+  // Cash flow: higher rent-buy gap is better
+  const maxGap = Math.max(Math.abs(A.rentBuyGapMonthly), Math.abs(B.rentBuyGapMonthly), 1)
+  const cashFlowA = A.rentBuyGapMonthly > 0 ? Math.min(100, (A.rentBuyGapMonthly / maxGap) * 100) : 0
+  const cashFlowB = B.rentBuyGapMonthly > 0 ? Math.min(100, (B.rentBuyGapMonthly / maxGap) * 100) : 0
+  
+  // Lease safety: higher remaining lease is better
+  const minLease = Math.min(A.medianRemainingLease, B.medianRemainingLease)
+  const maxLease = Math.max(A.medianRemainingLease, B.medianRemainingLease)
+  const leaseRange = maxLease - minLease || 1
+  const leaseSafetyA = leaseRange > 0 ? ((A.medianRemainingLease - minLease) / leaseRange * 100) : 50
+  const leaseSafetyB = leaseRange > 0 ? ((B.medianRemainingLease - minLease) / leaseRange * 100) : 50
+  
+  // School pressure: lower SPI is better, so invert
+  const spiAValue = spiA?.spi ?? 50
+  const spiBValue = spiB?.spi ?? 50
+  const minSPI = Math.min(spiAValue, spiBValue)
+  const maxSPI = Math.max(spiAValue, spiBValue)
+  const spiRange = maxSPI - minSPI || 1
+  const schoolPressureA = spiRange > 0 ? 100 - ((spiAValue - minSPI) / spiRange * 100) : 50
+  const schoolPressureB = spiRange > 0 ? 100 - ((spiBValue - minSPI) / spiRange * 100) : 50
+  
+  // Stability: lower volatility and higher volume is better
+  const maxVolatility = Math.max(A.volatility12m, B.volatility12m, 0.01)
+  const maxVolume = Math.max(A.volumeRecent, B.volumeRecent, 1)
+  const stabilityA = (1 - Math.min(1, A.volatility12m / maxVolatility)) * 50 + (A.volumeRecent / maxVolume) * 50
+  const stabilityB = (1 - Math.min(1, B.volatility12m / maxVolatility)) * 50 + (B.volumeRecent / maxVolume) * 50
+  
+  return {
+    townA: {
+      entryCost: Math.round(entryCostA),
+      cashFlow: Math.round(cashFlowA),
+      leaseSafety: Math.round(leaseSafetyA),
+      schoolPressure: Math.round(schoolPressureA),
+      stability: Math.round(stabilityA),
+      overall: 0 // Will be calculated based on lens
+    },
+    townB: {
+      entryCost: Math.round(entryCostB),
+      cashFlow: Math.round(cashFlowB),
+      leaseSafety: Math.round(leaseSafetyB),
+      schoolPressure: Math.round(schoolPressureB),
+      stability: Math.round(stabilityB),
+      overall: 0 // Will be calculated based on lens
+    }
+  }
+}
+
+// Calculate overall score based on lens weights
+function calculateOverallScore(
+  scores: CompareSummary['scores'],
+  lens: PreferenceLens,
+  longTerm: boolean
+): CompareSummary['scores'] {
+  if (!scores) return null
+  
+  // Define weights for each lens
+  let weights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
+  
+  if (lens === 'lower_cost') {
+    weights = { entryCost: 0.45, cashFlow: 0.20, leaseSafety: 0.20, schoolPressure: 0.10, stability: 0.05 }
+  } else if (lens === 'lease_safety') {
+    weights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.45, schoolPressure: 0.10, stability: 0.20 }
+  } else if (lens === 'school_pressure') {
+    weights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.10, schoolPressure: 0.45, stability: 0.20 }
+  } else { // balanced
+    weights = { entryCost: 0.25, cashFlow: 0.20, leaseSafety: 0.25, schoolPressure: 0.20, stability: 0.10 }
+  }
+  
+  // Adjust for long-term holding
+  if (longTerm) {
+    weights.leaseSafety += 0.10
+    weights.entryCost -= 0.05
+    weights.cashFlow -= 0.05
+  }
+  
+  // Calculate overall scores
+  const overallA = 
+    scores.townA.entryCost * weights.entryCost +
+    scores.townA.cashFlow * weights.cashFlow +
+    scores.townA.leaseSafety * weights.leaseSafety +
+    scores.townA.schoolPressure * weights.schoolPressure +
+    scores.townA.stability * weights.stability
+  
+  const overallB = 
+    scores.townB.entryCost * weights.entryCost +
+    scores.townB.cashFlow * weights.cashFlow +
+    scores.townB.leaseSafety * weights.leaseSafety +
+    scores.townB.schoolPressure * weights.schoolPressure +
+    scores.townB.stability * weights.stability
+  
+  return {
+    townA: { ...scores.townA, overall: Math.round(overallA) },
+    townB: { ...scores.townB, overall: Math.round(overallB) }
+  }
+}
+
 // Generate Compare Summary from Town Profiles (Fixed 5-block structure)
 export function generateCompareSummary(
   A: TownProfile,
   B: TownProfile,
   userBudget?: number,
   spiA?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
-  spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null
+  spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
+  landscapeA?: { schoolCount: number; highDemandSchools: number } | null,
+  landscapeB?: { schoolCount: number; highDemandSchools: number } | null,
+  lens: PreferenceLens = 'balanced',
+  longTerm: boolean = false
 ): CompareSummary {
   const badges: CompareSummary['badges'] = []
   
@@ -937,6 +1086,10 @@ export function generateCompareSummary(
   const spiDiff = spiA && spiB ? spiA.spi - spiB.spi : 0 // >0 means A has higher pressure
   const priceDiff = A.medianResalePrice - B.medianResalePrice // >0 means A is more expensive
   const leaseDiff = A.medianRemainingLease - B.medianRemainingLease // >0 means A has healthier lease
+  
+  // Generate standardized scores
+  const scores = generateStandardizedScores(A, B, spiA ?? null, spiB ?? null, landscapeA ?? null, landscapeB ?? null)
+  const scoresWithOverall = calculateOverallScore(scores, lens, longTerm)
   
   // Helper function to get SPI label
   const getSPILabel = (level: 'low' | 'medium' | 'high'): string => {
@@ -1196,6 +1349,74 @@ export function generateCompareSummary(
   }
   
   // ============================================
+  // Lens-based Recommendation (new format)
+  // ============================================
+  let recommendation: CompareSummary['recommendation'] = null
+  if (scoresWithOverall) {
+    const overallDiff = scoresWithOverall.townB.overall - scoresWithOverall.townA.overall
+    const winner = overallDiff > 0 ? B.town : A.town
+    const loser = overallDiff > 0 ? A.town : B.town
+    
+    // Generate headline based on lens
+    let headline = ''
+    if (lens === 'lower_cost') {
+      headline = priceDiff < 0 
+        ? `Choose ${A.town} if you prioritise lower entry price.`
+        : `Choose ${B.town} if you prioritise lower entry price.`
+    } else if (lens === 'lease_safety') {
+      headline = leaseDiff > 0
+        ? `Choose ${A.town} if you prioritise long-term lease safety.`
+        : `Choose ${B.town} if you prioritise long-term lease safety.`
+    } else if (lens === 'school_pressure') {
+      headline = spiDiff < 0
+        ? `Choose ${A.town} if you prioritise lower primary school pressure.`
+        : `Choose ${B.town} if you prioritise lower primary school pressure.`
+    } else {
+      headline = Math.abs(overallDiff) > 12
+        ? `Choose ${winner} based on balanced factors.`
+        : `Both towns are viable — ${winner} has a slight edge.`
+    }
+    
+    // Generate 3 trade-off bullets (fixed format)
+    const tradeoffs: string[] = []
+    
+    // Upfront cost
+    if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
+      const cheaper = priceDiff < 0 ? A.town : B.town
+      const diff = Math.abs(priceDiff)
+      tradeoffs.push(`💰 Upfront: ${cheaper} is cheaper by ~${formatCurrency(diff)}`)
+    }
+    
+    // Lease
+    if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
+      const healthier = leaseDiff > 0 ? A.town : B.town
+      const diff = Math.abs(leaseDiff)
+      tradeoffs.push(`🧱 Lease: ${healthier} has +${Math.round(diff)} yrs healthier lease profile`)
+    }
+    
+    // School
+    if (spiA && spiB) {
+      const lowerSPI = spiDiff < 0 ? A.town : B.town
+      const diff = Math.abs(spiDiff)
+      const level = (spiDiff < 0 ? spiA : spiB).level
+      const levelText = level === 'low' ? 'still Low' : level === 'medium' ? 'Moderate' : 'High'
+      tradeoffs.push(`🎓 School: Moving to ${lowerSPI === A.town ? B.town : A.town} ${spiDiff < 0 ? 'decreases' : 'increases'} SPI by +${diff.toFixed(1)} (${levelText})`)
+    }
+    
+    // Confidence badge
+    let confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
+    if (Math.abs(overallDiff) > 12) {
+      confidence = 'clear_winner'
+    } else if (Math.abs(overallDiff) > 5) {
+      confidence = 'balanced'
+    } else {
+      confidence = 'depends_on_preference'
+    }
+    
+    recommendation = { headline, tradeoffs: tradeoffs.slice(0, 3), confidence }
+  }
+  
+  // ============================================
   // Legacy fields (for backward compatibility)
   // ============================================
   const oneLiner = headlineVerdict
@@ -1228,6 +1449,10 @@ export function generateCompareSummary(
   return {
     // Bottom Line (top section)
     bottomLine,
+    // Lens-based Recommendation
+    recommendation,
+    // Standardized scores
+    scores: scoresWithOverall,
     // New 5-block structure
     headlineVerdict,
     educationPressure,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary } from '@/lib/hdb-data'
+import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary, PreferenceLens, TownComparisonData } from '@/lib/hdb-data'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
 import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
@@ -396,6 +396,9 @@ export default function CompareTownsPage() {
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [preferenceLens, setPreferenceLens] = useState<'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'>('balanced')
+  const [holdingPeriod, setHoldingPeriod] = useState<'short' | 'medium' | 'long'>('medium')
+  const [evidenceOpen, setEvidenceOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -434,9 +437,10 @@ export default function CompareTownsPage() {
     fetchData()
   }, [townA, townB, flatType])
 
-  // Generate Compare Summary from Town Profiles (with SPI)
+  // Generate Compare Summary from Town Profiles (with SPI and Lens)
+  const isLongTerm = holdingPeriod === 'long'
   const compareSummary: CompareSummary | null = profileA && profileB 
-    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB)
+    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB, landscapeA, landscapeB, preferenceLens, isLongTerm)
     : null
 
   // Generate suitability from profiles
@@ -452,19 +456,16 @@ export default function CompareTownsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Compare Two Towns — What You Gain, What You Trade Off</h1>
-          <p className="text-lg text-gray-600 mb-2">A side-by-side comparison based on resale prices, rent, lease profile, and long-term risks.</p>
-          <p className="text-sm text-gray-500 italic">
-            This tool helps you narrow down suitable towns and understand trade-offs. Final unit selection depends on specific flat attributes such as block, floor, and proximity.
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live?</h1>
+          <p className="text-lg text-gray-600 mb-2">Compare towns by price, lease risk, rent pressure, and primary school pressure.</p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Select Recommended Pairs */}
+        {/* First Screen: Quick Start */}
         {!searchParams.get('townA') && !searchParams.get('townB') && (
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Start — Try a recommended comparison:</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Start</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {RECOMMENDED_PAIRS.map((pair, index) => (
                 <button
@@ -476,17 +477,17 @@ export default function CompareTownsPage() {
                   className="text-left p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 >
                   <div className="font-semibold text-sm text-gray-900 mb-1">{pair.label}</div>
-                  <div className="text-xs text-gray-600 mb-2">{pair.townA} vs {pair.townB}</div>
-                  <div className="text-xs text-gray-500">{pair.description}</div>
+                  <div className="text-xs text-gray-600">{pair.townA} vs {pair.townB}</div>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Town Selection */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        {/* Second Screen: My Situation */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">My situation</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Town A</label>
               <select
@@ -513,64 +514,175 @@ export default function CompareTownsPage() {
               </select>
             </div>
           </div>
-          <div className="mt-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Flat Type</label>
-            <select
-              value={flatType}
-              onChange={(e) => setFlatType(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-            >
-              {FLAT_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Flat Type</label>
+              <select
+                value={flatType}
+                onChange={(e) => setFlatType(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                {FLAT_TYPES.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Holding period</label>
+              <select
+                value={holdingPeriod}
+                onChange={(e) => setHoldingPeriod(e.target.value as 'short' | 'medium' | 'long')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+              >
+                <option value="short">&lt;5 years</option>
+                <option value="medium">5–15 years</option>
+                <option value="long">15+ years</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Auto-generated Summary - Fixed 5-block structure */}
-        {compareSummary && (
+        {/* Third Screen: Preference Lens */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">What matters more to you?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${preferenceLens === 'lower_cost' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+              <input
+                type="radio"
+                name="lens"
+                value="lower_cost"
+                checked={preferenceLens === 'lower_cost'}
+                onChange={(e) => setPreferenceLens(e.target.value as PreferenceLens)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Lower upfront cost</div>
+                <div className="text-xs text-gray-600">Prioritise lower entry price</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${preferenceLens === 'lease_safety' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+              <input
+                type="radio"
+                name="lens"
+                value="lease_safety"
+                checked={preferenceLens === 'lease_safety'}
+                onChange={(e) => setPreferenceLens(e.target.value as PreferenceLens)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Long-term resale & lease safety</div>
+                <div className="text-xs text-gray-600">Prioritise healthier lease profile</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${preferenceLens === 'school_pressure' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+              <input
+                type="radio"
+                name="lens"
+                value="school_pressure"
+                checked={preferenceLens === 'school_pressure'}
+                onChange={(e) => setPreferenceLens(e.target.value as PreferenceLens)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Lower school pressure</div>
+                <div className="text-xs text-gray-600">Prioritise lower SPI & more options</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${preferenceLens === 'balanced' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+              <input
+                type="radio"
+                name="lens"
+                value="balanced"
+                checked={preferenceLens === 'balanced'}
+                onChange={(e) => setPreferenceLens(e.target.value as PreferenceLens)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">Balanced (default)</div>
+                <div className="text-xs text-gray-600">Weighted decision across all factors</div>
+              </div>
+            </label>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <input
+              type="checkbox"
+              id="longTerm"
+              checked={holdingPeriod === 'long'}
+              onChange={(e) => setHoldingPeriod(e.target.checked ? 'long' : 'medium')}
+              className="w-4 h-4"
+            />
+            <label htmlFor="longTerm" className="text-sm text-gray-700 cursor-pointer">
+              I plan to stay long-term (15+ years)
+            </label>
+          </div>
+        </div>
+
+        {/* Recommendation (new format) */}
+        {compareSummary && compareSummary.recommendation && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900">Summary</h3>
-              <div className="flex items-center gap-2">
-                {compareSummary.badges
-                  .filter(b => b.town === 'A')
-                  .map((badge, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        badge.tone === 'warn'
-                          ? 'bg-red-100 text-red-700'
-                          : badge.tone === 'good'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {townA}: {badge.label}
-                    </span>
-                  ))}
-                {compareSummary.badges
-                  .filter(b => b.town === 'B')
-                  .map((badge, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        badge.tone === 'warn'
-                          ? 'bg-red-100 text-red-700'
-                          : badge.tone === 'good'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {townB}: {badge.label}
-                    </span>
-                  ))}
-              </div>
+              <h3 className="text-lg font-bold text-gray-900">Recommendation</h3>
+              {compareSummary.recommendation.confidence === 'clear_winner' && (
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                  Clear winner
+                </span>
+              )}
+              {compareSummary.recommendation.confidence === 'balanced' && (
+                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                  Balanced
+                </span>
+              )}
+              {compareSummary.recommendation.confidence === 'depends_on_preference' && (
+                <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
+                  Depends on preference
+                </span>
+              )}
             </div>
 
-            {/* Bottom Line (Top Section) */}
+            {/* Recommendation Headline */}
+            <div className="mb-6">
+              <p className="text-xl font-bold text-gray-900 leading-relaxed">
+                {compareSummary.recommendation.headline}
+              </p>
+            </div>
+
+            {/* Trade-off bullets (3 fixed format) */}
+            <div className="mb-6 space-y-2">
+              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => (
+                <div key={idx} className="text-sm text-gray-800">
+                  {tradeoff}
+                </div>
+              ))}
+            </div>
+
+            {/* See the evidence button */}
+            <button
+              onClick={() => setEvidenceOpen(!evidenceOpen)}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {evidenceOpen ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  Hide evidence
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  See the evidence
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Evidence (expandable) */}
+        {compareSummary && evidenceOpen && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Evidence</h3>
+            
+            {/* Bottom Line (if exists) */}
             {compareSummary.bottomLine && (
-              <div className="mb-6 p-5 bg-white rounded-lg border-2 border-blue-300 shadow-sm">
+              <div className="mb-6 p-5 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">🧭</span>
                   <h4 className="text-lg font-bold text-gray-900">Bottom Line</h4>

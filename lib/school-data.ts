@@ -141,7 +141,7 @@ function calculateUncertainty(schools: PrimarySchool[], cutoffs: PSLECutoff[]): 
 
     if (schoolCutoffs.length >= 2) {
       // Convert bands to numeric: low=0, mid=0.5, high=1.0
-      const values = schoolCutoffs.map(c => {
+      const values: number[] = schoolCutoffs.map(c => {
         const band = getCutoffBand(c)
         return band === 'low' ? 0 : band === 'mid' ? 0.5 : 1.0
       })
@@ -197,6 +197,7 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
     const cleanTown = town.replace(/^["']|["']$/g, '').trim()
     
     // Fetch schools in this town - try exact match first
+    if (!supabase) return null
     let { data: schools, error: schoolsError } = await supabase
       .from('primary_schools')
       .select('*')
@@ -547,6 +548,7 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
 // Get school landscape for a town
 export async function getSchoolLandscape(town: string): Promise<SchoolLandscape | null> {
   try {
+    if (!supabase) return null
     // Clean town name - remove quotes if present
     const cleanTown = town.replace(/^["']|["']$/g, '').trim()
     
@@ -611,6 +613,7 @@ export async function getSchoolLandscape(town: string): Promise<SchoolLandscape 
 // Get all towns with schools
 export async function getTownsWithSchools(): Promise<string[]> {
   try {
+    if (!supabase) return []
     const { data, error } = await supabase
       .from('primary_schools')
       .select('town')
