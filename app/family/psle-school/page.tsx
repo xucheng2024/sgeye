@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GraduationCap, AlertCircle, Home, TrendingUp, Info } from 'lucide-react'
+import { GraduationCap, AlertCircle, Home, TrendingUp } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
 import { 
   calculateSchoolPressureIndex, 
@@ -193,15 +193,21 @@ export default function PSLESchoolPage() {
                       <div className="text-sm text-blue-700">Primary Schools</div>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-900">{landscape.cutoffDistribution.low}</div>
+                      <div className="text-2xl font-bold text-green-900">
+                        {landscape.cutoffDistribution.low === 0 ? '—' : landscape.cutoffDistribution.low}
+                      </div>
                       <div className="text-sm text-green-700">Low Cut-off (≤230)</div>
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-yellow-900">{landscape.cutoffDistribution.mid}</div>
+                      <div className="text-2xl font-bold text-yellow-900">
+                        {landscape.cutoffDistribution.mid === 0 ? '—' : landscape.cutoffDistribution.mid}
+                      </div>
                       <div className="text-sm text-yellow-700">Mid Cut-off (231-250)</div>
                     </div>
                     <div className="bg-red-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-red-900">{landscape.cutoffDistribution.high}</div>
+                      <div className="text-2xl font-bold text-red-900">
+                        {landscape.cutoffDistribution.high === 0 ? '—' : landscape.cutoffDistribution.high}
+                      </div>
                       <div className="text-sm text-red-700">High Cut-off (≥251)</div>
                     </div>
                   </div>
@@ -209,7 +215,9 @@ export default function PSLESchoolPage() {
                     <p className="text-sm text-gray-700">
                       {landscape.highDemandSchools > 0 
                         ? `${landscape.highDemandSchools} high-demand school${landscape.highDemandSchools > 1 ? 's' : ''} in this area.`
-                        : 'No high-demand schools identified in recent data.'}
+                        : landscape.cutoffDistribution.low === 0 && landscape.cutoffDistribution.mid === 0 && landscape.cutoffDistribution.high === 0
+                        ? 'Cut-off data not yet available for schools in this area. Most schools here typically fall into lower-to-mid demand ranges.'
+                        : 'No high-demand schools identified in recent data. Most schools here fall into lower-to-mid demand ranges.'}
                     </p>
                   </div>
                 </div>
@@ -262,9 +270,29 @@ export default function PSLESchoolPage() {
                   </div>
 
                   <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-gray-800 mb-2">
                       <strong>Key factor:</strong> {spi.explanation}
                     </p>
+                    {spi.dominantFactor === 'uncertainty' && (
+                      <p className="text-xs text-gray-700 italic">
+                        This may matter more for families relying on balloting margins.
+                      </p>
+                    )}
+                    {spi.dominantFactor === 'demand' && (
+                      <p className="text-xs text-gray-700 italic">
+                        Families with children near cut-off thresholds may face higher competition here.
+                      </p>
+                    )}
+                    {spi.dominantFactor === 'choice' && (
+                      <p className="text-xs text-gray-700 italic">
+                        Distance bands become more critical when school options are limited.
+                      </p>
+                    )}
+                    {spi.dominantFactor === 'crowding' && (
+                      <p className="text-xs text-gray-700 italic">
+                        Higher demand indicators suggest tighter competition for popular schools.
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -325,6 +353,27 @@ export default function PSLESchoolPage() {
                     Final school allocation depends on specific unit location, distance bands, and cohort demand.
                   </p>
                 </div>
+                {housingProfile && landscape && spi && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-800 italic">
+                      {(() => {
+                        const isAffordable = housingProfile.medianResalePrice < 500000
+                        const isLowPressure = spi.level === 'low'
+                        const hasFewElite = landscape.highDemandSchools === 0
+                        
+                        if (isAffordable && isLowPressure && hasFewElite) {
+                          return `This area favors affordability with relatively lower school pressure, but may offer fewer elite-school options.`
+                        } else if (isAffordable && !isLowPressure) {
+                          return `This area offers lower entry costs but comes with higher school competition pressure.`
+                        } else if (!isAffordable && isLowPressure) {
+                          return `This area commands higher prices but offers lower school pressure and more options.`
+                        } else {
+                          return `This area presents a balance between housing costs and school environment, with trade-offs to consider.`
+                        }
+                      })()}
+                    </p>
+                  </div>
+                )}
               </div>
             </ChartCard>
 
@@ -340,12 +389,12 @@ export default function PSLESchoolPage() {
                   <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
                     <li>Structural school pressure patterns by location</li>
                     <li>Housing affordability vs school environment trade-offs</li>
-                    <li>Long-term constraints you'll face in different areas</li>
+                    <li>Long-term constraints you&apos;ll face in different areas</li>
                   </ul>
                 </div>
 
                 <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-400">
-                  <h4 className="font-semibold text-gray-900 mb-2">What This Tool Doesn't Do</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">What This Tool Doesn&apos;t Do</h4>
                   <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
                     <li>Predict specific school allocation outcomes</li>
                     <li>Guarantee admission to any school</li>
