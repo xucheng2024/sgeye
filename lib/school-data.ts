@@ -193,11 +193,27 @@ async function calculateCrowding(town: string): Promise<number> {
 // Calculate School Pressure Index for a town
 export async function calculateSchoolPressureIndex(town: string): Promise<SchoolPressureIndex | null> {
   try {
-    // Fetch schools in this town
-    const { data: schools, error: schoolsError } = await supabase
+    // Clean town name - remove quotes if present
+    const cleanTown = town.replace(/^["']|["']$/g, '').trim()
+    
+    // Fetch schools in this town - try exact match first
+    let { data: schools, error: schoolsError } = await supabase
       .from('primary_schools')
       .select('*')
-      .eq('town', town)
+      .eq('town', cleanTown)
+    
+    // If no results, try with quotes (in case data was imported with quotes)
+    if ((!schools || schools.length === 0) && !schoolsError) {
+      const { data: schoolsWithQuotes, error: quotesError } = await supabase
+        .from('primary_schools')
+        .select('*')
+        .eq('town', `"${cleanTown}"`)
+      
+      if (!quotesError && schoolsWithQuotes && schoolsWithQuotes.length > 0) {
+        schools = schoolsWithQuotes
+        schoolsError = null
+      }
+    }
 
     if (schoolsError) {
       console.error(`Error fetching schools for ${town}:`, schoolsError)
@@ -227,11 +243,31 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
           console.log(`Found case-insensitive match: "${match}"`)
         }
       }
-      // Try case-insensitive search as fallback
-      const { data: schoolsCaseInsensitive, error: caseError } = await supabase
+      // Try case-insensitive search as fallback (with and without quotes)
+      let schoolsCaseInsensitive = null
+      let caseError = null
+      
+      // Try without quotes first
+      let { data: schoolsCI, error: ciError } = await supabase
         .from('primary_schools')
         .select('*')
-        .ilike('town', town)
+        .ilike('town', cleanTown)
+      
+      if (!ciError && schoolsCI && schoolsCI.length > 0) {
+        schoolsCaseInsensitive = schoolsCI
+      } else {
+        // Try with quotes
+        const { data: schoolsCIQuotes, error: ciQuotesError } = await supabase
+          .from('primary_schools')
+          .select('*')
+          .ilike('town', `"${cleanTown}"`)
+        
+        if (!ciQuotesError && schoolsCIQuotes && schoolsCIQuotes.length > 0) {
+          schoolsCaseInsensitive = schoolsCIQuotes
+        } else {
+          caseError = ciQuotesError || ciError
+        }
+      }
       
       if (caseError) {
         console.error(`Error in case-insensitive search for ${town}:`, caseError)
