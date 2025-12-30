@@ -425,7 +425,10 @@ export default function CompareTownsPage() {
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Compare Two Towns — What You Gain, What You Trade Off</h1>
-          <p className="text-lg text-gray-600">A side-by-side comparison based on resale prices, rent, lease profile, and long-term risks.</p>
+          <p className="text-lg text-gray-600 mb-2">A side-by-side comparison based on resale prices, rent, lease profile, and long-term risks.</p>
+          <p className="text-sm text-gray-500 italic">
+            This tool helps you narrow down suitable towns and understand trade-offs. Final unit selection depends on specific flat attributes such as block, floor, and proximity.
+          </p>
         </div>
       </header>
 
