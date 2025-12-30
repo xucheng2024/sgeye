@@ -976,7 +976,7 @@ export function generateCompareSummary(
   // Bottom Line (Top Section)
   // ============================================
   let bottomLine: CompareSummary['bottomLine'] = null
-  if (profileA && profileB) {
+  if (A && B) {
     const changes: string[] = []
     
     // Lease security change
@@ -1013,8 +1013,8 @@ export function generateCompareSummary(
     }
     
     // Monthly affordability (rent vs buy gap)
-    if (profileA.medianRent && profileB.medianRent) {
-      const rentGapDiff = profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly
+    if (A.medianRent && B.medianRent) {
+      const rentGapDiff = B.rentBuyGapMonthly - A.rentBuyGapMonthly
       if (Math.abs(rentGapDiff) < 200) {
         changes.push('💰 Similar monthly affordability')
       }
