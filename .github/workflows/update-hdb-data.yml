@@ -38,13 +38,3 @@ jobs:
           # Run aggregation via database function
           node scripts/run-aggregation.js
 
-      - name: Update Blocks Data (Incremental)
-        if: success() # Only run if aggregation succeeded
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          # Update blocks and block_metrics after new transaction data is available
-          echo "Updating blocks data (incremental)..."
-          node scripts/populate-blocks-data.js --incremental || echo "Blocks update completed with warnings"
-
