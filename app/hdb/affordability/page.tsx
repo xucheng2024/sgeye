@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { calculateAffordability, findAffordableProperties, getMedianRent, calculateMonthlyMortgage } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { Calculator, Home, Scale, AlertTriangle, ArrowRight } from 'lucide-react'
+import CompareTownsCTA from '@/components/CompareTownsCTA'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
@@ -570,23 +571,7 @@ export default function HDBAffordabilityPage() {
         )}
 
         {/* Redirect CTA to Compare Towns */}
-        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-          <div className="text-center">
-            <p className="text-base font-semibold text-gray-900 mb-2">
-              Ready to decide?
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              Compare rent vs buy trade-offs between towns →
-            </p>
-            <Link
-              href="/hdb/compare-towns"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              Compare Towns
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
+        <CompareTownsCTA text="Compare towns and see what changes" />
       </main>
     </div>
   )

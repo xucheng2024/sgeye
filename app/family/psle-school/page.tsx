@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { GraduationCap, AlertCircle, Home, TrendingUp, ArrowRight } from 'lucide-react'
+import { GraduationCap, AlertCircle, Home, TrendingUp } from 'lucide-react'
+import CompareTownsCTA from '@/components/CompareTownsCTA'
 import ChartCard from '@/components/ChartCard'
 import { 
   calculateSchoolPressureIndex, 
@@ -275,8 +275,11 @@ export default function PSLESchoolPage() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-4xl font-bold text-gray-900">{spi.spi}</div>
-                      <div className="text-sm text-gray-500">Pressure Index (0-100)</div>
+                      <div className="text-4xl font-bold text-gray-900">SPI: {spi.spi}</div>
+                      <div className="text-sm text-gray-600 font-medium mt-1">
+                        ({spi.level === 'low' ? 'Low pressure' : spi.level === 'medium' ? 'Moderate pressure' : 'High pressure'})
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">Pressure Index (0-100)</div>
                     </div>
                     <div className={`px-4 py-2 rounded-lg font-semibold ${getSPIColor(spi.level)}`}>
                       {getSPIBadge(spi.level)}
@@ -469,20 +472,7 @@ export default function PSLESchoolPage() {
             </ChartCard>
 
             {/* Redirect CTA to Compare Towns */}
-            <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-              <div className="text-center">
-                <p className="text-base font-semibold text-gray-900 mb-2">
-                  Compare education impact between two towns →
-                </p>
-                <Link
-                  href="/hdb/compare-towns"
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-                >
-                  Compare Towns
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </div>
-            </div>
+            <CompareTownsCTA text="Compare education impact when moving between towns" />
           </>
         )}
       </main>

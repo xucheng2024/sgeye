@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { getBinnedLeasePriceData, BinnedLeaseData } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { Clock, ArrowRight, AlertTriangle } from 'lucide-react'
+import CompareTownsCTA from '@/components/CompareTownsCTA'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -521,20 +522,7 @@ export default function HDBLeasePricePage() {
         </div>
 
         {/* Redirect CTA to Compare Towns */}
-        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-          <div className="text-center">
-            <p className="text-base font-semibold text-gray-900 mb-2">
-              See how lease risk affects your town choice →
-            </p>
-            <Link
-              href="/hdb/compare-towns"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-            >
-              Compare Towns
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
+        <CompareTownsCTA text="See how lease risk affects your town choice" />
       </main>
     </div>
   )

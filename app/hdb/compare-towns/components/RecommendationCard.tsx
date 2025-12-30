@@ -6,7 +6,7 @@
 'use client'
 
 import { CompareSummary, PreferenceLens } from '@/lib/hdb-data'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown, Minus } from 'lucide-react'
 
 interface RecommendationCardProps {
   compareSummary: CompareSummary
@@ -40,8 +40,56 @@ export default function RecommendationCard({
     return 'Balanced family'
   }
 
+  // Parse trade-off to determine direction and color
+  const parseTradeoff = (tradeoff: string) => {
+    const lowerText = tradeoff.toLowerCase()
+    let icon = '💰'
+    let direction: 'up' | 'down' | 'neutral' = 'neutral'
+    let color = 'text-gray-600'
+    
+    if (tradeoff.includes('Entry cost')) {
+      icon = '💰'
+      if (lowerText.includes('lower') || lowerText.includes('cheaper')) {
+        direction = 'down'
+        color = 'text-green-600'
+      } else if (lowerText.includes('higher') || lowerText.includes('more expensive')) {
+        direction = 'up'
+        color = 'text-orange-600'
+      } else {
+        direction = 'neutral'
+        color = 'text-gray-600'
+      }
+    } else if (tradeoff.includes('Lease')) {
+      icon = '🧱'
+      if (lowerText.includes('more') || lowerText.includes('healthier')) {
+        direction = 'up'
+        color = 'text-green-600'
+      } else if (lowerText.includes('less') || lowerText.includes('shorter')) {
+        direction = 'down'
+        color = 'text-orange-600'
+      } else {
+        direction = 'neutral'
+        color = 'text-gray-600'
+      }
+    } else if (tradeoff.includes('School')) {
+      icon = '🎓'
+      if (lowerText.includes('decreases') || lowerText.includes('lower')) {
+        direction = 'down'
+        color = 'text-green-600'
+      } else if (lowerText.includes('increases') || lowerText.includes('higher')) {
+        direction = 'up'
+        color = 'text-orange-600'
+      } else {
+        direction = 'neutral'
+        color = 'text-gray-600'
+      }
+    }
+    
+    return { icon, direction, color }
+  }
+
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
+    <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 p-8 mb-8 shadow-lg">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Recommendation</h3>
@@ -79,37 +127,32 @@ export default function RecommendationCard({
 
       {/* Verdict-style Recommendation */}
       <div className="space-y-6">
-        {/* Main recommendation */}
-        <div className="p-5 bg-white rounded-lg border-2 border-blue-300">
-          <p className="text-sm font-semibold text-gray-600 mb-3">
-            {preferenceLens === 'balanced' 
-              ? 'If you value a balanced trade-off:'
-              : preferenceLens === 'lower_cost'
-              ? 'If you prioritise lower upfront cost:'
-              : preferenceLens === 'lease_safety'
-              ? 'If you prioritise long-term lease safety:'
-              : 'If you prioritise lower school pressure:'}
-          </p>
-          <p className="text-xl font-bold text-gray-900 mb-4">
-            → {(() => {
-              const headline = compareSummary.recommendation.headline
-              if (headline.includes('Choose ')) {
-                const town = headline.match(/Choose ([^ ]+)/)?.[1] || ''
-                return `${town} is the better overall choice.`
-              }
-              return headline
-            })()}
+        {/* Main recommendation - LARGEST TEXT */}
+        <div className="p-6 bg-white rounded-xl border-2 border-blue-300">
+          <p className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            {compareSummary.recommendation.headline}
           </p>
           
-          <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Key trade-offs:</p>
-            <ul className="space-y-1.5">
-              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => (
-                <li key={idx} className="text-sm text-gray-800 flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>{tradeoff}</span>
-                </li>
-              ))}
+          <div className="border-t border-gray-200 pt-6">
+            <p className="text-sm font-semibold text-gray-700 mb-4">Key trade-offs:</p>
+            <ul className="space-y-3">
+              {compareSummary.recommendation.tradeoffs.map((tradeoff, idx) => {
+                const { icon, direction, color } = parseTradeoff(tradeoff)
+                const DirectionIcon = direction === 'up' ? ArrowUp : direction === 'down' ? ArrowDown : Minus
+                const iconColor = direction === 'up' ? 'text-orange-600' : direction === 'down' ? 'text-green-600' : 'text-gray-500'
+                
+                return (
+                  <li key={idx} className={`text-sm flex items-start gap-3 ${color}`}>
+                    <span className="text-lg">{icon}</span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span>{tradeoff}</span>
+                      {direction !== 'neutral' && (
+                        <DirectionIcon className={`w-4 h-4 ${iconColor}`} />
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         </div>

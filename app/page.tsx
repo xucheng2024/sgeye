@@ -106,35 +106,39 @@ export default function Home() {
       </section>
 
       {/* Section 4: Other Modules (Capability Showcase - All link to Compare) */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-gray-400 text-center mb-8">
+          <h2 className="text-xl font-bold text-gray-400 text-center mb-6">
             Explore the data (optional)
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Link
               href="/hdb/compare-towns"
-              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              Price trends
+              <div className="font-medium mb-1">How have resale prices evolved?</div>
+              <div className="text-xs text-gray-500">Price trends</div>
             </Link>
             <Link
               href="/hdb/compare-towns"
-              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              Heatmap
+              <div className="font-medium mb-1">Where are prices highest and lowest?</div>
+              <div className="text-xs text-gray-500">Heatmap</div>
             </Link>
             <Link
               href="/hdb/compare-towns"
-              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              Lease & risk
+              <div className="font-medium mb-1">How does lease decay affect prices?</div>
+              <div className="text-xs text-gray-500">Lease & risk</div>
             </Link>
             <Link
               href="/hdb/compare-towns"
-              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              PSLE overview
+              <div className="font-medium mb-1">What is school competition like here?</div>
+              <div className="text-xs text-gray-500">PSLE overview</div>
             </Link>
           </div>
         </div>
