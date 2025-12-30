@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary, PreferenceLens, TownComparisonData } from '@/lib/hdb-data'
 import { FamilyProfile, mapFamilyProfileToRuleProfile } from '@/lib/decision-rules'
@@ -381,7 +381,7 @@ function generateDecisionGuidanceFromProfiles(
   }
 }
 
-export default function CompareTownsPage() {
+function CompareTownsPageContent() {
   const searchParams = useSearchParams()
   // Use URL params if available, otherwise use default recommended pair
   const defaultPair = RECOMMENDED_PAIRS[0]
@@ -1691,6 +1691,21 @@ export default function CompareTownsPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function CompareTownsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    }>
+      <CompareTownsPageContent />
+    </Suspense>
   )
 }
 
