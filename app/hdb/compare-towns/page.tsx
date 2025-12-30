@@ -670,34 +670,38 @@ function CompareTownsPageContent() {
             )}
 
             {/* Price & Cash Flow - Data only */}
-            <div className="mb-6">
-              <h4 className="text-base font-semibold text-gray-900 mb-3">Price & Cash Flow</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">{townA} median price:</span>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileA.medianResalePrice)}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">{townB} median price:</span>
-                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileB.medianResalePrice)}</span>
+            {profileA && profileB && (
+              <div className="mb-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-3">Price & Cash Flow</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townA} median price:</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileA.medianResalePrice)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townB} median price:</span>
+                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(profileB.medianResalePrice)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Lease & Risk - Data only */}
-            <div className="mb-6">
-              <h4 className="text-base font-semibold text-gray-900 mb-3">Lease & Risk</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">{townA} remaining lease:</span>
-                  <span className="text-sm font-semibold text-gray-900">{Math.round(profileA.medianRemainingLease)} years</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                  <span className="text-sm font-medium text-gray-700">{townB} remaining lease:</span>
-                  <span className="text-sm font-semibold text-gray-900">{Math.round(profileB.medianRemainingLease)} years</span>
+            {profileA && profileB && (
+              <div className="mb-6">
+                <h4 className="text-base font-semibold text-gray-900 mb-3">Lease & Risk</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townA} remaining lease:</span>
+                    <span className="text-sm font-semibold text-gray-900">{Math.round(profileA.medianRemainingLease)} years</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-700">{townB} remaining lease:</span>
+                    <span className="text-sm font-semibold text-gray-900">{Math.round(profileB.medianRemainingLease)} years</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Time & Access - Data only */}
             {transportProfileA && transportProfileB && (
