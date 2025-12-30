@@ -51,6 +51,24 @@ function parseLeaseYears(leaseText) {
 }
 
 /**
+ * Calculate distance between two coordinates using Haversine formula
+ * Returns distance in meters
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null
+  
+  const R = 6371000 // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+/**
  * Step 1: Extract and insert unique blocks
  */
 async function populateBlocks() {
@@ -124,14 +142,83 @@ async function populateBlocks() {
 
 /**
  * Step 2: Calculate and populate block_metrics
+ * @param {boolean} incremental - If true, only update blocks with recent transactions
  */
-async function populateBlockMetrics() {
+async function populateBlockMetrics(incremental = false) {
   console.log('\nStep 2: Calculating block metrics...')
+  if (incremental) {
+    console.log('  Mode: Incremental update (only blocks with recent transactions)')
+  } else {
+    console.log('  Mode: Full update (all blocks)')
+  }
 
-  // Get all blocks
-  const { data: blocks, error: blocksError } = await supabase
-    .from('blocks')
-    .select('id, town, block_no, street')
+  let blocks
+  let blocksError
+
+  if (incremental) {
+    // Find blocks with transactions in the last 3 months
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const cutoffDate = threeMonthsAgo.toISOString().split('T')[0]
+
+    // Get unique blocks with recent transactions
+    const { data: recentTxs } = await supabase
+      .from('raw_resale_2017')
+      .select('town, block, street_name')
+      .gte('month', cutoffDate)
+      .not('block', 'is', null)
+      .not('street_name', 'is', null)
+
+    if (!recentTxs || recentTxs.length === 0) {
+      console.log('  No recent transactions found, skipping incremental update')
+      return true
+    }
+
+    // Create unique block keys
+    const blockKeys = new Set()
+    for (const tx of recentTxs) {
+      blockKeys.add(`${tx.town}|${tx.block}|${tx.street_name}`)
+    }
+
+    console.log(`  Found ${blockKeys.size} blocks with recent transactions`)
+
+    // Get full block records for these blocks
+    const blockArray = Array.from(blockKeys).map(key => {
+      const [town, block_no, street] = key.split('|')
+      return { town, block_no, street }
+    })
+
+    // Fetch blocks from database
+    const { data: allBlocks, error } = await supabase
+      .from('blocks')
+      .select('id, town, block_no, street, address, lat, lon')
+
+    if (!allBlocks || error) {
+      console.log('  Error fetching blocks from database')
+      blocksError = error
+      blocks = null
+    } else {
+      // Filter to only blocks that match our recent transactions
+      const blockMap = new Map(blockArray.map(b => [`${b.town}|${b.block_no}|${b.street}`, true]))
+      blocks = allBlocks.filter(block => 
+        blockMap.has(`${block.town}|${block.block_no}|${block.street}`)
+      )
+      blocksError = null
+      
+      if (blocks.length === 0) {
+        console.log('  No matching blocks found in database')
+        return true
+      }
+    }
+  } else {
+    // Get all blocks
+    const { data: blocksData, error } = await supabase
+      .from('blocks')
+      .select('id, town, block_no, street, address, lat, lon')
+    
+    blocks = blocksData
+    blocksError = error
+  }
 
   if (blocksError || !blocks || blocks.length === 0) {
     console.error('Error fetching blocks or no blocks found')
@@ -228,13 +315,109 @@ async function populateBlockMetrics() {
           }
         }
 
-        // TODO: Calculate MRT distance, bus stops, schools (requires geocoding and external APIs)
-        // For now, set to null
-        const mrtBand = null
-        const nearestMrtName = null
-        const nearestMrtDistM = null
-        const busStops400m = 0
-        const primaryWithin1km = 0
+        // Calculate primary schools within 1km (if block has coordinates)
+        let primaryWithin1km = 0
+        if (block.lat && block.lon) {
+          try {
+            const { data: schools } = await supabase
+              .from('primary_schools')
+              .select('latitude, longitude')
+              .not('latitude', 'is', null)
+              .not('longitude', 'is', null)
+            
+            if (schools && schools.length > 0) {
+              primaryWithin1km = schools.filter(school => {
+                const dist = calculateDistance(
+                  Number(block.lat),
+                  Number(block.lon),
+                  Number(school.latitude),
+                  Number(school.longitude)
+                )
+                return dist !== null && dist <= 1000 // 1km = 1000m
+              }).length
+            }
+          } catch (err) {
+            console.warn(`Error calculating schools for ${block.address}:`, err.message)
+          }
+        }
+
+        // Calculate MRT distance (if block has coordinates and mrt_stations table exists)
+        let mrtBand = null
+        let nearestMrtName = null
+        let nearestMrtDistM = null
+        
+        if (block.lat && block.lon) {
+          try {
+            // Get all MRT stations
+            const { data: mrtStations } = await supabase
+              .from('mrt_stations')
+              .select('station_name, latitude, longitude')
+              .not('latitude', 'is', null)
+              .not('longitude', 'is', null)
+            
+            if (mrtStations && mrtStations.length > 0) {
+              // Find nearest MRT station
+              let minDist = Infinity
+              let nearestStation = null
+              
+              for (const station of mrtStations) {
+                const dist = calculateDistance(
+                  Number(block.lat),
+                  Number(block.lon),
+                  Number(station.latitude),
+                  Number(station.longitude)
+                )
+                if (dist !== null && dist < minDist) {
+                  minDist = dist
+                  nearestStation = station
+                }
+              }
+              
+              if (nearestStation && minDist < Infinity) {
+                nearestMrtName = nearestStation.station_name
+                nearestMrtDistM = Math.round(minDist)
+                
+                // Set MRT band based on distance
+                if (minDist < 400) {
+                  mrtBand = '<400'
+                } else if (minDist < 800) {
+                  mrtBand = '400-800'
+                } else {
+                  mrtBand = '>800'
+                }
+              }
+            }
+          } catch (err) {
+            console.warn(`Error calculating MRT distance for ${block.address}:`, err.message)
+          }
+        }
+        
+        // Calculate bus stops within 400m (if block has coordinates and bus_stops table exists)
+        let busStops400m = 0
+        if (block.lat && block.lon) {
+          try {
+            const { data: busStops } = await supabase
+              .from('bus_stops')
+              .select('latitude, longitude')
+              .not('latitude', 'is', null)
+              .not('longitude', 'is', null)
+            
+            if (busStops && busStops.length > 0) {
+              busStops400m = busStops.filter(stop => {
+                const dist = calculateDistance(
+                  Number(block.lat),
+                  Number(block.lon),
+                  Number(stop.latitude),
+                  Number(stop.longitude)
+                )
+                return dist !== null && dist <= 400
+              }).length
+            }
+          } catch (err) {
+            // Bus stops table might not exist yet, that's okay
+            console.warn(`Error calculating bus stops for ${block.address}:`, err.message)
+          }
+        }
 
         // Calculate rolling 6-month change (simplified - would need historical data)
         const qoqChangePsm = null
@@ -288,17 +471,26 @@ async function populateBlockMetrics() {
  * Main function
  */
 async function main() {
+  // Check for incremental flag: --incremental or -i
+  const incremental = process.argv.includes('--incremental') || process.argv.includes('-i')
+  
   console.log('Starting blocks data population...')
   console.log(`Time: ${new Date().toISOString()}\n`)
 
   try {
-    const blocksSuccess = await populateBlocks()
-    if (!blocksSuccess) {
-      console.error('Failed to populate blocks')
-      process.exit(1)
+    // Step 1: Update blocks (only if not incremental, or if new blocks might exist)
+    if (!incremental) {
+      const blocksSuccess = await populateBlocks()
+      if (!blocksSuccess) {
+        console.error('Failed to populate blocks')
+        process.exit(1)
+      }
+    } else {
+      console.log('Step 1: Skipping blocks population (incremental mode)')
     }
 
-    const metricsSuccess = await populateBlockMetrics()
+    // Step 2: Calculate metrics (incremental or full)
+    const metricsSuccess = await populateBlockMetrics(incremental)
     if (!metricsSuccess) {
       console.error('Failed to populate block metrics')
       process.exit(1)
@@ -306,6 +498,9 @@ async function main() {
 
     console.log('\n' + '='.repeat(50))
     console.log('✅ Blocks data population completed successfully!')
+    if (incremental) {
+      console.log('   (Incremental update: only blocks with recent transactions)')
+    }
     console.log('='.repeat(50))
     process.exit(0)
   } catch (error) {

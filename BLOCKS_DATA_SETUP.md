@@ -99,11 +99,16 @@ block_metrics (aggregated metrics by flat_type, window_years)
   - `bus_stops_400m`: Number of bus stops within 400m
   - `primary_within_1km`: Number of primary schools within 1km
 
-## Current Limitations
+## Current Status
 
-1. **Geocoding**: MRT and bus stop data require geocoding block addresses. Currently set to `null` or `0`.
-2. **Change Metrics**: QoQ and rolling 6m changes require historical snapshots. Currently `null`.
-3. **School Data**: Requires integration with school location data. Currently `0`.
+1. **School Data**: ✅ Now uses `primary_schools` table to calculate schools within 1km (requires blocks to have lat/lon)
+2. **Geocoding**: Blocks need lat/lon coordinates. If missing, geocode using OneMap API (similar to `geocode-schools.js`)
+3. **MRT Data**: Requires either:
+   - An MRT stations table with coordinates, OR
+   - Integration with OneMap API to find nearest MRT stations
+   - Currently set to `null` until blocks are geocoded and MRT data source is available
+4. **Bus Stops**: Requires bus stop location data (OneMap API or bus stops table). Currently `0`.
+5. **Change Metrics**: QoQ and rolling 6m changes require historical snapshots. Currently `null`.
 
 ## Future Improvements
 
