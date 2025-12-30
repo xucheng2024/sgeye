@@ -99,6 +99,7 @@ export const SPI_CONSTANTS = {
   /** Uncertainty calculation parameters */
   UNCERTAINTY: {
     STD_SCALE: 0.25,
+    MIN_CUTOFF_YEARS: 2,
   },
   /** Crowding calculation parameters */
   CROWDING: {
@@ -106,8 +107,6 @@ export const SPI_CONSTANTS = {
   },
   /** Recent cutoff years to consider */
   RECENT_CUTOFF_YEARS: 5,
-  /** Minimum cutoff years for uncertainty calculation */
-  MIN_CUTOFF_YEARS: 2,
 } as const
 
 // ============================================

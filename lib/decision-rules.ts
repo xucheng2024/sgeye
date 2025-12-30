@@ -165,18 +165,21 @@ export interface SummaryTextRules {
       thresholds: Array<{
         condition: string
         text: string
+        threshold?: number
       }>
     }
     lease: {
       thresholds: Array<{
         condition: string
         text: string
+        threshold?: number
       }>
     }
     school: {
       thresholds: Array<{
         condition: string
         text: string
+        threshold?: number
       }>
     }
   }
@@ -184,6 +187,7 @@ export interface SummaryTextRules {
     conditions: Array<{
       condition: string
       text: string
+      threshold?: number
     }>
   }
 }

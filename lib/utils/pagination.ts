@@ -3,8 +3,6 @@
  * Handles pagination for queries that exceed Supabase's default limit
  */
 
-import { PostgrestQueryBuilder } from '@supabase/supabase-js'
-
 /**
  * Paginate a Supabase query to fetch all results
  * @param query - Supabase query builder
@@ -12,7 +10,7 @@ import { PostgrestQueryBuilder } from '@supabase/supabase-js'
  * @returns Array of all results
  */
 export async function paginateQuery<T>(
-  query: PostgrestQueryBuilder<any, any, any>,
+  query: { range: (from: number, to: number) => { data: Promise<{ data: T[] | null; error: any }> } } | any,
   pageSize: number = 1000
 ): Promise<T[]> {
   let allData: T[] = []
@@ -20,10 +18,11 @@ export async function paginateQuery<T>(
   let page = 0
 
   while (hasMore) {
-    const { data, error } = await query.range(
+    const rangeQuery = query.range(
       page * pageSize,
       (page + 1) * pageSize - 1
     )
+    const { data, error } = await rangeQuery
 
     if (error) throw error
 
