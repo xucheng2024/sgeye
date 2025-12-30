@@ -1,0 +1,189 @@
+/**
+ * Type definitions for HDB data
+ */
+
+export interface RawResaleTransaction {
+  month: string
+  town: string
+  flat_type: string
+  storey_range: string
+  floor_area_sqm: number
+  remaining_lease: string
+  resale_price: number
+  lease_commence_date?: number
+}
+
+export interface AggregatedMonthly {
+  month: string
+  town: string | null
+  flat_type: string
+  tx_count: number
+  median_price: number
+  p25_price: number
+  p75_price: number
+  median_psm: number
+  median_lease_years: number
+  avg_floor_area: number
+}
+
+export interface AffordabilityResult {
+  maxMonthlyPayment: number
+  maxLoanAmount: number
+  maxPropertyPrice: number
+  affordableTowns: Array<{
+    town: string
+    flatType: string
+    medianPrice: number
+    p25Price: number
+    txCount: number
+  }>
+}
+
+export interface BinnedLeaseData {
+  binLabel: string
+  binStart: number
+  binEnd: number
+  medianPrice: number
+  p25Price: number
+  p75Price: number
+  medianPricePerSqm: number
+  p25PricePerSqm: number
+  p75PricePerSqm: number
+  count: number
+}
+
+export type LeaseRiskLevel = 'low' | 'moderate' | 'high' | 'critical'
+
+export interface TownProfile {
+  town: string
+  flatType: string
+
+  // Price & cashflow
+  medianResalePrice: number
+  estimatedMonthlyMortgage: number
+  medianRent: number | null
+  rentBuyGapMonthly: number // rent - mortgage
+
+  // Lease stats
+  medianRemainingLease: number // years
+  pctTxBelow60: number // 0-1
+  pctTxBelow55: number // 0-1
+
+  // Market stability
+  volumeRecent: number
+  volatility12m: number
+
+  // Derived signals (engine output)
+  signals: {
+    leaseRisk: LeaseRiskLevel
+    leaseSignalReasons: string[] // explainable
+    pricingResponse: 'early_discount' | 'stable' | 'premium'
+    stability: 'stable' | 'volatile' | 'fragile'
+  }
+}
+
+export interface TownComparisonData {
+  town: string
+  flatType: string
+  medianPrice: number
+  p25Price: number
+  p75Price: number
+  medianLeaseYears: number
+  pctBelow55Years: number
+  txCount: number
+  priceVolatility: number // Coefficient of variation
+  medianRent: number | null
+  medianPricePerSqm: number
+}
+
+export type PreferenceLens = 'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'
+
+// Compare Summary output
+export interface CompareSummary {
+  // Bottom Line (new top section)
+  bottomLine: {
+    changes: string[] // List of changes (👍, ⚠, 💰)
+    bestFor: string // Best for statement
+  } | null
+  
+  // Lens-based Recommendation (new format)
+  recommendation: {
+    headline: string // "Choose BUKIT BATOK if you prioritise..."
+    tradeoffs: string[] // 3 fixed format bullets
+    confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
+  } | null
+  
+  // Standardized scores (0-100)
+  scores: {
+    townA: {
+      entryCost: number
+      cashFlow: number
+      leaseSafety: number
+      schoolPressure: number
+      stability: number
+      overall: number
+    }
+    townB: {
+      entryCost: number
+      cashFlow: number
+      leaseSafety: number
+      schoolPressure: number
+      stability: number
+      overall: number
+    }
+  } | null
+  
+  // Moving Education Impact
+  movingEducationImpact: {
+    spiChange: number // SPI difference (B - A)
+    spiChangeText: string // e.g., "+4.3 (still Low)"
+    highDemandSchoolsChange: number // Change in high-demand schools count
+    highDemandSchoolsText: string // e.g., "+0 / +1"
+    schoolCountChange: number // Change in number of primary schools
+    schoolCountText: string // e.g., "7 → 6"
+    choiceFlexibility: 'Similar' | 'Better' | 'Worse'
+    explanation: string // Auto-generated explanation sentence
+  } | null
+  
+  // Fixed 5-block structure
+  headlineVerdict: string // Block 1: Headline Verdict
+  educationPressure: {
+    comparison: string // SPI comparison text
+    explanation: string // Additional explanation
+    pressureRangeNote?: string // Pressure range explanation
+  } | null // Block 2: Education Pressure Comparison
+  housingTradeoff: {
+    price: string | null
+    lease: string | null
+  } // Block 3: Housing Trade-off
+  bestSuitedFor: {
+    townA: string[]
+    townB: string[]
+  } // Block 4: Who Each Town Is Better For
+  decisionHint: string // Block 5: Decision Hint
+  
+  // Legacy fields (kept for compatibility)
+  oneLiner: string
+  keyDifferences: string[]
+  bestFor: {
+    townA: string[]
+    townB: string[]
+  }
+  beCautious: {
+    townA: string[]
+    townB: string[]
+  }
+  advanced: {
+    rentBuyGapA: number
+    rentBuyGapB: number
+    stabilityA: string
+    stabilityB: string
+    leaseRiskReasonsA: string[]
+    leaseRiskReasonsB: string[]
+  }
+  badges: Array<{ town: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
+  
+  // Killer phrase: Moving from A to B
+  movingPhrase?: string | null
+}
+
