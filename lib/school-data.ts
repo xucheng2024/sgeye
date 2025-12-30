@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 import { getTownAggregated } from './hdb-data'
+import { SPI_CONSTANTS, MARKET_THRESHOLDS } from './constants'
+import { normalizeTownName, queryTownWithVariations } from './utils/town-normalizer'
 
 export interface PrimarySchool {
   id: number
@@ -55,6 +57,10 @@ function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
 }
 
+// SPI level thresholds
+const SPI_LEVEL_LOW = SPI_CONSTANTS.LEVELS.LOW
+const SPI_LEVEL_MEDIUM = SPI_CONSTANTS.LEVELS.MEDIUM
+
 // Get cutoff band from cutoff value or range
 function getCutoffBand(cutoff: PSLECutoff): 'low' | 'mid' | 'high' {
   if (cutoff.cutoff_max !== null) {
@@ -80,9 +86,9 @@ function getCutoffBand(cutoff: PSLECutoff): 'low' | 'mid' | 'high' {
 function calculateDemandPressure(schools: PrimarySchool[], cutoffs: PSLECutoff[]): number {
   if (schools.length === 0) return 50 // neutral if no data
 
-  // Get recent cutoffs (last 3-5 years)
+  // Get recent cutoffs
   const currentYear = new Date().getFullYear()
-  const recentCutoffs = cutoffs.filter(c => c.year >= currentYear - 5)
+  const recentCutoffs = cutoffs.filter(c => c.year >= currentYear - SPI_CONSTANTS.RECENT_CUTOFF_YEARS)
 
   // Count high-demand schools
   let highCount = 0
@@ -108,8 +114,10 @@ function calculateDemandPressure(schools: PrimarySchool[], cutoffs: PSLECutoff[]
 
   const pHigh = highCount / schools.length
 
-  // Logistic mapping: D = 100 * sigmoid((p_high - 0.25) / 0.08)
-  const D = 100 * sigmoid((pHigh - 0.25) / 0.08)
+  // Logistic mapping: D = 100 * sigmoid((p_high - threshold) / scale)
+  const D = 100 * sigmoid(
+    (pHigh - SPI_CONSTANTS.DEMAND.HIGH_DEMAND_THRESHOLD) / SPI_CONSTANTS.DEMAND.SIGMOID_SCALE
+  )
   
   return clamp(D)
 }
@@ -118,8 +126,8 @@ function calculateDemandPressure(schools: PrimarySchool[], cutoffs: PSLECutoff[]
 function calculateChoiceConstraint(schoolCount: number): number {
   if (schoolCount === 0) return 100 // worst case
 
-  // C = 100 * (1 - min(1, log(1+n) / log(1+12)))
-  const C = 100 * (1 - Math.min(1, Math.log(1 + schoolCount) / Math.log(1 + 12)))
+  // C = 100 * (1 - min(1, log(1+n) / log(1+reference)))
+  const C = 100 * (1 - Math.min(1, Math.log(1 + schoolCount) / Math.log(1 + SPI_CONSTANTS.CHOICE.REFERENCE_SCHOOL_COUNT)))
   
   return clamp(C)
 }
@@ -139,7 +147,7 @@ function calculateUncertainty(schools: PrimarySchool[], cutoffs: PSLECutoff[]): 
       .filter(c => c.school_id === school.id)
       .sort((a, b) => a.year - b.year)
 
-    if (schoolCutoffs.length >= 2) {
+    if (schoolCutoffs.length >= SPI_CONSTANTS.UNCERTAINTY.MIN_CUTOFF_YEARS) {
       // Convert bands to numeric: low=0, mid=0.5, high=1.0
       const values: number[] = schoolCutoffs.map(c => {
         const band = getCutoffBand(c)
@@ -159,8 +167,8 @@ function calculateUncertainty(schools: PrimarySchool[], cutoffs: PSLECutoff[]): 
   // Average std across schools
   const avgStd = schoolStd.reduce((a, b) => a + b, 0) / schoolStd.length
 
-  // U = clamp(avg_std / 0.25 * 100)
-  const U = clamp((avgStd / 0.25) * 100)
+  // U = clamp(avg_std / scale * 100)
+  const U = clamp((avgStd / SPI_CONSTANTS.UNCERTAINTY.STD_SCALE) * 100)
   
   return U
 }
@@ -179,9 +187,8 @@ async function calculateCrowding(town: string): Promise<number> {
     if (!townData) return 50 // neutral if no data for this town
 
     // For MVP: simple normalization (can enhance with percentile later)
-    // Assume typical range: 0-5000 transactions per year
-    // R = clamp((volume / 5000) * 100)
-    const R = clamp((townData.txCount / 5000) * 100)
+    // R = clamp((volume / max_volume) * 100)
+    const R = clamp((townData.txCount / SPI_CONSTANTS.CROWDING.MAX_VOLUME) * 100)
     
     return R
   } catch (error) {
@@ -193,26 +200,34 @@ async function calculateCrowding(town: string): Promise<number> {
 // Calculate School Pressure Index for a town
 export async function calculateSchoolPressureIndex(town: string): Promise<SchoolPressureIndex | null> {
   try {
-    // Clean town name - remove quotes if present
-    const cleanTown = town.replace(/^["']|["']$/g, '').trim()
-    
-    // Fetch schools in this town - try exact match first
     if (!supabase) return null
-    let { data: schools, error: schoolsError } = await supabase
+    
+    // Use town normalizer to handle variations
+    const cleanTown = normalizeTownName(town)
+    
+    // Try querying with variations
+    let schools: any[] | null = null
+    let schoolsError: any = null
+    
+    // Try exact match first (without quotes)
+    let result = await supabase
       .from('primary_schools')
       .select('*')
       .eq('town', cleanTown)
     
-    // If no results, try with quotes (in case data was imported with quotes)
-    if ((!schools || schools.length === 0) && !schoolsError) {
-      const { data: schoolsWithQuotes, error: quotesError } = await supabase
+    if (result.data && result.data.length > 0 && !result.error) {
+      schools = result.data
+    } else {
+      // Try with quotes (in case data was imported with quotes)
+      result = await supabase
         .from('primary_schools')
         .select('*')
         .eq('town', `"${cleanTown}"`)
       
-      if (!quotesError && schoolsWithQuotes && schoolsWithQuotes.length > 0) {
-        schools = schoolsWithQuotes
-        schoolsError = null
+      if (result.data && result.data.length > 0 && !result.error) {
+        schools = result.data
+      } else {
+        schoolsError = result.error
       }
     }
 
@@ -277,8 +292,8 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
       
       if (schoolsCaseInsensitive && schoolsCaseInsensitive.length > 0) {
         console.log(`Found ${schoolsCaseInsensitive.length} schools for ${town} using case-insensitive search`)
-        // Use the case-insensitive results
-        const schoolIds = schoolsCaseInsensitive.map(s => s.id)
+        schools = schoolsCaseInsensitive
+        const schoolIds = schools.map(s => s.id)
         const { data: cutoffs, error: cutoffsError } = await supabase
           .from('psle_cutoff')
           .select('*')
@@ -287,19 +302,23 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
         if (cutoffsError) throw cutoffsError
 
         // Calculate sub-scores
-        const D = calculateDemandPressure(schoolsCaseInsensitive, cutoffs || [])
-        const C = calculateChoiceConstraint(schoolsCaseInsensitive.length)
-        const U = calculateUncertainty(schoolsCaseInsensitive, cutoffs || [])
+        const D = calculateDemandPressure(schools, cutoffs || [])
+        const C = calculateChoiceConstraint(schools.length)
+        const U = calculateUncertainty(schools, cutoffs || [])
         const R = await calculateCrowding(town)
 
-        // Calculate SPI: 0.40*D + 0.30*C + 0.20*U + 0.10*R
-        const spi = 0.40 * D + 0.30 * C + 0.20 * U + 0.10 * R
+    // Calculate SPI using weights from constants
+    const spi = 
+      SPI_CONSTANTS.WEIGHTS.DEMAND_PRESSURE * D +
+      SPI_CONSTANTS.WEIGHTS.CHOICE_CONSTRAINT * C +
+      SPI_CONSTANTS.WEIGHTS.UNCERTAINTY * U +
+      SPI_CONSTANTS.WEIGHTS.CROWDING * R
 
-        // Determine level
-        let level: 'low' | 'medium' | 'high'
-        if (spi <= 33) level = 'low'
-        else if (spi <= 66) level = 'medium'
-        else level = 'high'
+    // Determine level
+    let level: 'low' | 'medium' | 'high'
+    if (spi <= SPI_LEVEL_LOW) level = 'low'
+    else if (spi <= SPI_LEVEL_MEDIUM) level = 'medium'
+    else level = 'high'
 
         // Find dominant factor
         const factors = [
@@ -361,32 +380,34 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
 
         // Generate parent-friendly "Why" explanations
         const whyExplanations: string[] = []
+        const LOW_THRESHOLD = 30
+        const HIGH_THRESHOLD = 70
         
-        if (D < 30) {
+        if (D < LOW_THRESHOLD) {
           whyExplanations.push('Few high-demand schools → less concentrated competition')
-        } else if (D > 70) {
+        } else if (D > HIGH_THRESHOLD) {
           whyExplanations.push('Many high-demand schools → more concentrated competition')
         } else {
           whyExplanations.push('Moderate mix of school demand levels')
         }
         
-        if (C < 30) {
+        if (C < LOW_THRESHOLD) {
           whyExplanations.push('Multiple school options → wider safety net')
-        } else if (C > 70) {
+        } else if (C > HIGH_THRESHOLD) {
           whyExplanations.push('Fewer school options → distance bands matter more')
         } else {
           whyExplanations.push('Moderate number of school choices available')
         }
         
-        if (U < 30) {
+        if (U < LOW_THRESHOLD) {
           whyExplanations.push('Stable cut-off patterns → outcomes more predictable')
-        } else if (U > 70) {
+        } else if (U > HIGH_THRESHOLD) {
           whyExplanations.push('Fluctuating cut-off patterns → outcomes less predictable')
         } else {
           whyExplanations.push('Moderate cut-off stability')
         }
         
-        if (R > 70) {
+        if (R > HIGH_THRESHOLD) {
           whyExplanations.push('Higher local demand → tighter competition for popular schools')
         }
 
@@ -422,13 +443,17 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
     const U = calculateUncertainty(schools, cutoffs || [])
     const R = await calculateCrowding(town)
 
-    // Calculate SPI: 0.40*D + 0.30*C + 0.20*U + 0.10*R
-    const spi = 0.40 * D + 0.30 * C + 0.20 * U + 0.10 * R
+    // Calculate SPI using weights from constants
+    const spi = 
+      SPI_CONSTANTS.WEIGHTS.DEMAND_PRESSURE * D +
+      SPI_CONSTANTS.WEIGHTS.CHOICE_CONSTRAINT * C +
+      SPI_CONSTANTS.WEIGHTS.UNCERTAINTY * U +
+      SPI_CONSTANTS.WEIGHTS.CROWDING * R
 
     // Determine level
     let level: 'low' | 'medium' | 'high'
-    if (spi <= 33) level = 'low'
-    else if (spi <= 66) level = 'medium'
+    if (spi <= SPI_LEVEL_LOW) level = 'low'
+    else if (spi <= SPI_LEVEL_MEDIUM) level = 'medium'
     else level = 'high'
 
     // Find dominant factor
@@ -494,36 +519,38 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
 
     // Generate parent-friendly "Why" explanations
     const whyExplanations: string[] = []
+    const LOW_THRESHOLD = 30
+    const HIGH_THRESHOLD = 70
     
     // Demand pressure explanation
-    if (D < 30) {
+    if (D < LOW_THRESHOLD) {
       whyExplanations.push('Few high-demand schools → less concentrated competition')
-    } else if (D > 70) {
+    } else if (D > HIGH_THRESHOLD) {
       whyExplanations.push('Many high-demand schools → more concentrated competition')
     } else {
       whyExplanations.push('Moderate mix of school demand levels')
     }
     
     // Choice constraint explanation
-    if (C < 30) {
+    if (C < LOW_THRESHOLD) {
       whyExplanations.push('Multiple school options → wider safety net')
-    } else if (C > 70) {
+    } else if (C > HIGH_THRESHOLD) {
       whyExplanations.push('Fewer school options → distance bands matter more')
     } else {
       whyExplanations.push('Moderate number of school choices available')
     }
     
     // Uncertainty explanation
-    if (U < 30) {
+    if (U < LOW_THRESHOLD) {
       whyExplanations.push('Stable cut-off patterns → outcomes more predictable')
-    } else if (U > 70) {
+    } else if (U > HIGH_THRESHOLD) {
       whyExplanations.push('Fluctuating cut-off patterns → outcomes less predictable')
     } else {
       whyExplanations.push('Moderate cut-off stability')
     }
     
     // Crowding explanation (optional, only if significant)
-    if (R > 70) {
+    if (R > HIGH_THRESHOLD) {
       whyExplanations.push('Higher local demand → tighter competition for popular schools')
     }
 
@@ -549,10 +576,11 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
 export async function getSchoolLandscape(town: string): Promise<SchoolLandscape | null> {
   try {
     if (!supabase) return null
-    // Clean town name - remove quotes if present
-    const cleanTown = town.replace(/^["']|["']$/g, '').trim()
     
-    // Fetch schools in this town - try exact match first (without quotes)
+    // Use town normalizer
+    const cleanTown = normalizeTownName(town)
+    
+    // Try exact match first (without quotes)
     let { data: schools, error: schoolsError } = await supabase
       .from('primary_schools')
       .select('*')
@@ -583,7 +611,7 @@ export async function getSchoolLandscape(town: string): Promise<SchoolLandscape 
     if (cutoffsError) throw cutoffsError
 
     const currentYear = new Date().getFullYear()
-    const recentCutoffs = (cutoffs || []).filter(c => c.year >= currentYear - 3)
+    const recentCutoffs = (cutoffs || []).filter(c => c.year >= currentYear - 3) // Use 3 years for landscape
 
     const distribution = { low: 0, mid: 0, high: 0 }
     let highDemandCount = 0

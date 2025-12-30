@@ -13,6 +13,16 @@ import {
   applyRuleProfile,
   calculateWeightedScore
 } from './decision-rules'
+import {
+  COMPARISON_THRESHOLDS,
+  LEASE_THRESHOLDS,
+  MARKET_THRESHOLDS,
+  FINANCIAL_CONSTANTS,
+  DATA_FETCHING,
+  LEASE_BINS,
+  SCORING_CONSTANTS,
+} from './constants'
+import { paginateQuery } from './utils/pagination'
 
 export interface RawResaleTransaction {
   month: string
@@ -81,25 +91,11 @@ export async function getAggregatedMonthly(
         query = query.lte('month', endMonth)
       }
 
-      // Supabase has a default limit of 1000, we need to fetch all data
-      let allData: AggregatedMonthly[] = []
-      let hasMore = true
-      let page = 0
-      const pageSize = 1000
-
-      while (hasMore) {
-        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1)
-
-        if (error) throw error
-        
-        if (data && data.length > 0) {
-          allData = allData.concat(data)
-          hasMore = data.length === pageSize
-          page++
-        } else {
-          hasMore = false
-        }
-      }
+      // Fetch all data with pagination
+      const allData = await paginateQuery<AggregatedMonthly>(
+        query,
+        DATA_FETCHING.PAGE_SIZE
+      )
 
       if (allData.length > 0) {
         return allData.map(item => ({
@@ -139,7 +135,7 @@ export async function getAggregatedMonthly(
 
 // Get town-level aggregated data for heatmap
 export async function getTownAggregated(
-  months: number = 3,
+  months: number = 3, // Keep 3 months for heatmap (different use case)
   flatType?: string
 ): Promise<Array<{
   town: string
@@ -164,24 +160,10 @@ export async function getTownAggregated(
       }
 
       // Fetch all data with pagination
-      let allData: Array<{ town: string; flat_type: string; median_price: number; tx_count: number }> = []
-      let hasMore = true
-      let page = 0
-      const pageSize = 1000
-
-      while (hasMore) {
-        const { data, error } = await query.range(page * pageSize, (page + 1) * pageSize - 1)
-
-        if (error) throw error
-        
-        if (data && data.length > 0) {
-          allData = allData.concat(data)
-          hasMore = data.length === pageSize
-          page++
-        } else {
-          hasMore = false
-        }
-      }
+      const allData = await paginateQuery<{ town: string; flat_type: string; median_price: number; tx_count: number }>(
+        query,
+        DATA_FETCHING.PAGE_SIZE
+      )
 
       if (allData.length > 0) {
         // Aggregate by town
@@ -268,7 +250,7 @@ function parseLeaseYears(leaseText: string): number | null {
 export async function getLeasePriceData(
   flatType?: string,
   town?: string,
-  limit: number = 10000
+  limit: number = DATA_FETCHING.DEFAULT_LEASE_LIMIT
 ): Promise<Array<{
   leaseYears: number
   price: number
@@ -358,19 +340,12 @@ export interface BinnedLeaseData {
 export async function getBinnedLeasePriceData(
   flatType?: string,
   town?: string,
-  limit: number = 10000
+  limit: number = DATA_FETCHING.DEFAULT_LEASE_LIMIT
 ): Promise<BinnedLeaseData[]> {
   const rawData = await getLeasePriceData(flatType, town, limit)
 
-  // Define bins: 0-40, 40-50, 50-60, 60-70, 70-80, 80-99
-  const bins = [
-    { start: 0, end: 40, label: '0-40' },
-    { start: 40, end: 50, label: '40-50' },
-    { start: 50, end: 60, label: '50-60' },
-    { start: 60, end: 70, label: '60-70' },
-    { start: 70, end: 80, label: '70-80' },
-    { start: 80, end: 99, label: '80-99' },
-  ]
+  // Use lease bins from constants
+  const bins = LEASE_BINS
 
   // Helper function to calculate percentile
   function percentile(arr: number[], p: number): number {
@@ -440,11 +415,11 @@ export function calculateAffordability(
     ltv: number
   }
 } {
-  // MSR: Mortgage Servicing Ratio ≤ 30%
-  const maxMonthlyPaymentMSR = monthlyIncome * 0.30
+  // MSR: Mortgage Servicing Ratio
+  const maxMonthlyPaymentMSR = monthlyIncome * FINANCIAL_CONSTANTS.MSR_LIMIT
 
-  // TDSR: Total Debt Servicing Ratio ≤ 55%
-  const maxMonthlyPaymentTDSR = monthlyIncome * 0.55 - otherDebts
+  // TDSR: Total Debt Servicing Ratio
+  const maxMonthlyPaymentTDSR = monthlyIncome * FINANCIAL_CONSTANTS.TDSR_LIMIT - otherDebts
 
   // Take the stricter constraint
   const maxMonthlyPayment = Math.min(maxMonthlyPaymentMSR, maxMonthlyPaymentTDSR)
@@ -460,8 +435,8 @@ export function calculateAffordability(
     maxLoanAmount = maxMonthlyPayment * numPayments
   }
 
-  // LTV: Loan-to-Value ≤ 75% (for resale flats)
-  const maxPropertyPriceByLTV = downPayment / 0.25
+  // LTV: Loan-to-Value (for resale flats)
+  const maxPropertyPriceByLTV = downPayment / (1 - FINANCIAL_CONSTANTS.LTV_RESALE)
 
   // Max property price = loan + downpayment, but also constrained by LTV
   const maxPropertyPriceByBudget = maxLoanAmount + downPayment
@@ -484,7 +459,7 @@ export function calculateAffordability(
 export async function findAffordableProperties(
   maxPrice: number,
   flatTypes: string[] = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE'],
-  months: number = 6
+  months: number = DATA_FETCHING.DEFAULT_RENTAL_MONTHS
 ): Promise<Array<{
   town: string
   flatType: string
@@ -549,11 +524,11 @@ export async function findAffordableProperties(
   })).sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice))
 }
 
-// Get median rent for a specific town and flat type (6-month rolling median)
+// Get median rent for a specific town and flat type (rolling median)
 export async function getMedianRent(
   town: string,
   flatType: string,
-  months: number = 6
+  months: number = DATA_FETCHING.DEFAULT_RENTAL_MONTHS
 ): Promise<number | null> {
   try {
     if (supabase) {
@@ -584,11 +559,11 @@ export async function getMedianRent(
 
       console.log('Rental query result:', { count: data?.length || 0, town: normalizedTown, flatType: normalizedFlatType })
 
-      // If no recent data, try to get any available data (fallback to last 12 months)
+      // If no recent data, try to get any available data (fallback to extended period)
       if (!data || data.length === 0) {
-        console.log('No data in last 6 months, trying last 12 months...')
+        console.log(`No data in last ${months} months, trying last ${DATA_FETCHING.FALLBACK_RENTAL_MONTHS} months...`)
         const fallbackStartDate = new Date()
-        fallbackStartDate.setMonth(fallbackStartDate.getMonth() - 12)
+        fallbackStartDate.setMonth(fallbackStartDate.getMonth() - DATA_FETCHING.FALLBACK_RENTAL_MONTHS)
 
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('hdb_rental_stats')
@@ -599,7 +574,7 @@ export async function getMedianRent(
           .lte('month', endDate.toISOString().split('T')[0])
           .not('median_rent', 'is', null)
           .order('month', { ascending: false })
-          .limit(6) // Get last 6 available months
+          .limit(DATA_FETCHING.DEFAULT_RENTAL_MONTHS) // Get last N available months
 
         if (fallbackError) {
           console.error('Error fetching fallback rental data:', fallbackError)
@@ -638,7 +613,7 @@ export async function getMedianRent(
       const rents = data.map(item => Number(item.median_rent)).filter(r => r > 0)
       if (rents.length === 0) return null
 
-      // Calculate median of medians (6-month rolling median)
+      // Calculate median of medians (rolling median)
       const sorted = rents.sort((a, b) => a - b)
       const mid = Math.floor(sorted.length / 2)
       return sorted.length % 2 === 0
@@ -819,29 +794,29 @@ export function computeLeaseRisk(input: {
   // Baseline by median
   let score = 0
 
-  if (medianRemainingLease < 55) {
+  if (medianRemainingLease < LEASE_THRESHOLDS.CRITICAL) {
     score += 3
-    reasons.push('Median remaining lease is below 55 years')
-  } else if (medianRemainingLease < 60) {
+    reasons.push(`Median remaining lease is below ${LEASE_THRESHOLDS.CRITICAL} years`)
+  } else if (medianRemainingLease < LEASE_THRESHOLDS.HIGH) {
     score += 2
-    reasons.push('Median remaining lease is below 60 years')
-  } else if (medianRemainingLease < 70) {
+    reasons.push(`Median remaining lease is below ${LEASE_THRESHOLDS.HIGH} years`)
+  } else if (medianRemainingLease < LEASE_THRESHOLDS.MODERATE) {
     score += 1
-    reasons.push('Median remaining lease is below 70 years')
+    reasons.push(`Median remaining lease is below ${LEASE_THRESHOLDS.MODERATE} years`)
   }
 
   // Concentration checks
-  if (pctTxBelow55 >= 0.3) {
+  if (pctTxBelow55 >= LEASE_THRESHOLDS.PCT_BELOW_55_HIGH) {
     score += 2
-    reasons.push('High share of transactions below 55 years')
-  } else if (pctTxBelow55 >= 0.15) {
+    reasons.push(`High share of transactions below ${LEASE_THRESHOLDS.CRITICAL} years`)
+  } else if (pctTxBelow55 >= LEASE_THRESHOLDS.PCT_BELOW_55_MODERATE) {
     score += 1
-    reasons.push('Meaningful share of transactions below 55 years')
+    reasons.push(`Meaningful share of transactions below ${LEASE_THRESHOLDS.CRITICAL} years`)
   }
 
-  if (pctTxBelow60 >= 0.5) {
+  if (pctTxBelow60 >= LEASE_THRESHOLDS.PCT_BELOW_60_WARNING) {
     score += 1
-    reasons.push('Majority of transactions below 60 years')
+    reasons.push(`Majority of transactions below ${LEASE_THRESHOLDS.HIGH} years`)
   }
 
   // Map score → level
@@ -857,9 +832,9 @@ export function computeLeaseRisk(input: {
 export async function getTownProfile(
   town: string,
   flatType: string,
-  months: number = 24, // Use 24 months for decision tool
-  loanYears: number = 25,
-  interestRate: number = 2.6
+  months: number = DATA_FETCHING.DEFAULT_MONTHS, // Use default months for decision tool
+  loanYears: number = FINANCIAL_CONSTANTS.DEFAULT_LOAN_YEARS,
+  interestRate: number = FINANCIAL_CONSTANTS.DEFAULT_INTEREST_RATE
 ): Promise<TownProfile | null> {
   try {
     if (supabase) {
@@ -899,8 +874,8 @@ export async function getTownProfile(
       
       // For percentage calculations, we approximate using monthly data
       // A more accurate approach would query raw transactions, but this is acceptable for decision tool
-      const below60 = leases.filter(l => l < 60).length
-      const below55 = leases.filter(l => l < 55).length
+      const below60 = leases.filter(l => l < LEASE_THRESHOLDS.HIGH).length
+      const below55 = leases.filter(l => l < LEASE_THRESHOLDS.CRITICAL).length
       const pctTxBelow60 = leases.length > 0 ? below60 / leases.length : 0
       const pctTxBelow55 = leases.length > 0 ? below55 / leases.length : 0
 
@@ -910,7 +885,7 @@ export async function getTownProfile(
       // Calculate mortgage
       const medianPrice = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
       const estimatedMortgage = calculateMonthlyMortgage(
-        medianPrice * 0.75, // 75% LTV
+        medianPrice * FINANCIAL_CONSTANTS.LTV_RESALE, // LTV for resale flats
         loanYears,
         interestRate
       )
@@ -924,21 +899,20 @@ export async function getTownProfile(
 
       // Determine pricing response
       let pricingResponse: 'early_discount' | 'stable' | 'premium'
-      if (medianLease < 60) {
+      if (medianLease < LEASE_THRESHOLDS.HIGH) {
         pricingResponse = 'early_discount'
-      } else if (medianLease < 70) {
+      } else if (medianLease < LEASE_THRESHOLDS.MODERATE) {
         pricingResponse = 'stable'
       } else {
         pricingResponse = 'premium'
       }
 
       // Determine stability
-      const islandAvgVolatility = 0.12
-      const islandAvgVolume = 100
       let stability: 'stable' | 'volatile' | 'fragile'
-      if (priceVolatility > islandAvgVolatility && data.reduce((sum, d) => sum + d.tx_count, 0) < islandAvgVolume) {
+      const totalVolume = data.reduce((sum, d) => sum + d.tx_count, 0)
+      if (priceVolatility > MARKET_THRESHOLDS.ISLAND_AVG_VOLATILITY && totalVolume < MARKET_THRESHOLDS.ISLAND_AVG_VOLUME) {
         stability = 'fragile'
-      } else if (priceVolatility > islandAvgVolatility) {
+      } else if (priceVolatility > MARKET_THRESHOLDS.ISLAND_AVG_VOLATILITY) {
         stability = 'volatile'
       } else {
         stability = 'stable'
@@ -1103,15 +1077,15 @@ export function generateCompareSummary(
 ): CompareSummary {
   const badges: CompareSummary['badges'] = []
   
-  // Thresholds
-  const SPI_SIGNIFICANT = 15
-  const PRICE_SIGNIFICANT = 30000 // S$30k
-  const LEASE_SIGNIFICANT = 15 // years
-  
   // Calculate differences
   const spiDiff = spiA && spiB ? spiA.spi - spiB.spi : 0 // >0 means A has higher pressure
   const priceDiff = A.medianResalePrice - B.medianResalePrice // >0 means A is more expensive
   const leaseDiff = A.medianRemainingLease - B.medianRemainingLease // >0 means A has healthier lease
+  
+  // Use thresholds from constants
+  const SPI_SIGNIFICANT = COMPARISON_THRESHOLDS.SPI_SIGNIFICANT
+  const PRICE_SIGNIFICANT = COMPARISON_THRESHOLDS.PRICE_SIGNIFICANT
+  const LEASE_SIGNIFICANT = COMPARISON_THRESHOLDS.LEASE_SIGNIFICANT
   
   // ============================================
   // Decision Rules System: Build Comparison Metrics (early)
@@ -1361,11 +1335,11 @@ export function generateCompareSummary(
       decisionHint = condition.text
       break
     } else if (condition.condition === 'preference == low_entry && delta_price > 30000' && 
-               preferenceId === 'low_entry' && metrics.deltaPrice > 30000) {
+               preferenceId === 'low_entry' && metrics.deltaPrice > COMPARISON_THRESHOLDS.PRICE_SIGNIFICANT) {
       decisionHint = condition.text
       break
     } else if (condition.condition === 'preference == low_school_pressure && abs(delta_spi) >= 8' && 
-               preferenceId === 'low_school_pressure' && Math.abs(metrics.deltaSPI) >= 8) {
+               preferenceId === 'low_school_pressure' && Math.abs(metrics.deltaSPI) >= COMPARISON_THRESHOLDS.SPI_MODERATE) {
       decisionHint = condition.text
       break
     } else if (condition.condition === 'default') {
@@ -1525,9 +1499,9 @@ export function generateCompareSummary(
       const direction = metrics.deltaSPI > 0 ? 'decreases' : 'increases'
       const targetTown = metrics.deltaSPI > 0 ? B.town : A.town
       
-      if (spiChangeAbs >= 8 && levelChange) {
+      if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MODERATE && levelChange) {
         tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI significantly (${levelText})`)
-      } else if (spiChangeAbs >= 3) {
+      } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MINOR) {
         tradeoffs.push(`🎓 School: Moving to ${targetTown} ${direction} SPI slightly (${levelText})`)
       } else if (spiChangeAbs > 0) {
         tradeoffs.push(`🎓 School: School pressure remains similar`)
@@ -1536,15 +1510,15 @@ export function generateCompareSummary(
     
     // Confidence badge
     let confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
-    if (overallDiffAbs > 12) {
+    if (overallDiffAbs > SCORING_CONSTANTS.CONFIDENCE.CLEAR_WINNER) {
       confidence = 'clear_winner'
-    } else if (overallDiffAbs > 5) {
+    } else if (overallDiffAbs > SCORING_CONSTANTS.CONFIDENCE.BALANCED) {
       confidence = 'balanced'
     } else {
       confidence = 'depends_on_preference'
     }
     
-    recommendation = { headline, tradeoffs: tradeoffs.slice(0, 3), confidence }
+    recommendation = { headline, tradeoffs: tradeoffs.slice(0, SCORING_CONSTANTS.MAX_TRADEOFF_BULLETS), confidence }
   }
   
   // ============================================
@@ -1586,15 +1560,15 @@ export function generateCompareSummary(
     
     // Generate explanation sentence
     let explanation = ''
-    if (spiChangeAbs < 3) {
+    if (spiChangeAbs < COMPARISON_THRESHOLDS.SPI_MINOR) {
       explanation = `Pressure remains similar — moving is unlikely to materially change day-to-day stress.`
-    } else if (spiChangeAbs >= 3 && spiChangeAbs < 8) {
+    } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MINOR && spiChangeAbs < COMPARISON_THRESHOLDS.SPI_MODERATE) {
       if (spiChange > 0) {
         explanation = `Pressure increases slightly, but stays within ${finalLevel === 'low' ? 'Low' : 'Moderate'} range — moving is unlikely to materially change day-to-day stress unless you target specific elite schools.`
       } else {
         explanation = `Pressure decreases slightly — moving may reduce competition, especially if you're targeting mid-tier schools.`
       }
-    } else if (spiChangeAbs >= 8) {
+    } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MODERATE) {
       if (spiChange > 0) {
         const levelChange = spiA.level !== spiB.level
         if (levelChange) {
@@ -1625,15 +1599,15 @@ export function generateCompareSummary(
   if (recommendation && movingEducationImpact && lens === 'school_pressure') {
     const spiChangeAbs = Math.abs(movingEducationImpact.spiChange)
     
-    // If SPI difference > 8: Education dimension can override price/lease
-    if (spiChangeAbs > 8) {
+    // If SPI difference is significant: Education dimension can override price/lease
+    if (spiChangeAbs > COMPARISON_THRESHOLDS.SPI_MODERATE) {
       // Education becomes primary factor in headline
       if (movingEducationImpact.spiChange < 0) {
         recommendation.headline = `Choose ${A.town} if you prioritise significantly lower primary school pressure.`
       } else {
         recommendation.headline = `Choose ${B.town} if you prioritise significantly lower primary school pressure.`
       }
-    } else if (spiChangeAbs >= 3 && spiChangeAbs <= 8) {
+    } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MINOR && spiChangeAbs <= COMPARISON_THRESHOLDS.SPI_MODERATE) {
       // Write as trade-off
       if (movingEducationImpact.spiChange < 0) {
         recommendation.headline = `Choose ${A.town} for lower school pressure, but consider trade-offs with price and lease.`
@@ -1641,7 +1615,7 @@ export function generateCompareSummary(
         recommendation.headline = `Choose ${B.town} for lower school pressure, but consider trade-offs with price and lease.`
       }
     }
-    // If SPI difference < 3: Keep existing headline (education mentioned in trade-offs)
+    // If SPI difference is minor: Keep existing headline (education mentioned in trade-offs)
   }
   
   // ============================================
@@ -1655,12 +1629,12 @@ export function generateCompareSummary(
     
     // Force education mention if:
     // 1. SPI crosses level (Low → Moderate or Moderate → High)
-    // 2. High-demand schools difference ≥ 2
-    // 3. Primary school count difference ≥ 4
-    if (levelChange || highDemandDiff >= 2 || schoolCountDiff >= 4) {
+    // 2. High-demand schools difference is significant
+    // 3. Primary school count difference is significant
+    if (levelChange || highDemandDiff >= COMPARISON_THRESHOLDS.HIGH_DEMAND_SCHOOLS_SIGNIFICANT || schoolCountDiff >= COMPARISON_THRESHOLDS.SCHOOL_COUNT_SIGNIFICANT) {
       // Add education to trade-offs if not already there
       const hasEducation = recommendation.tradeoffs.some(t => t.includes('School') || t.includes('🎓'))
-      if (!hasEducation && recommendation.tradeoffs.length < 3) {
+      if (!hasEducation && recommendation.tradeoffs.length < SCORING_CONSTANTS.MAX_TRADEOFF_BULLETS) {
         const spiChange = movingEducationImpact.spiChange
         const lowerSPI = spiChange < 0 ? A.town : B.town
         const diff = spiChangeAbs
@@ -1773,8 +1747,8 @@ export async function getTownComparisonData(
       )
       const priceVolatility = avgPrice > 0 ? priceStdDev / avgPrice : 0
 
-      // % below 55 years
-      const below55 = leases.filter(l => l < 55).length
+      // % below critical threshold
+      const below55 = leases.filter(l => l < LEASE_THRESHOLDS.CRITICAL).length
       const pctBelow55Years = leases.length > 0 ? (below55 / leases.length) * 100 : 0
 
       // Get median rent

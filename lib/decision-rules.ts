@@ -5,6 +5,14 @@
  * All rules are configurable, explainable, and extensible.
  */
 
+import {
+  COMPARISON_THRESHOLDS,
+  LEASE_THRESHOLDS,
+  PREFERENCE_WEIGHTS,
+  FAMILY_PROFILE_ADJUSTMENTS,
+  HOLDING_PERIOD,
+} from './constants'
+
 // ============================================
 // Family Profile (MVP: 4 Questions)
 // ============================================
@@ -92,69 +100,45 @@ export interface SchoolRule {
 export const PREFERENCE_MODES: Record<string, PreferenceMode> = {
   balanced: {
     id: 'balanced',
-    weights: {
-      price: 0.25,
-      lease: 0.30,
-      school: 0.15,
-      rent: 0.20,
-      stability: 0.10
-    },
+    weights: PREFERENCE_WEIGHTS.BALANCED,
     description: 'Weighted across affordability, lease safety, school pressure, and cash flow.'
   },
   
   low_entry: {
     id: 'low_entry',
-    weights: {
-      price: 0.45,
-      rent: 0.25,
-      lease: 0.15,
-      school: 0.10,
-      stability: 0.05
-    },
+    weights: PREFERENCE_WEIGHTS.LOW_ENTRY,
     description: 'Prioritises lower upfront cost and monthly cash flow.',
     hardRules: [
       {
         condition: 'price_diff > 20000',
         effect: 'override',
-        threshold: 20000
+        threshold: COMPARISON_THRESHOLDS.PRICE_MODERATE
       }
     ]
   },
   
   long_term: {
     id: 'long_term',
-    weights: {
-      lease: 0.45,
-      stability: 0.20,
-      school: 0.15,
-      price: 0.10,
-      rent: 0.10
-    },
+    weights: PREFERENCE_WEIGHTS.LONG_TERM,
     description: 'Optimised for long holding periods and future resale.',
     hardRules: [
       {
         condition: 'lease < 60',
         effect: 'warning',
-        threshold: 60
+        threshold: LEASE_THRESHOLDS.HIGH
       }
     ]
   },
   
   low_school_pressure: {
     id: 'low_school_pressure',
-    weights: {
-      school: 0.45,
-      lease: 0.20,
-      price: 0.15,
-      stability: 0.10,
-      rent: 0.10
-    },
+    weights: PREFERENCE_WEIGHTS.LOW_SCHOOL_PRESSURE,
     description: 'Prioritises lower primary school competition and flexibility.',
     schoolRules: [
       {
         condition: 'delta_spi >= 10',
         impact: 'significant',
-        threshold: 10
+        threshold: 10 // Keep 10 for school-specific rule (different from general SPI_MODERATE)
       },
       {
         condition: 'spi_level == Low',
@@ -234,14 +218,16 @@ export const SUMMARY_TEXT_RULES: SummaryTextRules = {
   tradeoffs: {
     price: {
       thresholds: [
-        {
-          condition: 'abs(delta_price) >= 30000',
-          text: '{cheaper} is cheaper by ~{diff}'
-        },
-        {
-          condition: 'abs(delta_price) >= 20000',
-          text: '{cheaper} is cheaper by ~{diff}'
-        }
+      {
+        condition: 'abs(delta_price) >= 30000',
+        text: '{cheaper} is cheaper by ~{diff}',
+        threshold: COMPARISON_THRESHOLDS.PRICE_SIGNIFICANT
+      },
+      {
+        condition: 'abs(delta_price) >= 20000',
+        text: '{cheaper} is cheaper by ~{diff}',
+        threshold: COMPARISON_THRESHOLDS.PRICE_MODERATE
+      }
       ]
     },
     lease: {
@@ -262,14 +248,16 @@ export const SUMMARY_TEXT_RULES: SummaryTextRules = {
     },
     school: {
       thresholds: [
-        {
-          condition: 'abs(delta_spi) >= 8 && spi_level_change',
-          text: 'Moving to {town} {direction} SPI significantly ({level})'
-        },
-        {
-          condition: 'abs(delta_spi) >= 3',
-          text: 'Moving to {town} {direction} SPI slightly ({level})'
-        },
+      {
+        condition: 'abs(delta_spi) >= 8 && spi_level_change',
+        text: 'Moving to {town} {direction} SPI significantly ({level})',
+        threshold: COMPARISON_THRESHOLDS.SPI_MODERATE
+      },
+      {
+        condition: 'abs(delta_spi) >= 3',
+        text: 'Moving to {town} {direction} SPI slightly ({level})',
+        threshold: COMPARISON_THRESHOLDS.SPI_MINOR
+      },
         {
           condition: 'abs(delta_spi) < 3',
           text: 'School pressure remains similar'
@@ -286,11 +274,13 @@ export const SUMMARY_TEXT_RULES: SummaryTextRules = {
       },
       {
         condition: 'preference == low_entry && delta_price > 30000',
-        text: 'If upfront cost is your primary concern, the price difference may outweigh other factors.'
+        text: 'If upfront cost is your primary concern, the price difference may outweigh other factors.',
+        threshold: COMPARISON_THRESHOLDS.PRICE_SIGNIFICANT
       },
       {
         condition: 'preference == low_school_pressure && abs(delta_spi) >= 8',
-        text: 'If primary school pressure is your priority, the SPI difference should be your main consideration.'
+        text: 'If primary school pressure is your priority, the SPI difference should be your main consideration.',
+        threshold: COMPARISON_THRESHOLDS.SPI_MODERATE
       },
       {
         condition: 'default',
@@ -321,7 +311,7 @@ export const SUITABILITY_RULES: SuitabilityRule[] = [
       {
         metric: 'lease',
         operator: '>=',
-        value: 70,
+        value: LEASE_THRESHOLDS.MODERATE,
         text: 'Long-term owners valuing lease security'
       },
       {
@@ -344,14 +334,14 @@ export const SUITABILITY_RULES: SuitabilityRule[] = [
       {
         metric: 'lease',
         operator: '<',
-        value: 60,
-        text: 'High lease risk — may face financing constraints'
+        value: LEASE_THRESHOLDS.HIGH,
+        text: `High lease risk — may face financing constraints (below ${LEASE_THRESHOLDS.HIGH} years)`
       },
       {
         metric: 'pct_tx_below_55',
         operator: '>',
-        value: 30,
-        text: 'Significant portion of flats below 55 years remaining'
+        value: LEASE_THRESHOLDS.PCT_BELOW_55_HIGH * 100, // Convert to percentage
+        text: `Significant portion of flats below ${LEASE_THRESHOLDS.CRITICAL} years remaining`
       }
     ]
   }
@@ -413,7 +403,7 @@ export function checkHardRules(
       if (metrics.leaseA < rule.threshold || metrics.leaseB < rule.threshold) {
         warnings.push({
           type: rule.effect as 'warning' | 'penalty' | 'override',
-          message: '⚠ Lease Risk: One or both towns have median lease below 60 years, which may face financing constraints.'
+          message: `⚠ Lease Risk: One or both towns have median lease below ${rule.threshold} years, which may face financing constraints.`
         })
       }
     }
@@ -496,9 +486,9 @@ export function mapFamilyProfileToRuleProfile(profile: FamilyProfile): RuleProfi
   
   // Family stage adjustments
   if (profile.stage === 'no_children') {
-    adjustments.school -= 0.10  // ↓ School weight
+    adjustments.school += FAMILY_PROFILE_ADJUSTMENTS.SCHOOL.NO_CHILDREN
   } else if (profile.stage === 'primary_family' || profile.stage === 'planning_primary') {
-    adjustments.school += 0.15  // ↑ School weight
+    adjustments.school += FAMILY_PROFILE_ADJUSTMENTS.SCHOOL.PRIMARY_FAMILY
   } else if (profile.stage === 'older_children') {
     adjustments.lease += 0.05
     adjustments.stability += 0.05  // ↑ Lease + Stability
@@ -506,25 +496,25 @@ export function mapFamilyProfileToRuleProfile(profile: FamilyProfile): RuleProfi
   
   // Holding years adjustments
   if (profile.holdingYears === 'short') {
-    adjustments.lease -= 0.10  // ↓ Lease importance
+    adjustments.lease += FAMILY_PROFILE_ADJUSTMENTS.LEASE.SHORT
     adjustments.price += 0.05
   } else if (profile.holdingYears === 'long') {
-    adjustments.lease += 0.10  // ↑ Lease & resale
+    adjustments.lease += FAMILY_PROFILE_ADJUSTMENTS.LEASE.LONG
     adjustments.stability += 0.05
   }
   
   // School sensitivity adjustments
   if (profile.schoolSensitivity === 'high') {
-    adjustments.school += 0.20  // +0.2
+    adjustments.school += FAMILY_PROFILE_ADJUSTMENTS.SENSITIVITY.HIGH
   } else if (profile.schoolSensitivity === 'low') {
-    adjustments.school -= 0.10  // -0.1
+    adjustments.school += FAMILY_PROFILE_ADJUSTMENTS.SENSITIVITY.LOW
   }
   
   // Normalize adjustments (ensure weights sum to 1)
   const totalAdjustment = Object.values(adjustments).reduce((sum, val) => sum + Math.abs(val), 0)
-  if (totalAdjustment > 0.3) {
+  if (totalAdjustment > FAMILY_PROFILE_ADJUSTMENTS.MAX_TOTAL_ADJUSTMENT) {
     // Scale down if adjustments are too large
-    const scale = 0.3 / totalAdjustment
+    const scale = FAMILY_PROFILE_ADJUSTMENTS.MAX_TOTAL_ADJUSTMENT / totalAdjustment
     Object.keys(adjustments).forEach(key => {
       adjustments[key as keyof typeof adjustments] *= scale
     })
@@ -539,9 +529,9 @@ export function mapFamilyProfileToRuleProfile(profile: FamilyProfile): RuleProfi
   }
   
   const holdingDescriptions: Record<HoldingYears, string> = {
-    'short': '< 5 years',
-    'medium': '5–15 years',
-    'long': '15+ years'
+    'short': `< ${HOLDING_PERIOD.SHORT} years`,
+    'medium': `${HOLDING_PERIOD.SHORT}–${HOLDING_PERIOD.MEDIUM} years`,
+    'long': `${HOLDING_PERIOD.MEDIUM}+ years`
   }
   
   const priorityDescriptions: Record<CostVsValue, string> = {
