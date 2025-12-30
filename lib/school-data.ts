@@ -199,8 +199,174 @@ export async function calculateSchoolPressureIndex(town: string): Promise<School
       .select('*')
       .eq('town', town)
 
-    if (schoolsError) throw schoolsError
+    if (schoolsError) {
+      console.error(`Error fetching schools for ${town}:`, schoolsError)
+      throw schoolsError
+    }
+    
+    console.log(`Query result for ${town}:`, { 
+      schoolsCount: schools?.length || 0, 
+      sampleSchool: schools?.[0]?.school_name 
+    })
+    
     if (!schools || schools.length === 0) {
+      console.warn(`No schools found for town: ${town}. Checking all towns in database...`)
+      
+      // Debug: Check what towns are actually in the database
+      const { data: allTowns, error: allTownsError } = await supabase
+        .from('primary_schools')
+        .select('town')
+        .not('town', 'is', null)
+      
+      if (!allTownsError && allTowns) {
+        const uniqueTowns = [...new Set(allTowns.map(s => s.town))].sort()
+        console.log(`Available towns in database:`, uniqueTowns)
+        console.log(`Looking for: "${town}"`)
+        const match = uniqueTowns.find(t => t.toLowerCase() === town.toLowerCase())
+        if (match) {
+          console.log(`Found case-insensitive match: "${match}"`)
+        }
+      }
+      // Try case-insensitive search as fallback
+      const { data: schoolsCaseInsensitive, error: caseError } = await supabase
+        .from('primary_schools')
+        .select('*')
+        .ilike('town', town)
+      
+      if (caseError) {
+        console.error(`Error in case-insensitive search for ${town}:`, caseError)
+        return null
+      }
+      
+      if (schoolsCaseInsensitive && schoolsCaseInsensitive.length > 0) {
+        console.log(`Found ${schoolsCaseInsensitive.length} schools for ${town} using case-insensitive search`)
+        // Use the case-insensitive results
+        const schoolIds = schoolsCaseInsensitive.map(s => s.id)
+        const { data: cutoffs, error: cutoffsError } = await supabase
+          .from('psle_cutoff')
+          .select('*')
+          .in('school_id', schoolIds)
+
+        if (cutoffsError) throw cutoffsError
+
+        // Calculate sub-scores
+        const D = calculateDemandPressure(schoolsCaseInsensitive, cutoffs || [])
+        const C = calculateChoiceConstraint(schoolsCaseInsensitive.length)
+        const U = calculateUncertainty(schoolsCaseInsensitive, cutoffs || [])
+        const R = await calculateCrowding(town)
+
+        // Calculate SPI: 0.40*D + 0.30*C + 0.20*U + 0.10*R
+        const spi = 0.40 * D + 0.30 * C + 0.20 * U + 0.10 * R
+
+        // Determine level
+        let level: 'low' | 'medium' | 'high'
+        if (spi <= 33) level = 'low'
+        else if (spi <= 66) level = 'medium'
+        else level = 'high'
+
+        // Find dominant factor
+        const factors = [
+          { name: 'demand' as const, value: D },
+          { name: 'choice' as const, value: C },
+          { name: 'uncertainty' as const, value: U },
+          { name: 'crowding' as const, value: R }
+        ]
+        const dominant = factors.reduce((max, f) => f.value > max.value ? f : max)
+
+        // Generate explanation (matched to SPI level)
+        let explanation = ''
+        if (spi < 25) {
+          switch (dominant.name) {
+            case 'demand':
+              explanation = 'A wide range of lower-demand schools keeps competition manageable.'
+              break
+            case 'choice':
+              explanation = 'Multiple school options provide flexibility and reduce pressure.'
+              break
+            case 'uncertainty':
+              explanation = 'Stable cut-off patterns make outcomes more predictable.'
+              break
+            case 'crowding':
+              explanation = 'Lower local demand keeps competition manageable.'
+              break
+          }
+        } else if (spi > 50) {
+          switch (dominant.name) {
+            case 'demand':
+              explanation = 'Competition is concentrated in a few high-demand schools.'
+              break
+            case 'choice':
+              explanation = 'Fewer nearby schools means fewer alternatives; distance bands matter more.'
+              break
+            case 'uncertainty':
+              explanation = 'Cut-off levels fluctuate more here, making outcomes less predictable.'
+              break
+            case 'crowding':
+              explanation = 'Higher demand indicators suggest tighter competition for popular schools.'
+              break
+          }
+        } else {
+          switch (dominant.name) {
+            case 'demand':
+              explanation = 'Moderate mix of school demand levels, with some competition for popular schools.'
+              break
+            case 'choice':
+              explanation = 'Adequate school options, but distance bands still matter.'
+              break
+            case 'uncertainty':
+              explanation = 'Cut-off patterns show moderate variability year to year.'
+              break
+            case 'crowding':
+              explanation = 'Moderate local demand suggests balanced competition levels.'
+              break
+          }
+        }
+
+        // Generate parent-friendly "Why" explanations
+        const whyExplanations: string[] = []
+        
+        if (D < 30) {
+          whyExplanations.push('Few high-demand schools → less concentrated competition')
+        } else if (D > 70) {
+          whyExplanations.push('Many high-demand schools → more concentrated competition')
+        } else {
+          whyExplanations.push('Moderate mix of school demand levels')
+        }
+        
+        if (C < 30) {
+          whyExplanations.push('Multiple school options → wider safety net')
+        } else if (C > 70) {
+          whyExplanations.push('Fewer school options → distance bands matter more')
+        } else {
+          whyExplanations.push('Moderate number of school choices available')
+        }
+        
+        if (U < 30) {
+          whyExplanations.push('Stable cut-off patterns → outcomes more predictable')
+        } else if (U > 70) {
+          whyExplanations.push('Fluctuating cut-off patterns → outcomes less predictable')
+        } else {
+          whyExplanations.push('Moderate cut-off stability')
+        }
+        
+        if (R > 70) {
+          whyExplanations.push('Higher local demand → tighter competition for popular schools')
+        }
+
+        return {
+          town,
+          spi: Math.round(spi * 10) / 10,
+          level,
+          demandPressure: Math.round(D * 10) / 10,
+          choiceConstraint: Math.round(C * 10) / 10,
+          uncertainty: Math.round(U * 10) / 10,
+          crowding: Math.round(R * 10) / 10,
+          dominantFactor: dominant.name,
+          explanation,
+          whyExplanations
+        }
+      }
+      
       return null // No schools data
     }
 
