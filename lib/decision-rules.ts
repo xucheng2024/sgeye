@@ -6,6 +6,38 @@
  */
 
 // ============================================
+// Family Profile (MVP: 4 Questions)
+// ============================================
+
+export type FamilyStage = 'no_children' | 'primary_family' | 'planning_primary' | 'older_children'
+export type HoldingYears = 'short' | 'medium' | 'long'  // <5, 5-15, 15+
+export type CostVsValue = 'cost' | 'value' | 'balanced'
+export type SchoolSensitivity = 'high' | 'neutral' | 'low'
+
+export interface FamilyProfile {
+  stage: FamilyStage
+  holdingYears: HoldingYears
+  costVsValue: CostVsValue
+  schoolSensitivity: SchoolSensitivity
+}
+
+export interface RuleProfile {
+  activeRuleSet: string  // 'balanced' | 'low_entry' | 'long_term' | 'low_school_pressure'
+  weightAdjustments: {
+    school: number
+    lease: number
+    price: number
+    rent: number
+    stability: number
+  }
+  personalizedContext: {
+    stageDescription: string
+    holdingDescription: string
+    priorityDescription: string
+  }
+}
+
+// ============================================
 // Input Metrics (Standardized)
 // ============================================
 // All metrics are normalized: positive = favorable for Town B (moving from A → B)
@@ -431,5 +463,127 @@ export function evaluateSchoolRules(
   }
   
   return { impact: 'neutral', message: '' }
+}
+
+// ============================================
+// Family Profile → Rule Profile Mapping
+// ============================================
+
+export function mapFamilyProfileToRuleProfile(profile: FamilyProfile): RuleProfile {
+  // Step 1: Determine base rule set from cost_vs_value
+  let activeRuleSet: string
+  if (profile.costVsValue === 'cost') {
+    activeRuleSet = 'low_entry'
+  } else if (profile.costVsValue === 'value') {
+    activeRuleSet = 'long_term'
+  } else {
+    activeRuleSet = 'balanced'
+  }
+  
+  // Step 2: Apply holding years adjustment
+  if (profile.holdingYears === 'long' && activeRuleSet !== 'low_school_pressure') {
+    activeRuleSet = 'long_term'
+  }
+  
+  // Step 3: Calculate weight adjustments
+  const adjustments = {
+    school: 0,
+    lease: 0,
+    price: 0,
+    rent: 0,
+    stability: 0
+  }
+  
+  // Family stage adjustments
+  if (profile.stage === 'no_children') {
+    adjustments.school -= 0.10  // ↓ School weight
+  } else if (profile.stage === 'primary_family' || profile.stage === 'planning_primary') {
+    adjustments.school += 0.15  // ↑ School weight
+  } else if (profile.stage === 'older_children') {
+    adjustments.lease += 0.05
+    adjustments.stability += 0.05  // ↑ Lease + Stability
+  }
+  
+  // Holding years adjustments
+  if (profile.holdingYears === 'short') {
+    adjustments.lease -= 0.10  // ↓ Lease importance
+    adjustments.price += 0.05
+  } else if (profile.holdingYears === 'long') {
+    adjustments.lease += 0.10  // ↑ Lease & resale
+    adjustments.stability += 0.05
+  }
+  
+  // School sensitivity adjustments
+  if (profile.schoolSensitivity === 'high') {
+    adjustments.school += 0.20  // +0.2
+  } else if (profile.schoolSensitivity === 'low') {
+    adjustments.school -= 0.10  // -0.1
+  }
+  
+  // Normalize adjustments (ensure weights sum to 1)
+  const totalAdjustment = Object.values(adjustments).reduce((sum, val) => sum + Math.abs(val), 0)
+  if (totalAdjustment > 0.3) {
+    // Scale down if adjustments are too large
+    const scale = 0.3 / totalAdjustment
+    Object.keys(adjustments).forEach(key => {
+      adjustments[key as keyof typeof adjustments] *= scale
+    })
+  }
+  
+  // Step 4: Generate personalized context descriptions
+  const stageDescriptions: Record<FamilyStage, string> = {
+    'no_children': 'Young couple / No children yet',
+    'primary_family': 'Family with primary-school child(ren)',
+    'planning_primary': 'Planning for primary school soon',
+    'older_children': 'Older children / Long-term stability focus'
+  }
+  
+  const holdingDescriptions: Record<HoldingYears, string> = {
+    'short': '< 5 years',
+    'medium': '5–15 years',
+    'long': '15+ years'
+  }
+  
+  const priorityDescriptions: Record<CostVsValue, string> = {
+    'cost': 'Lower upfront & monthly cost',
+    'value': 'Long-term value & resale safety',
+    'balanced': 'Balanced'
+  }
+  
+  return {
+    activeRuleSet,
+    weightAdjustments: adjustments,
+    personalizedContext: {
+      stageDescription: stageDescriptions[profile.stage],
+      holdingDescription: holdingDescriptions[profile.holdingYears],
+      priorityDescription: priorityDescriptions[profile.costVsValue]
+    }
+  }
+}
+
+// Apply rule profile to preference mode (with adjustments)
+export function applyRuleProfile(baseMode: PreferenceMode, ruleProfile: RuleProfile): PreferenceMode {
+  const adjustedWeights = {
+    price: Math.max(0, Math.min(1, baseMode.weights.price + ruleProfile.weightAdjustments.price)),
+    lease: Math.max(0, Math.min(1, baseMode.weights.lease + ruleProfile.weightAdjustments.lease)),
+    school: Math.max(0, Math.min(1, baseMode.weights.school + ruleProfile.weightAdjustments.school)),
+    rent: Math.max(0, Math.min(1, baseMode.weights.rent + ruleProfile.weightAdjustments.rent)),
+    stability: Math.max(0, Math.min(1, baseMode.weights.stability + ruleProfile.weightAdjustments.stability))
+  }
+  
+  // Normalize weights to sum to 1
+  const total = Object.values(adjustedWeights).reduce((sum, val) => sum + val, 0)
+  if (total > 0) {
+    Object.keys(adjustedWeights).forEach(key => {
+      adjustedWeights[key as keyof typeof adjustedWeights] /= total
+    })
+  }
+  
+  return {
+    ...baseMode,
+    id: ruleProfile.activeRuleSet,
+    weights: adjustedWeights,
+    description: baseMode.description
+  }
 }
 

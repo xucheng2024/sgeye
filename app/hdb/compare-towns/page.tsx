@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getTownProfile, generateCompareSummary, TownProfile, CompareSummary, PreferenceLens, TownComparisonData } from '@/lib/hdb-data'
+import { FamilyProfile, mapFamilyProfileToRuleProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
 import { Scale, AlertTriangle, TrendingUp, Map, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react'
@@ -403,6 +404,8 @@ export default function CompareTownsPage() {
   const [leaseOpen, setLeaseOpen] = useState(true)
   const [marketOpen, setMarketOpen] = useState(false)
   const [schoolAccessOpen, setSchoolAccessOpen] = useState(false)
+  const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null)
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -441,10 +444,18 @@ export default function CompareTownsPage() {
     fetchData()
   }, [townA, townB, flatType])
 
-  // Generate Compare Summary from Town Profiles (with SPI and Lens)
+  // Generate Compare Summary from Town Profiles (with SPI, Lens, and Family Profile)
   const isLongTerm = holdingPeriod === 'long'
+  // Convert holdingPeriod to FamilyProfile format if familyProfile doesn't exist
+  const effectiveFamilyProfile: FamilyProfile | null = familyProfile || (holdingPeriod ? {
+    stage: 'primary_family',  // Default
+    holdingYears: holdingPeriod,
+    costVsValue: preferenceLens === 'lower_cost' ? 'cost' : preferenceLens === 'lease_safety' ? 'value' : 'balanced',
+    schoolSensitivity: preferenceLens === 'school_pressure' ? 'high' : 'neutral'
+  } : null)
+  
   const compareSummary: CompareSummary | null = profileA && profileB 
-    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB, landscapeA, landscapeB, preferenceLens, isLongTerm)
+    ? generateCompareSummary(profileA, profileB, userBudget, spiA, spiB, landscapeA, landscapeB, preferenceLens, isLongTerm, effectiveFamilyProfile)
     : null
 
   // Generate suitability from profiles
@@ -466,6 +477,228 @@ export default function CompareTownsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Family Profile Display Bar */}
+        {effectiveFamilyProfile && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-gray-700">👨‍👩‍👧 Family profile:</span>
+                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                  {effectiveFamilyProfile.stage === 'no_children' ? 'Young couple / No children yet' :
+                   effectiveFamilyProfile.stage === 'primary_family' ? 'Primary school family' :
+                   effectiveFamilyProfile.stage === 'planning_primary' ? 'Planning for primary school soon' :
+                   'Older children / Long-term stability'}
+                </span>
+                <span className="px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-medium">
+                  {effectiveFamilyProfile.holdingYears === 'short' ? '< 5 years' :
+                   effectiveFamilyProfile.holdingYears === 'medium' ? '5–15 years' :
+                   '15+ years'}
+                </span>
+                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                  {effectiveFamilyProfile.costVsValue === 'cost' ? 'Cost-focused' :
+                   effectiveFamilyProfile.costVsValue === 'value' ? 'Value-focused' :
+                   'Balanced'}
+                </span>
+                <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded text-xs font-medium">
+                  {effectiveFamilyProfile.schoolSensitivity === 'high' ? 'Low school pressure' :
+                   effectiveFamilyProfile.schoolSensitivity === 'low' ? 'Comfortable with competition' :
+                   'Neutral'}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowProfileEditor(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                (Edit)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Family Profile Editor Sidebar */}
+        {showProfileEditor && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-end">
+            <div className="bg-white h-full w-full max-w-md shadow-xl overflow-y-auto">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Family Profile</h2>
+                <button
+                  onClick={() => setShowProfileEditor(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-8">
+                {/* Question 1: Family Stage */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Your family stage
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'no_children', label: 'Young couple / No children yet' },
+                      { value: 'primary_family', label: 'Family with primary-school child(ren)' },
+                      { value: 'planning_primary', label: 'Planning for primary school soon' },
+                      { value: 'older_children', label: 'Older children / Long-term stability focus' }
+                    ].map(option => (
+                      <label key={option.value} className={`flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-all ${
+                        (familyProfile?.stage === option.value || (!familyProfile && option.value === 'primary_family')) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="stage"
+                          value={option.value}
+                          checked={familyProfile?.stage === option.value || (!familyProfile && option.value === 'primary_family')}
+                          onChange={(e) => setFamilyProfile(prev => ({
+                            ...(prev || { stage: 'primary_family', holdingYears: 'medium', costVsValue: 'balanced', schoolSensitivity: 'neutral' }),
+                            stage: e.target.value as FamilyProfile['stage']
+                          }))}
+                          className="mr-3"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 2: Holding Years */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    How long do you expect to stay in this home?
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'short', label: '< 5 years' },
+                      { value: 'medium', label: '5–15 years' },
+                      { value: 'long', label: '15+ years' }
+                    ].map(option => (
+                      <label key={option.value} className={`flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-all ${
+                        (familyProfile?.holdingYears === option.value || (!familyProfile && holdingPeriod === option.value)) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="holdingYears"
+                          value={option.value}
+                          checked={familyProfile?.holdingYears === option.value || (!familyProfile && holdingPeriod === option.value)}
+                          onChange={(e) => {
+                            const value = e.target.value as FamilyProfile['holdingYears']
+                            setFamilyProfile(prev => ({
+                              ...(prev || { stage: 'primary_family', holdingYears: 'medium', costVsValue: 'balanced', schoolSensitivity: 'neutral' }),
+                              holdingYears: value
+                            }))
+                            setHoldingPeriod(value)
+                          }}
+                          className="mr-3"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 3: Cost vs Value */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Which matters more right now?
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'cost', label: 'Lower upfront & monthly cost' },
+                      { value: 'value', label: 'Long-term value & resale safety' },
+                      { value: 'balanced', label: 'Balanced' }
+                    ].map(option => (
+                      <label key={option.value} className={`flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-all ${
+                        (familyProfile?.costVsValue === option.value || (!familyProfile && (
+                          (preferenceLens === 'lower_cost' && option.value === 'cost') ||
+                          (preferenceLens === 'lease_safety' && option.value === 'value') ||
+                          (preferenceLens === 'balanced' && option.value === 'balanced')
+                        ))) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="costVsValue"
+                          value={option.value}
+                          checked={familyProfile?.costVsValue === option.value || (!familyProfile && (
+                            (preferenceLens === 'lower_cost' && option.value === 'cost') ||
+                            (preferenceLens === 'lease_safety' && option.value === 'value') ||
+                            (preferenceLens === 'balanced' && option.value === 'balanced')
+                          ))}
+                          onChange={(e) => {
+                            const value = e.target.value as FamilyProfile['costVsValue']
+                            setFamilyProfile(prev => ({
+                              ...(prev || { stage: 'primary_family', holdingYears: 'medium', costVsValue: 'balanced', schoolSensitivity: 'neutral' }),
+                              costVsValue: value
+                            }))
+                            // Auto-update preference lens
+                            if (value === 'cost') setPreferenceLens('lower_cost')
+                            else if (value === 'value') setPreferenceLens('lease_safety')
+                            else setPreferenceLens('balanced')
+                          }}
+                          className="mr-3"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Question 4: School Sensitivity */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    How sensitive are you to school competition?
+                  </label>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'high', label: 'Very sensitive (prefer lower pressure)' },
+                      { value: 'neutral', label: 'Neutral' },
+                      { value: 'low', label: 'Comfortable with competition' }
+                    ].map(option => (
+                      <label key={option.value} className={`flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-all ${
+                        (familyProfile?.schoolSensitivity === option.value || (!familyProfile && (
+                          (preferenceLens === 'school_pressure' && option.value === 'high') ||
+                          (!familyProfile && option.value === 'neutral')
+                        ))) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="schoolSensitivity"
+                          value={option.value}
+                          checked={familyProfile?.schoolSensitivity === option.value || (!familyProfile && (
+                            (preferenceLens === 'school_pressure' && option.value === 'high') ||
+                            (!familyProfile && option.value === 'neutral')
+                          ))}
+                          onChange={(e) => {
+                            const value = e.target.value as FamilyProfile['schoolSensitivity']
+                            setFamilyProfile(prev => ({
+                              ...(prev || { stage: 'primary_family', holdingYears: 'medium', costVsValue: 'balanced', schoolSensitivity: 'neutral' }),
+                              schoolSensitivity: value
+                            }))
+                            // Auto-update preference lens if very sensitive
+                            if (value === 'high') setPreferenceLens('school_pressure')
+                          }}
+                          className="mr-3"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowProfileEditor(false)}
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Save Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* First Screen: Quick Start */}
         {!searchParams.get('townA') && !searchParams.get('townB') && (
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-6">

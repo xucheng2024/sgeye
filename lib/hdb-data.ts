@@ -3,12 +3,15 @@ import { formatCurrency } from './utils'
 import {
   ComparisonMetrics,
   getPreferenceMode,
-  calculateWeightedScore,
   checkHardRules,
   evaluateSchoolRules,
   SUMMARY_TEXT_RULES,
   SUITABILITY_RULES,
-  PREFERENCE_MODES
+  FamilyProfile,
+  RuleProfile,
+  mapFamilyProfileToRuleProfile,
+  applyRuleProfile,
+  calculateWeightedScore
 } from './decision-rules'
 
 export interface RawResaleTransaction {
@@ -1095,7 +1098,8 @@ export function generateCompareSummary(
   landscapeA?: { schoolCount: number; highDemandSchools: number } | null,
   landscapeB?: { schoolCount: number; highDemandSchools: number } | null,
   lens: PreferenceLens = 'balanced',
-  longTerm: boolean = false
+  longTerm: boolean = false,
+  familyProfile?: FamilyProfile | null
 ): CompareSummary {
   const badges: CompareSummary['badges'] = []
   
@@ -1126,8 +1130,19 @@ export function generateCompareSummary(
     pctTxBelow55B: B.pctTxBelow55
   }
   
-  // Get preference mode based on lens and long-term flag
-  const preferenceMode = getPreferenceMode(lens, longTerm)
+  // Get preference mode based on lens and long-term flag (or family profile)
+  let preferenceMode: ReturnType<typeof getPreferenceMode>
+  let ruleProfile: RuleProfile | null = null
+  
+  if (familyProfile) {
+    // Use family profile to generate rule profile
+    ruleProfile = mapFamilyProfileToRuleProfile(familyProfile)
+    const baseMode = getPreferenceMode(ruleProfile.activeRuleSet, familyProfile.holdingYears === 'long')
+    preferenceMode = applyRuleProfile(baseMode, ruleProfile)
+  } else {
+    // Fallback to lens-based mode
+    preferenceMode = getPreferenceMode(lens, longTerm)
+  }
   
   // Generate standardized scores
   const scores = generateStandardizedScores(A, B, spiA ?? null, spiB ?? null, landscapeA ?? null, landscapeB ?? null)
@@ -1428,27 +1443,56 @@ export function generateCompareSummary(
     const winner = overallDiff > 0 ? B.town : A.town
     const winnerIsB = overallDiff > 0
     
-    // Generate headline using rules
+    // Generate headline using rules (personalized if family profile exists)
     let headline = ''
     const preferenceId = preferenceMode.id
     const overallDiffAbs = Math.abs(overallDiff)
     
-    if (preferenceId === 'balanced') {
-      headline = overallDiffAbs > 12
-        ? `Choose ${winner} based on balanced factors.`
-        : `Both towns are viable — ${winner} has a slight edge.`
-    } else if (preferenceId === 'low_entry') {
-      headline = metrics.deltaPrice > 0
-        ? `Choose ${B.town} if you prioritise lower entry price.`
-        : `Choose ${A.town} if you prioritise lower entry price.`
-    } else if (preferenceId === 'long_term') {
-      headline = metrics.deltaLeaseYears > 0
-        ? `Choose ${B.town} if you prioritise long-term lease safety.`
-        : `Choose ${A.town} if you prioritise long-term lease safety.`
-    } else if (preferenceId === 'low_school_pressure') {
-      headline = metrics.deltaSPI > 0
-        ? `Choose ${B.town} if you prioritise lower primary school pressure.`
-        : `Choose ${A.town} if you prioritise lower primary school pressure.`
+    if (ruleProfile && familyProfile) {
+      // Personalized headline based on family profile
+      const stageDesc = ruleProfile.personalizedContext.stageDescription
+      const holdingDesc = ruleProfile.personalizedContext.holdingDescription
+      
+      if (preferenceId === 'long_term' || familyProfile.costVsValue === 'value') {
+        if (metrics.deltaLeaseYears > 0) {
+          headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, lease security matters more than upfront price. ${B.town} offers a healthier lease profile, even though entry cost is higher.`
+        } else {
+          headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, ${A.town} offers better lease security, though entry cost may be higher.`
+        }
+      } else if (preferenceId === 'low_entry' || familyProfile.costVsValue === 'cost') {
+        if (metrics.deltaPrice > 0) {
+          headline = `For a ${stageDesc.toLowerCase()} prioritizing lower upfront & monthly cost, ${B.town} offers better affordability, though lease profile may be shorter.`
+        } else {
+          headline = `For a ${stageDesc.toLowerCase()} prioritizing lower upfront & monthly cost, ${A.town} offers better affordability, though lease profile may be shorter.`
+        }
+      } else if (preferenceId === 'low_school_pressure' || familyProfile.schoolSensitivity === 'high') {
+        if (metrics.deltaSPI > 0) {
+          headline = `For a ${stageDesc.toLowerCase()} sensitive to school competition, ${B.town} offers lower primary school pressure, making it a better fit for your priorities.`
+        } else {
+          headline = `For a ${stageDesc.toLowerCase()} sensitive to school competition, ${A.town} offers lower primary school pressure, making it a better fit for your priorities.`
+        }
+      } else {
+        headline = `For a ${stageDesc.toLowerCase()} planning to stay ${holdingDesc.toLowerCase()}, ${winner} offers a better overall balance for your situation.`
+      }
+    } else {
+      // Fallback to non-personalized headlines
+      if (preferenceId === 'balanced') {
+        headline = overallDiffAbs > 12
+          ? `Choose ${winner} based on balanced factors.`
+          : `Both towns are viable — ${winner} has a slight edge.`
+      } else if (preferenceId === 'low_entry') {
+        headline = metrics.deltaPrice > 0
+          ? `Choose ${B.town} if you prioritise lower entry price.`
+          : `Choose ${A.town} if you prioritise lower entry price.`
+      } else if (preferenceId === 'long_term') {
+        headline = metrics.deltaLeaseYears > 0
+          ? `Choose ${B.town} if you prioritise long-term lease safety.`
+          : `Choose ${A.town} if you prioritise long-term lease safety.`
+      } else if (preferenceId === 'low_school_pressure') {
+        headline = metrics.deltaSPI > 0
+          ? `Choose ${B.town} if you prioritise lower primary school pressure.`
+          : `Choose ${A.town} if you prioritise lower primary school pressure.`
+      }
     }
     
     // Generate 3 trade-off bullets using rules
