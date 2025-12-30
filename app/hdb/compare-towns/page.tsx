@@ -1281,11 +1281,23 @@ export default function CompareTownsPage() {
             </ChartCard>
 
             {/* Module E: Market Stability */}
-            <ChartCard
-              title="Market Stability"
-              description="Transaction volume and price volatility"
-              icon={<TrendingUp className="w-6 h-6" />}
-            >
+            <div className="mb-8">
+              <button
+                onClick={() => setMarketOpen(!marketOpen)}
+                className="w-full flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-all mb-2"
+              >
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Market Stability</h3>
+                </div>
+                {marketOpen ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+              {marketOpen && (
+                <ChartCard
+                  title="Market Stability"
+                  description="Transaction volume and price volatility"
+                  icon={<TrendingUp className="w-6 h-6" />}
+                >
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
