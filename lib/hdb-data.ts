@@ -950,6 +950,10 @@ export function generateCompareSummary(
   } else if (spiA && spiB) {
     // Education pressure is similar
     headlineVerdict = `Both towns face similar levels of primary school competition.`
+  } else if (spiA || spiB) {
+    // Only one town has SPI data
+    const availableTown = spiA ? A.town : B.town
+    headlineVerdict = `Primary school pressure data is available for ${availableTown}, but not for ${spiA ? B.town : A.town}.`
   } else {
     // No SPI data - fallback to price/lease
     if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
@@ -977,6 +981,13 @@ export function generateCompareSummary(
       explanation = `Both towns offer similar school competition levels.`
     }
     
+    educationPressure = { comparison, explanation }
+  } else if (spiA || spiB) {
+    // Show partial data if only one town has SPI data
+    const availableTown = spiA ? A.town : B.town
+    const availableSPI = spiA || spiB!
+    const comparison = `Primary school pressure:\n• ${availableTown}: SPI ${availableSPI.spi} (${getSPILabel(availableSPI.level)})\n• ${spiA ? B.town : A.town}: Data not available`
+    const explanation = `School pressure data is only available for ${availableTown}.`
     educationPressure = { comparison, explanation }
   }
   

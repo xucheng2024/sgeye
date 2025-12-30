@@ -1,0 +1,208 @@
+Processing 101 schools...
+This may take several minutes due to API rate limits.
+
+school_name,address,postal_code,planning_area,town,latitude,longitude
+[1/101] Geocoding: Ang Mo Kio Primary School... ✓ Found: 1.367337, 103.842155
+"Ang Mo Kio Primary School","6 ANG MO KIO STREET 22 ANG MO KIO SECONDARY SCHOOL SINGAPORE 569362","569284","ANG MO KIO","ANG MO KIO","1.36733710171069","103.842154973672"
+[2/101] Geocoding: Da Qiao Primary School... ✗ Address not found, trying school name... ✗ Not found
+"Da Qiao Primary School","12 Ang Mo Kio Street 44","569250","ANG MO KIO","ANG MO KIO","1.3700","103.8500"
+[3/101] Geocoding: Jing Shan Primary School... ✓ Found: 1.369331, 103.835004
+"Jing Shan Primary School","ANG MO KIO STREET 21","569384","ANG MO KIO","ANG MO KIO","1.36933143581853","103.835003785636"
+[4/101] Geocoding: Mayflower Primary School... ✗ Address not found, trying school name... ✓ Found: 1.376377, 103.843253
+"Mayflower Primary School","8 Ang Mo Kio Street 14","569062","ANG MO KIO","ANG MO KIO","1.37637683547682","103.843252803742"
+[5/101] Geocoding: Teck Ghee Primary School... ✗ Address not found, trying school name... ✓ Found: 1.365588, 103.850957
+"Teck Ghee Primary School","11 Ang Mo Kio Street 54","569184","ANG MO KIO","ANG MO KIO","1.36558782075966","103.850957126982"
+[6/101] Geocoding: Bedok Green Primary School... ✓ Found: 1.323446, 103.937879
+"Bedok Green Primary School","1 BEDOK SOUTH AVENUE 2 BEDOK GREEN PRIMARY SCHOOL SINGAPORE 469317","469315","BEDOK","BEDOK","1.32344593287992","103.937878976352"
+[7/101] Geocoding: Bedok South Primary School... ✓ Found: 1.325137, 103.950989
+"Bedok South Primary School","1 JALAN LANGGAR BEDOK BEDOK SOUTH SECONDARY SCHOOL SINGAPORE 468585","468555","BEDOK","BEDOK","1.32513655159184","103.950989139261"
+[8/101] Geocoding: Fengshan Primary School... ✓ Found: 1.330505, 103.935817
+"Fengshan Primary School","114 BEDOK NORTH STREET 2 SINGAPORE 460114","469642","BEDOK","BEDOK","1.33050521254379","103.93581688525"
+[9/101] Geocoding: Opera Estate Primary School... ✗ Address not found, trying school name... ✓ Found: 1.319319, 103.923788
+"Opera Estate Primary School","10 Opera Estate Road","437840","BEDOK","BEDOK","1.31931914436255","103.923788259248"
+[10/101] Geocoding: Temasek Primary School... ✓ Found: 1.339230, 103.918408
+"Temasek Primary School","519 BEDOK RESERVOIR ROAD ARCHIPELAGO SINGAPORE 479276","479229","BEDOK","BEDOK","1.33922952352996","103.918407544173"
+[11/101] Geocoding: Yu Neng Primary School... ✓ Found: 1.335294, 103.947013
+"Yu Neng Primary School","3018 BEDOK NORTH STREET 5 EASTLINK SINGAPORE 486132","469642","BEDOK","BEDOK","1.3352942001459","103.94701280453"
+[12/101] Geocoding: Catholic High School (Primary)... ✓ Found: 1.354723, 103.844875
+"Catholic High School (Primary)","9 BISHAN STREET 22 CATHOLIC HIGH SCHOOL SINGAPORE 579767","579767","BISHAN","BISHAN","1.3547230747166","103.844874676599"
+[13/101] Geocoding: Guangyang Primary School... ✓ Found: 1.346043, 103.849285
+"Guangyang Primary School","6 BISHAN STREET 12 ALPHAJOY STUDENT CARE CENTRE (GUANGYANG) SINGAPORE 579806","579807","BISHAN","BISHAN","1.34604265945532","103.84928476911"
+[14/101] Geocoding: Kuo Chuan Presbyterian Primary School... ✓ Found: 1.350171, 103.854984
+"Kuo Chuan Presbyterian Primary School","10 BISHAN STREET 13 KUO CHUAN PRESBYTERIAN SECONDARY SCHOOL SINGAPORE 579795","579795","BISHAN","BISHAN","1.35017129930314","103.854983746416"
+[15/101] Geocoding: Marymount Convent School... ✓ Found: 1.360938, 103.842575
+"Marymount Convent School","20 BISHAN STREET 22 THE SALVATION ARMY BISHAN CHINESE CORPS SINGAPORE 579768","579767","BISHAN","BISHAN","1.36093756290554","103.842574644167"
+[16/101] Geocoding: Bukit Batok Primary School... ✓ Found: 1.352015, 103.747822
+"Bukit Batok Primary School","50 BUKIT BATOK WEST AVENUE 3 BUKIT BATOK POLYCLINIC SINGAPORE 659164","659159","BUKIT BATOK","BUKIT BATOK","1.35201517590477","103.747822265461"
+[17/101] Geocoding: Lianhua Primary School... ✓ Found: 1.359033, 103.749487
+"Lianhua Primary School","30 BUKIT BATOK STREET 31 HONG KAH NORTH COMMUNITY CLUB SINGAPORE 659440","659442","BUKIT BATOK","BUKIT BATOK","1.35903339724932","103.749486819843"
+[18/101] Geocoding: Princess Elizabeth Primary School... ✓ Found: 1.357630, 103.742933
+"Princess Elizabeth Primary School","200 BUKIT BATOK WEST AVENUE 5 SINGAPORE 659871","659204","BUKIT BATOK","BUKIT BATOK","1.35763038395609","103.742933165324"
+[19/101] Geocoding: West View Primary School... ✓ Found: 1.342352, 103.760159
+"West View Primary School","11 BUKIT BATOK STREET 25 SINGAPORE 658712","659633","BUKIT BATOK","BUKIT BATOK","1.34235172835604","103.760159353985"
+[20/101] Geocoding: Alexandra Primary School... ✗ Address not found, trying school name... ✓ Found: 1.291334, 103.824425
+"Alexandra Primary School","1A Alexandra Road","119958","BUKIT MERAH","BUKIT MERAH","1.29133439161334","103.824424680531"
+[21/101] Geocoding: Cantonment Primary School... ✓ Found: 1.275473, 103.839963
+"Cantonment Primary School","1 CANTONMENT CLOSE CANTONMENT PRIMARY SCHOOL SINGAPORE 088256","080001","BUKIT MERAH","BUKIT MERAH","1.27547252623201","103.839962631748"
+[22/101] Geocoding: Radin Mas Primary School... ✓ Found: 1.274275, 103.820258
+"Radin Mas Primary School","1 TELOK BLANGAH RISE SHELTON COLLEGE INTERNATIONAL SINGAPORE 098888","098888","BUKIT MERAH","BUKIT MERAH","1.27427494015908","103.82025772579"
+[23/101] Geocoding: Zhenghua Primary School... ✗ Address not found, trying school name... ✓ Found: 1.379549, 103.769314
+"Zhenghua Primary School","91 Senja Road","678692","BUKIT PANJANG","BUKIT PANJANG","1.37954887512229","103.769313521752"
+[24/101] Geocoding: Greenridge Primary School... ✗ Address not found, trying school name... ✓ Found: 1.385889, 103.767794
+"Greenridge Primary School","592 Upper Bukit Timah Road","678117","BUKIT PANJANG","BUKIT PANJANG","1.3858892193692","103.767794469258"
+[25/101] Geocoding: West Spring Primary School... ✓ Found: 1.387823, 103.760129
+"West Spring Primary School","61 SENJA ROAD WEST SPRING SECONDARY SCHOOL SINGAPORE 677737","678692","BUKIT PANJANG","BUKIT PANJANG","1.38782283303782","103.760128840155"
+[26/101] Geocoding: Henry Park Primary School... ✓ Found: 1.316676, 103.784296
+"Henry Park Primary School","1 HOLLAND GROVE ROAD HENRY PARK PRIMARY SCHOOL SINGAPORE 278790","278790","BUKIT TIMAH","BUKIT TIMAH","1.31667646178347","103.784296227747"
+[27/101] Geocoding: Nanyang Primary School... ✓ Found: 1.317295, 103.805595
+"Nanyang Primary School","95 KING'S ROAD KING'S GARDEN SINGAPORE 268144","268138","BUKIT TIMAH","BUKIT TIMAH","1.31729533897233","103.805595008848"
+[28/101] Geocoding: Raffles Girls' Primary School... ✓ Found: 1.330042, 103.806398
+"Raffles Girls' Primary School","21 HILLCREST ROAD KNOWLEDGE PARK EDUCARE (SC) PTE LTD (RAFFLES GIRLS) SINGAPORE 289072","289072","BUKIT TIMAH","BUKIT TIMAH","1.33004178068277","103.806397828938"
+[29/101] Geocoding: St. Margaret's Primary School... ✗ Address not found, trying school name... ✓ Found: 1.303904, 103.845955
+"St. Margaret's Primary School","99 Wilkie Road","228088","CENTRAL AREA","CENTRAL AREA","1.30390355715254","103.845955315605"
+[30/101] Geocoding: Stamford Primary School... ✓ Found: 1.303456, 103.857454
+"Stamford Primary School","1 VICTORIA LANE SINGAPORE 198423","188010","CENTRAL AREA","CENTRAL AREA","1.30345638467449","103.857453500579"
+[31/101] Geocoding: Tao Nan School... ✗ Address not found, trying school name... ✓ Found: 1.294332, 103.849026
+"Tao Nan School","49 Marine Parade","449108","CENTRAL AREA","CENTRAL AREA","1.2943321052493","103.849026157822"
+[32/101] Geocoding: Choa Chu Kang Primary School... ✗ Address not found, trying school name... ✓ Found: 1.380265, 103.736554
+"Choa Chu Kang Primary School","30 Choa Chu Kang Street 54","689234","CHOA CHU KANG","CHOA CHU KANG","1.38026516111464","103.736554295636"
+[33/101] Geocoding: De La Salle School... ✓ Found: 1.394708, 103.743202
+"De La Salle School","11 CHOA CHU KANG STREET 52 DE LA SALLE SCHOOL SINGAPORE 689285","689285","CHOA CHU KANG","CHOA CHU KANG","1.3947078296399","103.743201812831"
+[34/101] Geocoding: South View Primary School... ✗ Address not found, trying school name... ✓ Found: 1.381667, 103.746276
+"South View Primary School","6 Choa Chu Kang Street 51","689333","CHOA CHU KANG","CHOA CHU KANG","1.38166664389749","103.746275846011"
+[35/101] Geocoding: Yew Tee Primary School... ✓ Found: 1.397748, 103.751581
+"Yew Tee Primary School","20 CHOA CHU KANG STREET 64 THE WINDERMERE SINGAPORE 689093","689143","CHOA CHU KANG","CHOA CHU KANG","1.39774827163461","103.751580705894"
+[36/101] Geocoding: Clementi Primary School... ✓ Found: 1.315539, 103.762021
+"Clementi Primary School","10 CLEMENTI AVENUE 3 CLEMENTI TOWN SECONDARY SCHOOL SINGAPORE 129904","129904","CLEMENTI","CLEMENTI","1.31553912945073","103.762020598524"
+[37/101] Geocoding: Nan Hua Primary School... ✓ Found: 1.319202, 103.761095
+"Nan Hua Primary School","30 JALAN LEMPENG NAN HUA PRIMARY SCHOOL SINGAPORE 128806","128806","CLEMENTI","CLEMENTI","1.31920159956387","103.761095065761"
+[38/101] Geocoding: Qifa Primary School... ✓ Found: 1.311015, 103.764861
+"Qifa Primary School","518 CLEMENTI AVENUE 3 CLEMENTI SPORTS CENTRE SINGAPORE 129907","129908","CLEMENTI","CLEMENTI","1.31101498092681","103.764861406796"
+[39/101] Geocoding: West Coast Primary School... ✓ Found: 1.313992, 103.767089
+"West Coast Primary School","328 CLEMENTI AVENUE 2 SINGAPORE 120328","129907","CLEMENTI","CLEMENTI","1.31399161476536","103.767089003977"
+[40/101] Geocoding: Geylang Methodist School (Primary)... ✓ Found: 1.317649, 103.882661
+"Geylang Methodist School (Primary)","2 GEYLANG EAST CENTRAL GEYLANG METHODIST SCHOOL (SECONDARY) SINGAPORE 389705","389705","GEYLANG","GEYLANG","1.31764900474601","103.882661129303"
+[41/101] Geocoding: Gongshang Primary School... ✓ Found: 1.366848, 103.937776
+"Gongshang Primary School","15 TAMPINES STREET 62 PARKTOWN RESIDENCE (U/C) SINGAPORE 529389","529456","GEYLANG","GEYLANG","1.36684842281087","103.937776357215"
+[42/101] Geocoding: MacPherson Primary School... ✓ Found: 1.340187, 103.884956
+"MacPherson Primary School","191 UPPER PAYA LEBAR ROAD SINGAPORE 534871","409033","GEYLANG","GEYLANG","1.34018739316387","103.884956214356"
+[43/101] Geocoding: Damai Primary School... ✓ Found: 1.338629, 103.920210
+"Damai Primary School","529 BEDOK RESERVOIR ROAD ARCHIPELAGO SINGAPORE 479281","479229","HOUGANG","HOUGANG","1.33862896753118","103.920209884773"
+[44/101] Geocoding: Hougang Primary School... ✓ Found: 1.372312, 103.893662
+"Hougang Primary School","90 HOUGANG AVENUE 10 SUNFLOWER PRESCHOOL @ HOUGANG (PTE. LTD.) SINGAPORE 538766","538789","HOUGANG","HOUGANG","1.37231186447501","103.893661609307"
+[45/101] Geocoding: Punggol Primary School... ✓ Found: 1.406044, 103.899380
+"Punggol Primary School","50 PUNGGOL WALK A TREASURE TROVE SINGAPORE 828830","828814","HOUGANG","HOUGANG","1.40604382878848","103.899379746577"
+[46/101] Geocoding: Xinmin Primary School... ✓ Found: 1.371768, 103.882810
+"Xinmin Primary School","9 HOUGANG AVENUE 8 RAFFLES STUDENT CARE CENTRE LLP (XINMIN PRIMARY) SINGAPORE 538784","538789","HOUGANG","HOUGANG","1.37176798317468","103.88280991785"
+[47/101] Geocoding: Fuhua Primary School... ✓ Found: 1.347014, 103.726521
+"Fuhua Primary School","5 JURONG WEST STREET 41 FUHUA SECONDARY SCHOOL SINGAPORE 649410","649410","JURONG EAST","JURONG EAST","1.34701408913756","103.72652089832"
+[48/101] Geocoding: Jurong Primary School... ✗ Address not found, trying school name... ✓ Found: 1.348439, 103.733157
+"Jurong Primary School","30 Jurong West Street 75","648186","JURONG EAST","JURONG EAST","1.34843859698946","103.733156566858"
+[49/101] Geocoding: Rulang Primary School... ✓ Found: 1.354710, 103.702642
+"Rulang Primary School","2 JURONG WEST STREET 25 SINGAPORE 648325","649296","JURONG EAST","JURONG EAST","1.3547096550712","103.702641921539"
+[50/101] Geocoding: Shuqun Primary School... ✓ Found: 1.351639, 103.717524
+"Shuqun Primary School","450 JURONG WEST STREET 42 SINGAPORE 640450","649370","JURONG EAST","JURONG EAST","1.35163889174202","103.717524141693"
+[51/101] Geocoding: Boon Lay Garden Primary School... ✗ Address not found, trying school name... ✓ Found: 1.343179, 103.713281
+"Boon Lay Garden Primary School","31 Jurong West Street 52","649296","JURONG WEST","JURONG WEST","1.34317853793318","103.713280889452"
+[52/101] Geocoding: Jurong West Primary School... ✓ Found: 1.337936, 103.699283
+"Jurong West Primary School","606 JURONG WEST STREET 65 SINGAPORE 640606","648354","JURONG WEST","JURONG WEST","1.33793644267156","103.699282789577"
+[53/101] Geocoding: Pioneer Primary School... ✓ Found: 1.351485, 103.707578
+"Pioneer Primary School","31 JURONG WEST STREET 24 ACE @ WORK ENRICHMENT PTE LTD (CORPORATION PRIMARY) SINGAPORE 648347","648200","JURONG WEST","JURONG WEST","1.35148548772662","103.707578404944"
+[54/101] Geocoding: Yuhua Primary School... ✓ Found: 1.338681, 103.692767
+"Yuhua Primary School","21 JURONG WEST STREET 93 CALTEX JURONG WEST SINGAPORE 648964","649410","JURONG WEST","JURONG WEST","1.33868102526914","103.692767342476"
+[55/101] Geocoding: Kallang Primary School... ✓ Found: 1.335741, 103.865666
+"Kallang Primary School","121 POTONG PASIR AVENUE 1 JALAN BESAR TOWN COUNCIL (POTONG PASIR OFFICE) SINGAPORE 350121","208801","KALLANG/WHAMPOA","KALLANG/WHAMPOA","1.33574084734373","103.865665596118"
+[56/101] Geocoding: St. Andrew's Junior School... ✗ Address not found, trying school name... ✓ Found: 1.331403, 103.865117
+"St. Andrew's Junior School","5 Potong Pasir Avenue 1","358571","KALLANG/WHAMPOA","KALLANG/WHAMPOA","1.33140255308868","103.865117134385"
+[57/101] Geocoding: Whampoa Primary School... ✓ Found: 1.322505, 103.853439
+"Whampoa Primary School","10 WHAMPOA DRIVE SINGAPORE 327720","327715","KALLANG/WHAMPOA","KALLANG/WHAMPOA","1.3225053606235","103.853439457391"
+[58/101] Geocoding: Haig Girls' School... ✓ Found: 1.312293, 103.897693
+"Haig Girls' School","2 HAIG ROAD HAIG VIEW SINGAPORE 430002","438792","MARINE PARADE","MARINE PARADE","1.31229349318871","103.897692815712"
+[59/101] Geocoding: Tao Nan School... ✗ Address not found, trying school name... ✓ Found: 1.294332, 103.849026
+"Tao Nan School","49 Marine Parade","449108","MARINE PARADE","MARINE PARADE","1.2943321052493","103.849026157822"
+[60/101] Geocoding: Victoria School... ✓ Found: 1.308713, 103.927981
+"Victoria School","2 SIGLAP LINK VICTORIA SCHOOL SINGAPORE 448880","448880","MARINE PARADE","MARINE PARADE","1.3087130270751","103.927980966639"
+[61/101] Geocoding: Casuarina Primary School... ✗ Address not found, trying school name... ✓ Found: 1.372461, 103.957020
+"Casuarina Primary School","50 Pasir Ris Drive 1","519529","PASIR RIS","PASIR RIS","1.37246063927999","103.957020286115"
+[62/101] Geocoding: Elias Park Primary School... ✓ Found: 1.372841, 103.959728
+"Elias Park Primary School","11 PASIR RIS STREET 41 PASIR RIS CREST SECONDARY SCHOOL SINGAPORE 518934","518934","PASIR RIS","PASIR RIS","1.37284060102246","103.959728202919"
+[63/101] Geocoding: Pasir Ris Primary School... ✗ Address not found, trying school name... ✓ Found: 1.372419, 103.962807
+"Pasir Ris Primary School","390 Pasir Ris Drive 6","519391","PASIR RIS","PASIR RIS","1.37241870245531","103.962807212116"
+[64/101] Geocoding: White Sands Primary School... ✓ Found: 1.365636, 103.960862
+"White Sands Primary School","2 PASIR RIS STREET 11 LEARNING LEAP PTE LTD (WHITE SANDS PRIMARY SCHOOL) SINGAPORE 519075","519074","PASIR RIS","PASIR RIS","1.36563610941695","103.960861814678"
+[65/101] Geocoding: Edgefield Primary School... ✗ Address not found, trying school name... ✓ Found: 1.400091, 103.907848
+"Edgefield Primary School","75 Punggol Field","828814","PUNGGOL","PUNGGOL","1.40009139510996","103.907847599114"
+[66/101] Geocoding: Greendale Primary School... ✓ Found: 1.406044, 103.899380
+"Greendale Primary School","50 PUNGGOL WALK A TREASURE TROVE SINGAPORE 828830","828814","PUNGGOL","PUNGGOL","1.40604382878848","103.899379746577"
+[67/101] Geocoding: Punggol Primary School... ✓ Found: 1.406044, 103.899380
+"Punggol Primary School","50 PUNGGOL WALK A TREASURE TROVE SINGAPORE 828830","828814","PUNGGOL","PUNGGOL","1.40604382878848","103.899379746577"
+[68/101] Geocoding: Waterway Primary School... ✓ Found: 1.398893, 103.918586
+"Waterway Primary School","70 PUNGGOL DRIVE KNOWLEDGE PARK EDUCARE PTE LTD (WATERWAY PRIMARY) SINGAPORE 828802","828824","PUNGGOL","PUNGGOL","1.39889261226315","103.918585924582"
+[69/101] Geocoding: Fairfield Methodist School (Primary)... ✓ Found: 1.301634, 103.784100
+"Fairfield Methodist School (Primary)","102 DOVER ROAD FAIRFIELD METHODIST SCHOOL (SECONDARY) SINGAPORE 139649","139649","QUEENSTOWN","QUEENSTOWN","1.30163374395823","103.784099647149"
+[70/101] Geocoding: New Town Primary School... ✓ Found: 1.299811, 103.799965
+"New Town Primary School","300 TANGLIN HALT ROAD NEW TOWN CAREHUT SINGAPORE 148812","148812","QUEENSTOWN","QUEENSTOWN","1.29981138884057","103.799964819895"
+[71/101] Geocoding: Queensway Primary School... ✓ Found: 1.300223, 103.802207
+"Queensway Primary School","2A MARGARET DRIVE QUEENSWAY SECONDARY SCHOOL SINGAPORE 149295","149295","QUEENSTOWN","QUEENSTOWN","1.30022271592188","103.802207291625"
+[72/101] Geocoding: Commonwealth Primary School... ✓ Found: 1.314967, 103.764270
+"Commonwealth Primary School","3155 COMMONWEALTH AVENUE WEST CLEMENTI BUS INTERCHANGE SINGAPORE 129588","149603","QUEENSTOWN","QUEENSTOWN","1.31496652285558","103.764270467593"
+[73/101] Geocoding: Canberra Primary School... ✓ Found: 1.376434, 103.830090
+"Canberra Primary School","21 SEMBAWANG HILLS DRIVE THOMSON HILLS ESTATE SINGAPORE 575899","757714","SEMBAWANG","SEMBAWANG","1.37643434694039","103.830089528994"
+[74/101] Geocoding: Sembawang Primary School... ✓ Found: 1.448197, 103.819499
+"Sembawang Primary School","30 SEMBAWANG DRIVE SEMBAWANG PUBLIC LIBRARY SINGAPORE 757713","757714","SEMBAWANG","SEMBAWANG","1.44819666623789","103.819498634275"
+[75/101] Geocoding: Wellington Primary School... ✓ Found: 1.451685, 103.822516
+"Wellington Primary School","10 WELLINGTON CIRCLE MOE KINDERGARTEN @ WELLINGTON SINGAPORE 757702","757702","SEMBAWANG","SEMBAWANG","1.45168517614776","103.822516208087"
+[76/101] Geocoding: Compassvale Primary School... ✗ Address not found, trying school name... ✓ Found: 1.394445, 103.897812
+"Compassvale Primary School","21 Sengkang East Way","545040","SENGKANG","SENGKANG","1.39444529636566","103.897812229905"
+[77/101] Geocoding: North Spring Primary School... ✗ Address not found, trying school name... ✓ Found: 1.387061, 103.903203
+"North Spring Primary School","15 Sengkang East Way","545040","SENGKANG","SENGKANG","1.38706146494859","103.903202683028"
+[78/101] Geocoding: Rivervale Primary School... ✗ Address not found, trying school name... ✓ Found: 1.393410, 103.904560
+"Rivervale Primary School","11 Rivervale Street","545081","SENGKANG","SENGKANG","1.39340997767762","103.904559511997"
+[79/101] Geocoding: Sengkang Primary School... ✗ Address not found, trying school name... ✓ Found: 1.392846, 103.875218
+"Sengkang Primary School","15 Anchorvale Link","544835","SENGKANG","SENGKANG","1.39284606680477","103.875217666486"
+[80/101] Geocoding: Paya Lebar Methodist Girls' School (Primary)... ✓ Found: 1.350968, 103.885120
+"Paya Lebar Methodist Girls' School (Primary)","296 LORONG AH SOO PAYA LEBAR METHODIST GIRLS' SCHOOL (SECONDARY) SINGAPORE 536742","536742","SERANGOON","SERANGOON","1.35096755912522","103.885120050588"
+[81/101] Geocoding: Serangoon Garden Primary School... ✓ Found: 1.362959, 103.871609
+"Serangoon Garden Primary School","21 SERANGOON GARDEN WAY SINGAPORE 556063","556052","SERANGOON","SERANGOON","1.36295924508072","103.871609222719"
+[82/101] Geocoding: Yangzheng Primary School... ✓ Found: 1.353812, 103.870135
+"Yangzheng Primary School","237 SERANGOON AVENUE 3 SINGAPORE 550237","556095","SERANGOON","SERANGOON","1.35381198342473","103.87013457465"
+[83/101] Geocoding: Angsana Primary School... ✓ Found: 1.357116, 103.949145
+"Angsana Primary School","1 TAMPINES STREET 42 COMMIT LEARNING SCHOOLHOUSE @ GONGSHANG PRIMARY SCHOOL SINGAPORE 529176","529177","TAMPINES","TAMPINES","1.35711606790292","103.949144797277"
+[84/101] Geocoding: East Spring Primary School... ✗ Address not found, trying school name... ✓ Found: 1.352684, 103.961677
+"East Spring Primary School","30 Tampines Street 81","529014","TAMPINES","TAMPINES","1.35268400746357","103.961676849165"
+[85/101] Geocoding: Gongshang Primary School... ✓ Found: 1.366848, 103.937776
+"Gongshang Primary School","15 TAMPINES STREET 62 PARKTOWN RESIDENCE (U/C) SINGAPORE 529389","529456","TAMPINES","TAMPINES","1.36684842281087","103.937776357215"
+[86/101] Geocoding: Junyuan Primary School... ✓ Found: 1.366848, 103.937776
+"Junyuan Primary School","15 TAMPINES STREET 62 PARKTOWN RESIDENCE (U/C) SINGAPORE 529389","529456","TAMPINES","TAMPINES","1.36684842281087","103.937776357215"
+[87/101] Geocoding: Poi Ching School... ✗ Address not found, trying school name... ✓ Found: 1.357651, 103.935246
+"Poi Ching School","5 Tampines Street 21","529399","TAMPINES","TAMPINES","1.35765122315688","103.935246477199"
+[88/101] Geocoding: Tampines North Primary School... ✓ Found: 1.360488, 103.948769
+"Tampines North Primary School","30 TAMPINES AVENUE 9 BIG HEART STUDENT CARE (TAMPINES NORTH PRIMARY SCHOOL) SINGAPORE 529565","529766","TAMPINES","TAMPINES","1.36048786025607","103.948768900518"
+[89/101] Geocoding: First Toa Payoh Primary School... ✓ Found: 1.340323, 103.855530
+"First Toa Payoh Primary School","7 LORONG 8 TOA PAYOH FIRST TOA PAYOH PRIMARY SCHOOL SINGAPORE 319252","319253","TOA PAYOH","TOA PAYOH","1.34032299499938","103.855529906182"
+[90/101] Geocoding: Pei Tong Primary School... ✓ Found: 1.337165, 103.857229
+"Pei Tong Primary School","10 LORONG 7 TOA PAYOH TOA PAYOH COURT SINGAPORE 310010","319314","TOA PAYOH","TOA PAYOH","1.33716527577081","103.857228807914"
+[91/101] Geocoding: St. Andrew's Junior School... ✗ Address not found, trying school name... ✓ Found: 1.331403, 103.865117
+"St. Andrew's Junior School","5 Potong Pasir Avenue 1","358571","TOA PAYOH","TOA PAYOH","1.33140255308868","103.865117134385"
+[92/101] Geocoding: Admiralty Primary School... ✗ Address not found, trying school name... ✓ Found: 1.442635, 103.800040
+"Admiralty Primary School","31 Woodlands Ring Road","738240","WOODLANDS","WOODLANDS","1.4426347903311","103.800040119743"
+[93/101] Geocoding: Evergreen Primary School... ✗ Address not found, trying school name... ✓ Found: 1.444153, 103.794578
+"Evergreen Primary School","21 Woodlands Street 81","738526","WOODLANDS","WOODLANDS","1.44415332824735","103.794577787757"
+[94/101] Geocoding: Greenwood Primary School... ✓ Found: 1.444312, 103.790067
+"Greenwood Primary School","20 WOODLANDS AVENUE 9 SHELL WOODLANDS AVENUE 9 SINGAPORE 738954","739064","WOODLANDS","WOODLANDS","1.44431165485789","103.790067364842"
+[95/101] Geocoding: Marsiling Primary School... ✓ Found: 1.430473, 103.774942
+"Marsiling Primary School","WOODLANDS STREET 31","738454","WOODLANDS","WOODLANDS","1.43047275332765","103.774942395378"
+[96/101] Geocoding: Qihua Primary School... ✗ Address not found, trying school name... ✓ Found: 1.442036, 103.788340
+"Qihua Primary School","51 Woodlands Street 13","738623","WOODLANDS","WOODLANDS","1.44203596557592","103.788339762066"
+[97/101] Geocoding: Riverside Primary School... ✓ Found: 1.428988, 103.780917
+"Riverside Primary School","30 WOODLANDS AVENUE 1 THE WOODGROVE SINGAPORE 739065","739064","WOODLANDS","WOODLANDS","1.42898765704375","103.780916973423"
+[98/101] Geocoding: Chongfu School... ✗ Address not found, trying school name... ✓ Found: 1.438396, 103.839309
+"Chongfu School","70 Yishun Avenue 6","768980","YISHUN","YISHUN","1.43839562897006","103.839309173817"
+[99/101] Geocoding: Northland Primary School... ✓ Found: 1.427319, 103.844863
+"Northland Primary School","530 YISHUN RING ROAD SINGAPORE 768680","768689","YISHUN","YISHUN","1.42731880981378","103.844863443"
+[100/101] Geocoding: Xishan Primary School... ✓ Found: 1.419226, 103.837391
+"Xishan Primary School","11 YISHUN STREET 61 CHUNG CHENG HIGH SCHOOL (YISHUN) SINGAPORE 768547","768547","YISHUN","YISHUN","1.41922603586175","103.837390782849"
+[101/101] Geocoding: Yishun Primary School... ✓ Found: 1.432322, 103.838094
+"Yishun Primary School","6 YISHUN STREET 21 YISHUN TOWN SECONDARY SCHOOL SINGAPORE 768610","768610","YISHUN","YISHUN","1.43232156717386","103.838094226361"
+
+Done! Geocoded: 100, Failed: 1, Kept existing: 0

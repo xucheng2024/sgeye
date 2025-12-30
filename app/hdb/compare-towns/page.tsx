@@ -398,17 +398,30 @@ export default function CompareTownsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      const [resultA, resultB, spiResultA, spiResultB] = await Promise.all([
-        getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
-        getTownProfile(townB, flatType, 24),
-        calculateSchoolPressureIndex(townA),
-        calculateSchoolPressureIndex(townB),
-      ])
-      setProfileA(resultA)
-      setProfileB(resultB)
-      setSpiA(spiResultA)
-      setSpiB(spiResultB)
-      setLoading(false)
+      try {
+        const [resultA, resultB, spiResultA, spiResultB] = await Promise.all([
+          getTownProfile(townA, flatType, 24), // Use 24 months for decision tool
+          getTownProfile(townB, flatType, 24),
+          calculateSchoolPressureIndex(townA),
+          calculateSchoolPressureIndex(townB),
+        ])
+        setProfileA(resultA)
+        setProfileB(resultB)
+        setSpiA(spiResultA)
+        setSpiB(spiResultB)
+        
+        // Debug logging
+        console.log('SPI Data:', {
+          townA,
+          townB,
+          spiA: spiResultA,
+          spiB: spiResultB,
+        })
+      } catch (error) {
+        console.error('Error fetching comparison data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchData()
   }, [townA, townB, flatType])
@@ -560,7 +573,7 @@ export default function CompareTownsPage() {
             </div>
 
             {/* Block 2: Education Pressure Comparison */}
-            {compareSummary.educationPressure && (
+            {compareSummary.educationPressure ? (
               <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
                 <p className="text-sm font-semibold text-gray-900 mb-2">Education Pressure Comparison</p>
                 <div className="text-sm text-gray-800 whitespace-pre-line mb-2">
@@ -568,6 +581,13 @@ export default function CompareTownsPage() {
                 </div>
                 <p className="text-sm text-gray-700">
                   {compareSummary.educationPressure.explanation}
+                </p>
+              </div>
+            ) : (
+              <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Education Pressure Comparison</p>
+                <p className="text-sm text-gray-700">
+                  School pressure data is not available for one or both towns. This may be because the towns don&apos;t have primary schools in our database.
                 </p>
               </div>
             )}

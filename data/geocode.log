@@ -1,0 +1,187 @@
+Processing 182 schools...
+This may take several minutes due to API rate limits.
+
+[1/182] Geocoding: Admiralty Primary School... ✓ Found: 1.442635, 103.800040
+[2/182] Geocoding: Ahmad Ibrahim Primary School... ✓ Found: 1.433153, 103.832942
+[3/182] Geocoding: Ai Tong School... ✓ Found: 1.360583, 103.833020
+[4/182] Geocoding: Alexandra Primary School... ✓ Found: 1.291334, 103.824425
+[5/182] Geocoding: Anchor Green Primary School... ✓ Found: 1.390370, 103.887165
+[6/182] Geocoding: Anderson Primary School... ✓ Found: 1.384199, 103.841412
+[7/182] Geocoding: Ang Mo Kio Primary School... ✓ Found: 1.369322, 103.839631
+[8/182] Geocoding: Anglo-Chinese School (Junior)... ✓ Found: 1.309350, 103.840950
+[9/182] Geocoding: Anglo-Chinese School (Primary)... ✓ Found: 1.318371, 103.835610
+[10/182] Geocoding: Angsana Primary School... ✓ Found: 1.363606, 103.938941
+[11/182] Geocoding: Beacon Primary School... ✓ Found: 1.383949, 103.773632
+[12/182] Geocoding: Bedok Green Primary School... ✓ Found: 1.323446, 103.937879
+[13/182] Geocoding: Bendemeer Primary School... ✓ Found: 1.321813, 103.865404
+[14/182] Geocoding: Blangah Rise Primary School... ✓ Found: 1.276120, 103.808629
+[15/182] Geocoding: Boon Lay Garden Primary School... ✓ Found: 1.342840, 103.712858
+[16/182] Geocoding: Bukit Panjang Primary School... ✓ Found: 1.373501, 103.769417
+[17/182] Geocoding: Bukit Timah Primary School... ✓ Found: 1.337750, 103.766855
+[18/182] Geocoding: Bukit View Primary School... ✓ Found: 1.345861, 103.753666
+[19/182] Geocoding: Canberra Primary School... ✓ Found: 1.451250, 103.815859
+[20/182] Geocoding: Canossa Catholic Primary School... ✓ Found: 1.326644, 103.882228
+[21/182] Geocoding: Cantonment Primary School... ✓ Found: 1.275473, 103.839963
+[22/182] Geocoding: Casuarina Primary School... ✓ Found: 1.372461, 103.957020
+[23/182] Geocoding: Catholic High School (Primary Section)... ✓ Found: 1.354723, 103.844875
+[24/182] Geocoding: Cedar Primary School... ✓ Found: 1.335661, 103.875620
+[25/182] Geocoding: Changkat Primary School... ✓ Found: 1.340232, 103.952080
+[26/182] Geocoding: CHIJ (Katong) Primary... ✓ Found: 1.306485, 103.911106
+[27/182] Geocoding: CHIJ (Kellock)... ✓ Found: 1.275023, 103.828158
+[28/182] Geocoding: CHIJ Our Lady of Good Counsel... ✓ Found: 1.357430, 103.864009
+[29/182] Geocoding: CHIJ Our Lady of the Nativity... ✓ Found: 1.373303, 103.897576
+[30/182] Geocoding: CHIJ Our Lady Queen of Peace... ✓ Found: 1.366604, 103.767412
+[31/182] Geocoding: CHIJ Primary (Toa Payoh)... ✓ Found: 1.332753, 103.841847
+[32/182] Geocoding: CHIJ St. Nicholas Girls' School (Primary Section)... ✓ Found: 1.373477, 103.834253
+[33/182] Geocoding: Chongfu School... ✓ Found: 1.438396, 103.839309
+[34/182] Geocoding: Chongzheng Primary School... ✓ Found: 1.350611, 103.951317
+[35/182] Geocoding: Chua Chu Kang Primary School... ✓ Found: 1.377759, 103.741833
+[36/182] Geocoding: Clementi Primary School... ✓ Found: 1.315063, 103.763144
+[37/182] Geocoding: Compassvale Primary School... ✓ Found: 1.394445, 103.897812
+[38/182] Geocoding: Concord Primary School... ✓ Found: 1.380265, 103.736554
+[39/182] Geocoding: Corporation Primary School... ✓ Found: 1.351485, 103.707578
+[40/182] Geocoding: Damai Primary School... ✓ Found: 1.335246, 103.921286
+[41/182] Geocoding: Dazhong Primary School... ✓ Found: 1.359180, 103.748472
+[42/182] Geocoding: De La Salle School... ✓ Found: 1.394708, 103.743202
+[43/182] Geocoding: East Spring Primary School... ✓ Found: 1.352684, 103.961677
+[44/182] Geocoding: Edgefield Primary School... ✓ Found: 1.400091, 103.907848
+[45/182] Geocoding: Elias Park Primary School... ✓ Found: 1.375057, 103.945289
+[46/182] Geocoding: Endeavour Primary School... ✓ Found: 1.453882, 103.817175
+[47/182] Geocoding: Evergreen Primary School... ✓ Found: 1.444148, 103.794545
+[48/182] Geocoding: Fairfield Methodist School (Primary)... ✓ Found: 1.301004, 103.785456
+[49/182] Geocoding: Farrer Park Primary School... ✓ Found: 1.312369, 103.850766
+[50/182] Geocoding: Fengshan Primary School... ✓ Found: 1.329806, 103.931710
+[51/182] Geocoding: Fern Green Primary School... ✓ Found: 1.397270, 103.880330
+[52/182] Geocoding: Fernvale Primary School... ✓ Found: 1.390302, 103.874445
+[53/182] Geocoding: First Toa Payoh Primary School... ✓ Found: 1.340323, 103.855530
+[54/182] Geocoding: Frontier Primary School... ✓ Found: 1.336413, 103.699702
+[55/182] Geocoding: Fuchun Primary School... ✓ Found: 1.430480, 103.778193
+[56/182] Geocoding: Fuhua Primary School... ✓ Found: 1.336597, 103.736089
+[57/182] Geocoding: Gan Eng Seng Primary School... ✓ Found: 1.285595, 103.815547
+[58/182] Geocoding: Geylang Methodist School (Primary)... ✓ Found: 1.318144, 103.883629
+[59/182] Geocoding: Gongshang Primary School... ✓ Found: 1.357116, 103.949145
+[60/182] Geocoding: Greendale Primary School... ✓ Found: 1.396482, 103.912335
+[61/182] Geocoding: Greenridge Primary School... ✓ Found: 1.385889, 103.767794
+[62/182] Geocoding: Greenwood Primary School... ✓ Found: 1.439900, 103.804726
+[63/182] Geocoding: Haig Girls' School... ✓ Found: 1.311943, 103.902903
+[64/182] Geocoding: Henry Park Primary School... ✓ Found: 1.316676, 103.784296
+[65/182] Geocoding: Holy Innocents' Primary School... ✓ Found: 1.366938, 103.894115
+[66/182] Geocoding: Hong Wen School... ✓ Found: 1.321760, 103.857628
+[67/182] Geocoding: Horizon Primary School... ✓ Found: 1.399550, 103.913405
+[68/182] Geocoding: Hougang Primary School... ✓ Found: 1.377382, 103.880805
+[69/182] Geocoding: Huamin Primary School... ✓ Found: 1.426973, 103.844240
+[70/182] Geocoding: Innova Primary School... ✓ Found: 1.428967, 103.790608
+[71/182] Geocoding: Jiemin Primary School... ✓ Found: 1.427688, 103.830425
+[72/182] Geocoding: Jing Shan Primary School... ✓ Found: 1.371964, 103.851764
+[73/182] Geocoding: Junyuan Primary School... ✓ Found: 1.347871, 103.939222
+[74/182] Geocoding: Jurong Primary School... ✓ Found: 1.348439, 103.733157
+[75/182] Geocoding: Jurong West Primary School... ✓ Found: 1.339175, 103.698804
+[76/182] Geocoding: Keming Primary School... ✓ Found: 1.345528, 103.756449
+[77/182] Geocoding: Kheng Cheng School... ✓ Found: 1.337338, 103.847149
+[78/182] Geocoding: Kong Hwa School... ✓ Found: 1.310997, 103.888352
+[79/182] Geocoding: Kranji Primary School... ✓ Found: 1.393561, 103.747363
+[80/182] Geocoding: Kuo Chuan Presbyterian Primary School... ✓ Found: 1.349398, 103.855018
+[81/182] Geocoding: Lakeside Primary School... ✓ Found: 1.338204, 103.718090
+[82/182] Geocoding: Lianhua Primary School... ✓ Found: 1.354242, 103.754166
+[83/182] Geocoding: Maha Bodhi School... ✓ Found: 1.328580, 103.901307
+[84/182] Geocoding: Maris Stella High School (Primary Section)... ✓ Found: 1.341392, 103.877741
+[85/182] Geocoding: Marsiling Primary School... ✓ Found: 1.433839, 103.773643
+[86/182] Geocoding: Marymount Convent School... ✓ Found: 1.340438, 103.839812
+[87/182] Geocoding: Mayflower Primary School... ✓ Found: 1.376377, 103.843253
+[88/182] Geocoding: Mee Toh School... ✓ Found: 1.394854, 103.908573
+[89/182] Geocoding: Meridian Primary School... ✓ Found: 1.375507, 103.934953
+[90/182] Geocoding: Methodist Girls' School (Primary)... ✓ Found: 1.332662, 103.783382
+[91/182] Geocoding: Montfort Junior School... ✓ Found: 1.373624, 103.889741
+[92/182] Geocoding: Nan Chiau Primary School... ✓ Found: 1.392211, 103.891181
+[93/182] Geocoding: Nan Hua Primary School... ✓ Found: 1.319202, 103.761095
+[94/182] Geocoding: Nanyang Primary School... ✓ Found: 1.321071, 103.807682
+[95/182] Geocoding: Naval Base Primary School... ✓ Found: 1.415902, 103.839101
+[96/182] Geocoding: New Town Primary School... ✓ Found: 1.299811, 103.799965
+[97/182] Geocoding: Ngee Ann Primary School... ✓ Found: 1.305532, 103.917570
+[98/182] Geocoding: North Spring Primary School... ✓ Found: 1.387061, 103.903203
+[99/182] Geocoding: North View Primary School... ✓ Found: 1.427452, 103.848378
+[100/182] Geocoding: North Vista Primary School... ✓ Found: 1.382551, 103.896265
+[101/182] Geocoding: Northland Primary School... ✓ Found: 1.421304, 103.840793
+[102/182] Geocoding: Northoaks Primary School... ✓ Found: 1.457329, 103.814076
+[103/182] Geocoding: Northshore Primary School... ✓ Found: 1.418423, 103.905147
+[104/182] Geocoding: Oasis Primary School... ✓ Found: 1.405072, 103.911200
+[105/182] Geocoding: Opera Estate Primary School... ✓ Found: 1.319969, 103.923753
+[106/182] Geocoding: Palm View Primary School... ✓ Found: 1.383769, 103.891355
+[107/182] Geocoding: Park View Primary School... ✓ Found: 1.378017, 103.939202
+[108/182] Geocoding: Pasir Ris Primary School... ✓ Found: 1.372451, 103.962923
+[109/182] Geocoding: Paya Lebar Methodist Girls' School (Primary)... ✓ Found: 1.350255, 103.884847
+[110/182] Geocoding: Pei Chun Public School... ✓ Found: 1.336779, 103.855341
+[111/182] Geocoding: Pei Hwa Presbyterian Primary School... ✓ Found: 1.338073, 103.776251
+[112/182] Geocoding: Pei Tong Primary School... ✓ Found: 1.316665, 103.767439
+[113/182] Geocoding: Peiying Primary School... ✓ Found: 1.417416, 103.830143
+[114/182] Geocoding: Pioneer Primary School... ✓ Found: 1.354426, 103.732791
+[115/182] Geocoding: Poi Ching School... ✓ Found: 1.357651, 103.935246
+[116/182] Geocoding: Princess Elizabeth Primary School... ✓ Found: 1.349191, 103.740719
+[117/182] Geocoding: Punggol Cove Primary School... ✓ Found: 1.411585, 103.898904
+[118/182] Geocoding: Punggol Green Primary School... ✓ Found: 1.401726, 103.898794
+[119/182] Geocoding: Punggol Primary School... ✓ Found: 1.378201, 103.894667
+[120/182] Geocoding: Punggol View Primary School... ✓ Found: 1.405053, 103.905299
+[121/182] Geocoding: Qifa Primary School... ✓ Found: 1.313266, 103.756629
+[122/182] Geocoding: Qihua Primary School... ✓ Found: 1.442036, 103.788340
+[123/182] Geocoding: Queenstown Primary School... ✓ Found: 1.295529, 103.807648
+[124/182] Geocoding: Radin Mas Primary School... ✓ Found: 1.274897, 103.824116
+[125/182] Geocoding: Raffles Girls' Primary School... ✓ Found: 1.330042, 103.806398
+[126/182] Geocoding: Red Swastika School... ✓ Found: 1.334057, 103.934318
+[127/182] Geocoding: River Valley Primary School... ✓ Found: 1.294183, 103.836019
+[128/182] Geocoding: Riverside Primary School... ✓ Found: 1.447004, 103.801889
+[129/182] Geocoding: Rivervale Primary School... ✓ Found: 1.393335, 103.904545
+[130/182] Geocoding: Rosyth School... ✓ Found: 1.372858, 103.874772
+[131/182] Geocoding: Rulang Primary School... ✓ Found: 1.346739, 103.718458
+[132/182] Geocoding: Sembawang Primary School... ✓ Found: 1.445745, 103.821153
+[133/182] Geocoding: Seng Kang Primary School... ✓ Found: 1.389250, 103.899528
+[134/182] Geocoding: Sengkang Green Primary School... ✓ Found: 1.392540, 103.874985
+[135/182] Geocoding: Shuqun Primary School... ✓ Found: 1.346870, 103.721559
+[136/182] Geocoding: Si Ling Primary School... ✓ Found: 1.432409, 103.786035
+[137/182] Geocoding: Singapore Chinese Girls' Primary School... ✓ Found: 1.320634, 103.828165
+[138/182] Geocoding: South View Primary School... ✓ Found: 1.381431, 103.747154
+[139/182] Geocoding: Springdale Primary School... ✓ Found: 1.395285, 103.889416
+[140/182] Geocoding: St Andrew's School (Junior)... ✓ Found: 1.331403, 103.865117
+[141/182] Geocoding: St. Anthony's Canossian Primary School... ✓ Found: 1.334725, 103.941235
+[142/182] Geocoding: St. Anthony's Primary School... ✓ Found: 1.364119, 103.749252
+[143/182] Geocoding: St. Gabriel's Primary School... ✓ Found: 1.349308, 103.862310
+[144/182] Geocoding: St. Hilda's Primary School... ✓ Found: 1.349680, 103.937016
+[145/182] Geocoding: St. Joseph's Institution Junior... ✓ Found: 1.317815, 103.845633
+[146/182] Geocoding: St. Margaret's School (Primary)... ✓ Found: 1.304144, 103.845820
+[147/182] Geocoding: St. Stephen's School... ✓ Found: 1.318790, 103.917258
+[148/182] Geocoding: Tampines North Primary School... ✓ Found: 1.360488, 103.948769
+[149/182] Geocoding: Tampines Primary School... ✓ Found: 1.350486, 103.943573
+[150/182] Geocoding: Tanjong Katong Primary School... ✓ Found: 1.304985, 103.900000
+[151/182] Geocoding: Tao Nan School... ✓ Found: 1.305285, 103.911553
+[152/182] Geocoding: Teck Ghee Primary School... ✓ Found: 1.365650, 103.851010
+[153/182] Geocoding: Teck Whye Primary School... ✓ Found: 1.383887, 103.753925
+[154/182] Geocoding: Telok Kurau Primary School... ✓ Found: 1.331096, 103.911005
+[155/182] Geocoding: Temasek Primary School... ✓ Found: 1.317203, 103.945759
+[156/182] Geocoding: Townsville Primary School... ✓ Found: 1.359946, 103.853769
+[157/182] Geocoding: Unity Primary School... ✓ Found: 1.402783, 103.746801
+[158/182] Geocoding: Valour Primary School... ✓ Found: 1.407442, 103.898762
+[159/182] Geocoding: Waterway Primary School... ✓ Found: 1.398893, 103.918586
+[160/182] Geocoding: Wellington Primary School... ✓ Found: 1.451685, 103.822516
+[161/182] Geocoding: West Grove Primary School... ✓ Found: 1.344712, 103.698964
+[162/182] Geocoding: West Spring Primary School... ✓ Found: 1.389180, 103.766398
+[163/182] Geocoding: West View Primary School... ✓ Found: 1.383785, 103.760273
+[164/182] Geocoding: Westwood Primary School... ✓ Found: 1.347711, 103.700468
+[165/182] Geocoding: White Sands Primary School... ✓ Found: 1.365636, 103.960862
+[166/182] Geocoding: Woodgrove Primary School... ✓ Found: 1.432736, 103.790230
+[167/182] Geocoding: Woodlands Primary School... ✓ Found: 1.436583, 103.791791
+[168/182] Geocoding: Woodlands Ring Primary School... ✓ Found: 1.434852, 103.797414
+[169/182] Geocoding: Xinghua Primary School... ✓ Found: 1.357997, 103.890216
+[170/182] Geocoding: Xingnan Primary School... ✓ Found: 1.342706, 103.687588
+[171/182] Geocoding: Xinmin Primary School... ✓ Found: 1.371768, 103.882810
+[172/182] Geocoding: Xishan Primary School... ✓ Found: 1.433472, 103.837755
+[173/182] Geocoding: Yangzheng Primary School... ✓ Found: 1.348977, 103.868467
+[174/182] Geocoding: Yew Tee Primary School... ✓ Found: 1.396726, 103.751818
+[175/182] Geocoding: Yio Chu Kang Primary School... ✓ Found: 1.377933, 103.885644
+[176/182] Geocoding: Yishun Primary School... ✓ Found: 1.433976, 103.834051
+[177/182] Geocoding: Yu Neng Primary School... ✓ Found: 1.333980, 103.932015
+[178/182] Geocoding: Yuhua Primary School... ✓ Found: 1.342920, 103.740861
+[179/182] Geocoding: Yumin Primary School... ✓ Found: 1.351316, 103.950551
+[180/182] Geocoding: Zhangde Primary School... ✓ Found: 1.284212, 103.825952
+[181/182] Geocoding: Zhenghua Primary School... ✓ Found: 1.379429, 103.769703
+[182/182] Geocoding: Zhonghua Primary School... ✓ Found: 1.360261, 103.869713
+
+Done! Geocoded: 182, Failed: 0, Kept existing: 0
