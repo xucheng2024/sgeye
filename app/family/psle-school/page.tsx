@@ -1,39 +1,370 @@
 'use client'
 
-import { GraduationCap } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { GraduationCap, AlertCircle, Home, TrendingUp, Info } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
+import { 
+  calculateSchoolPressureIndex, 
+  getSchoolLandscape, 
+  getTownsWithSchools,
+  SchoolPressureIndex,
+  SchoolLandscape 
+} from '@/lib/school-data'
+import { getTownProfile, TownProfile } from '@/lib/hdb-data'
+import { formatCurrency } from '@/lib/utils'
+
+const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
 
 export default function PSLESchoolPage() {
+  const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
+  const [landscape, setLandscape] = useState<SchoolLandscape | null>(null)
+  const [spi, setSpi] = useState<SchoolPressureIndex | null>(null)
+  const [housingProfile, setHousingProfile] = useState<TownProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [availableTowns, setAvailableTowns] = useState<string[]>(TOWNS)
+
+  useEffect(() => {
+    loadTowns()
+  }, [])
+
+  useEffect(() => {
+    if (selectedTown) {
+      loadData()
+    }
+  }, [selectedTown])
+
+  async function loadTowns() {
+    try {
+      const towns = await getTownsWithSchools()
+      if (towns.length > 0) {
+        setAvailableTowns(towns)
+        if (!towns.includes(selectedTown)) {
+          setSelectedTown(towns[0])
+        }
+      }
+    } catch (error) {
+      console.error('Error loading towns:', error)
+    }
+  }
+
+  async function loadData() {
+    setLoading(true)
+    try {
+      const [landscapeData, spiData, housingData] = await Promise.all([
+        getSchoolLandscape(selectedTown),
+        calculateSchoolPressureIndex(selectedTown),
+        getTownProfile(selectedTown, '4 ROOM')
+      ])
+      
+      setLandscape(landscapeData)
+      setSpi(spiData)
+      setHousingProfile(housingData)
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function getSPIColor(level: string) {
+    switch (level) {
+      case 'low': return 'text-green-600 bg-green-50'
+      case 'medium': return 'text-yellow-600 bg-yellow-50'
+      case 'high': return 'text-red-600 bg-red-50'
+      default: return 'text-gray-600 bg-gray-50'
+    }
+  }
+
+  function getSPIBadge(level: string) {
+    switch (level) {
+      case 'low': return '🟢 Low pressure'
+      case 'medium': return '🟡 Medium'
+      case 'high': return '🔴 High pressure'
+      default: return '⚪ Unknown'
+    }
+  }
+
+  function getHousingSummary(profile: TownProfile | null): string {
+    if (!profile) return 'No housing data available'
+    
+    const price = profile.medianResalePrice
+    const lease = profile.medianRemainingLease
+    
+    let summary = ''
+    if (price < 400000) {
+      summary += 'Lower entry price'
+    } else if (price < 600000) {
+      summary += 'Moderate entry price'
+    } else {
+      summary += 'Higher entry price'
+    }
+    
+    summary += ', '
+    
+    if (lease < 60) {
+      summary += 'higher lease risk'
+    } else if (lease < 70) {
+      summary += 'moderate lease risk'
+    } else {
+      summary += 'healthier lease'
+    }
+    
+    return summary
+  }
+
+  function getSchoolSummary(landscape: SchoolLandscape | null, spi: SchoolPressureIndex | null): string {
+    if (!landscape && !spi) return 'No school data available'
+    
+    let summary = ''
+    
+    if (spi) {
+      if (spi.level === 'high') {
+        summary += 'Higher pressure'
+      } else if (spi.level === 'medium') {
+        summary += 'Moderate pressure'
+      } else {
+        summary += 'Lower pressure'
+      }
+    }
+    
+    if (landscape) {
+      summary += ', '
+      if (landscape.schoolCount < 5) {
+        summary += 'fewer school options nearby'
+      } else if (landscape.schoolCount < 10) {
+        summary += 'moderate school options'
+      } else {
+        summary += 'broader school options'
+      }
+    }
+    
+    return summary
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">PSLE & School Location</h1>
-          <p className="mt-2 text-gray-600">Understand school zones, PSLE cut-off points, and housing location trade-offs</p>
+          <p className="mt-2 text-gray-600">
+            Understand structural school pressure and housing trade-offs by location
+          </p>
+          <p className="mt-1 text-xs text-gray-500 italic">
+            This tool helps you understand structural constraints, not individual school selection.
+          </p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ChartCard
-          title="Coming Soon"
-          description="This feature is under development"
-          icon={<GraduationCap className="w-6 h-6" />}
-        >
-          <div className="flex items-center justify-center h-[400px] text-gray-500">
-            <div className="text-center">
-              <p className="text-lg mb-2">PSLE & School Location Analysis</p>
-              <p className="text-sm">This feature will help you understand:</p>
-              <ul className="text-sm mt-4 space-y-2 text-left max-w-md mx-auto">
-                <li>• School zones and proximity to HDB estates</li>
-                <li>• PSLE cut-off points by school</li>
-                <li>• Housing price impact of school location</li>
-                <li>• Trade-offs between location and affordability</li>
-              </ul>
-            </div>
+        {/* Town Selector */}
+        <div className="mb-6">
+          <label htmlFor="town-select" className="block text-sm font-medium text-gray-700 mb-2">
+            Select Town / Planning Area
+          </label>
+          <select
+            id="town-select"
+            value={selectedTown}
+            onChange={(e) => setSelectedTown(e.target.value)}
+            className="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2 border"
+          >
+            {availableTowns.map(town => (
+              <option key={town} value={town}>{town}</option>
+            ))}
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            Loading school and housing data...
           </div>
-        </ChartCard>
+        ) : (
+          <>
+            {/* Module 1: School Landscape */}
+            <ChartCard
+              title="School Landscape"
+              description="Primary school distribution and cut-off patterns in this area"
+              icon={<GraduationCap className="w-6 h-6" />}
+            >
+              {landscape ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-900">{landscape.schoolCount}</div>
+                      <div className="text-sm text-blue-700">Primary Schools</div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-green-900">{landscape.cutoffDistribution.low}</div>
+                      <div className="text-sm text-green-700">Low Cut-off (≤230)</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-yellow-900">{landscape.cutoffDistribution.mid}</div>
+                      <div className="text-sm text-yellow-700">Mid Cut-off (231-250)</div>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-red-900">{landscape.cutoffDistribution.high}</div>
+                      <div className="text-sm text-red-700">High Cut-off (≥251)</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700">
+                      {landscape.highDemandSchools > 0 
+                        ? `${landscape.highDemandSchools} high-demand school${landscape.highDemandSchools > 1 ? 's' : ''} in this area.`
+                        : 'No high-demand schools identified in recent data.'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No school data available for {selectedTown}
+                </div>
+              )}
+            </ChartCard>
+
+            {/* Module 2: School Pressure Index */}
+            <ChartCard
+              title="School Pressure Index"
+              description="Structural pressure level based on competition, choice constraints, and market dynamics"
+              icon={<TrendingUp className="w-6 h-6" />}
+            >
+              {spi ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-4xl font-bold text-gray-900">{spi.spi}</div>
+                      <div className="text-sm text-gray-500">Pressure Index (0-100)</div>
+                    </div>
+                    <div className={`px-4 py-2 rounded-lg font-semibold ${getSPIColor(spi.level)}`}>
+                      {getSPIBadge(spi.level)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs text-gray-600 mb-1">Demand Pressure</div>
+                      <div className="text-lg font-semibold">{spi.demandPressure}</div>
+                      <div className="text-xs text-gray-500">Weight: 40%</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs text-gray-600 mb-1">Choice Constraint</div>
+                      <div className="text-lg font-semibold">{spi.choiceConstraint}</div>
+                      <div className="text-xs text-gray-500">Weight: 30%</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs text-gray-600 mb-1">Uncertainty</div>
+                      <div className="text-lg font-semibold">{spi.uncertainty}</div>
+                      <div className="text-xs text-gray-500">Weight: 20%</div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-xs text-gray-600 mb-1">Crowding</div>
+                      <div className="text-lg font-semibold">{spi.crowding}</div>
+                      <div className="text-xs text-gray-500">Weight: 10%</div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                    <p className="text-sm text-gray-800">
+                      <strong>Key factor:</strong> {spi.explanation}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No pressure index data available for {selectedTown}
+                </div>
+              )}
+            </ChartCard>
+
+            {/* Module 3: Housing × School Trade-off */}
+            <ChartCard
+              title="Housing × School Trade-off"
+              description="Structural comparison of housing affordability and school pressure"
+              icon={<Home className="w-6 h-6" />}
+            >
+              <div className="space-y-4">
+                <div className="p-4 bg-white border border-gray-200 rounded-lg">
+                  <h3 className="font-semibold text-lg text-gray-900 mb-3">{selectedTown}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Home className="w-4 h-4 text-gray-600" />
+                        <span className="text-sm font-medium text-gray-700">Housing</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {getHousingSummary(housingProfile)}
+                      </p>
+                      {housingProfile && (
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div>Median price: {formatCurrency(housingProfile.medianResalePrice)}</div>
+                          <div>Lease: {housingProfile.medianRemainingLease.toFixed(1)} years remaining</div>
+                          <div>Volume: {housingProfile.volumeRecent} transactions (24m)</div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <GraduationCap className="w-4 h-4 text-gray-600" />
+                        <span className="text-sm font-medium text-gray-700">Schools</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {getSchoolSummary(landscape, spi)}
+                      </p>
+                      {landscape && (
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div>Schools: {landscape.schoolCount} primary schools</div>
+                          <div>High-demand: {landscape.highDemandSchools} schools</div>
+                          {spi && <div>Pressure: {spi.level} ({spi.spi})</div>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-400">
+                  <p className="text-xs text-gray-700">
+                    <strong>Note:</strong> This shows structural trends for {selectedTown}. 
+                    Final school allocation depends on specific unit location, distance bands, and cohort demand.
+                  </p>
+                </div>
+              </div>
+            </ChartCard>
+
+            {/* Module 4: Reality Check */}
+            <ChartCard
+              title="Important Context"
+              description="Understanding what this tool does and doesn't do"
+              icon={<AlertCircle className="w-6 h-6" />}
+            >
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">What This Tool Shows</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                    <li>Structural school pressure patterns by location</li>
+                    <li>Housing affordability vs school environment trade-offs</li>
+                    <li>Long-term constraints you'll face in different areas</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-400">
+                  <h4 className="font-semibold text-gray-900 mb-2">What This Tool Doesn't Do</h4>
+                  <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                    <li>Predict specific school allocation outcomes</li>
+                    <li>Guarantee admission to any school</li>
+                    <li>Replace official MOE distance band information</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-800">
+                    <strong>Reality Check:</strong> PSLE allocation depends on distance bands and cohort demand. 
+                    This tool shows structural trends, not guaranteed outcomes. 
+                    Final unit selection should consider specific block location, floor level, and proximity to preferred schools.
+                  </p>
+                </div>
+              </div>
+            </ChartCard>
+          </>
+        )}
       </main>
     </div>
   )
 }
-
