@@ -239,6 +239,15 @@ export default function HDBAffordabilityPage() {
                 </p>
               </div>
             )}
+            
+            {/* Transport Burden Hint */}
+            {results && (
+              <div className="mb-5 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  <strong>💡 Trade-off reminder:</strong> Lower price often comes with higher daily time burden. When comparing towns, consider how transport differences will affect your daily routine over 10–15 years.
+                </p>
+              </div>
+            )}
             {results ? (
               <div className="space-y-4">
                 {/* Final Budget - Most Prominent */}

@@ -326,8 +326,23 @@ export async function generateCompareSummary(
       }
     }
     
-    // Time burden change (Phase 2 v1: only add to tradeoffs, not scoring)
-    if (timeAccessA && timeAccessB) {
+    // Time burden change (Phase 2 v1: only add to tradeoffs, not scoring) - using TBI
+    const transportProfileA = getTownTransportProfile(A.town)
+    const transportProfileB = getTownTransportProfile(B.town)
+    if (transportProfileA && transportProfileB) {
+      const tbiA = calculateTBI(transportProfileA)
+      const tbiB = calculateTBI(transportProfileB)
+      const tbiDiff = tbiB - tbiA
+      
+      if (Math.abs(tbiDiff) >= 3) {
+        if (tbiDiff > 0) {
+          changes.push(`⚠ Transport burden: +${tbiDiff} (higher daily time cost)`)
+        } else {
+          changes.push(`👍 Transport burden: ${tbiDiff} (lower daily time cost)`)
+        }
+      }
+    } else if (timeAccessA && timeAccessB) {
+      // Fallback to qualitative assessment
       const burdenLevels = { low: 1, medium: 2, high: 3 }
       const burdenDiff = burdenLevels[timeBurdenB] - burdenLevels[timeBurdenA]
       if (burdenDiff > 0) {
@@ -563,7 +578,86 @@ export async function generateCompareSummary(
     }
     
     if (parts.length > 0) {
-      movingPhrase = `Moving from ${fromTown} to ${toTown} ${parts.join(', but ')}.`
+      // Generate moving phrase with better structure for Transport burden
+      const transportProfileA = getTownTransportProfile(A.town)
+      const transportProfileB = getTownTransportProfile(B.town)
+      let transportPart = ''
+      
+      if (transportProfileA && transportProfileB) {
+        const tbiA = calculateTBI(transportProfileA)
+        const tbiB = calculateTBI(transportProfileB)
+        const tbiDiff = tbiB - tbiA
+        
+        if (Math.abs(tbiDiff) >= 5) {
+          if (planningHorizon === 'long') {
+            transportPart = tbiDiff > 0 
+              ? 'increases daily time burden over a 10–15 year horizon'
+              : 'reduces daily time burden over a 10–15 year horizon'
+          } else {
+            transportPart = tbiDiff > 0 
+              ? 'increases daily time burden'
+              : 'reduces daily time burden'
+          }
+        }
+      }
+      
+      // Build the phrase: prioritize lease and transport if significant
+      // Format: "Moving from A to B reduces lease risk significantly, but increases daily time burden over a 10–15 year horizon."
+      const leaseParts: string[] = []
+      const transportParts: string[] = []
+      const otherParts: string[] = []
+      
+      parts.forEach(part => {
+        if (part.includes('lease') || part.includes('Lease')) {
+          // Transform lease language
+          let leaseText = part
+          if (part.includes('improves lease security')) {
+            leaseText = 'reduces lease risk significantly'
+          } else if (part.includes('reduces lease security')) {
+            leaseText = 'increases lease risk'
+          }
+          leaseParts.push(leaseText)
+        } else if (part.includes('time burden') || part === transportPart) {
+          if (transportPart) {
+            transportParts.push(transportPart)
+          } else {
+            transportParts.push(part)
+          }
+        } else {
+          otherParts.push(part)
+        }
+      })
+      
+      // Build final phrase with proper structure
+      const phraseParts: string[] = []
+      
+      // Add lease first if present
+      if (leaseParts.length > 0) {
+        phraseParts.push(leaseParts[0])
+      }
+      
+      // Add transport with "but" if it contrasts with lease
+      if (transportParts.length > 0) {
+        if (leaseParts.length > 0) {
+          // Use "but" to show contrast
+          phraseParts.push(`but ${transportParts[0]}`)
+        } else {
+          phraseParts.push(transportParts[0])
+        }
+      }
+      
+      // Add other parts
+      otherParts.forEach(part => {
+        if (phraseParts.length > 0) {
+          phraseParts.push(`, and ${part}`)
+        } else {
+          phraseParts.push(part)
+        }
+      })
+      
+      if (phraseParts.length > 0) {
+        movingPhrase = `Moving from ${fromTown} to ${toTown} ${phraseParts.join('')}.`
+      }
     }
   }
   
@@ -657,10 +751,10 @@ export async function generateCompareSummary(
       }
     }
     
-    // Generate exactly 3 trade-off bullets (fixed template)
+    // Generate exactly 3-4 trade-off bullets (fixed template)
     const tradeoffs: string[] = []
     
-    // Always show 3 bullets: Entry cost, Lease profile, School pressure
+    // Always show: Entry cost, Lease profile, School pressure, Transport burden
     // 1. Entry cost
     const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
     const priceDiff = Math.abs(metrics.deltaPrice)
@@ -705,6 +799,27 @@ export async function generateCompareSummary(
       tradeoffs.push(`School pressure: Data not available for comparison`)
     }
     
+    // 4. Transport burden (using TBI)
+    const transportProfileA = getTownTransportProfile(A.town)
+    const transportProfileB = getTownTransportProfile(B.town)
+    if (transportProfileA && transportProfileB) {
+      const tbiA = calculateTBI(transportProfileA)
+      const tbiB = calculateTBI(transportProfileB)
+      const tbiDiff = tbiB - tbiA
+      
+      if (Math.abs(tbiDiff) >= 3) { // Show if significant difference
+        if (tbiDiff > 0) {
+          const burdenText = tbiDiff >= 15 ? 'higher daily time cost' : tbiDiff >= 8 ? 'moderate time cost increase' : 'slightly higher time cost'
+          tradeoffs.push(`Transport burden: +${tbiDiff} (${burdenText})`)
+        } else {
+          const burdenText = Math.abs(tbiDiff) >= 15 ? 'lower daily time cost' : Math.abs(tbiDiff) >= 8 ? 'moderate time cost reduction' : 'slightly lower time cost'
+          tradeoffs.push(`Transport burden: ${tbiDiff} (${burdenText})`)
+        }
+      } else {
+        tradeoffs.push(`Transport burden: Similar daily time cost`)
+      }
+    }
+    
     // Confidence badge
     let confidence: 'clear_winner' | 'balanced' | 'depends_on_preference'
     if (overallDiffAbs > SCORING_CONSTANTS.CONFIDENCE.CLEAR_WINNER) {
@@ -715,7 +830,7 @@ export async function generateCompareSummary(
       confidence = 'depends_on_preference'
     }
     
-    recommendation = { headline, tradeoffs: tradeoffs.slice(0, 3), confidence }
+    recommendation = { headline, tradeoffs: tradeoffs.slice(0, 4), confidence }
   }
   
   // ============================================

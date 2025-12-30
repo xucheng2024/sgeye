@@ -908,14 +908,12 @@ function CompareTownsPageContent() {
                               const tbiA = calculateTBI(transportProfileA)
                               const tbiB = calculateTBI(transportProfileB)
                               const tbiDiff = tbiB - tbiA
-                              const levelA = getTBILevel(tbiA)
-                              const levelB = getTBILevel(tbiB)
-                              if (tbiDiff === 0) {
-                                return `No change (${getTBILevelLabel(levelA)})`
+                              if (Math.abs(tbiDiff) < 3) {
+                                return `No change`
                               }
-                              const arrow = tbiDiff > 0 ? '↑' : '↓'
-                              const levelChange = levelA !== levelB ? ` (${getTBILevelLabel(levelA)} → ${getTBILevelLabel(levelB)})` : ''
-                              return `${tbiDiff > 0 ? '+' : ''}${tbiDiff} TBI ${arrow}${levelChange}`
+                              const burdenText = tbiDiff >= 15 ? 'higher daily time cost' : tbiDiff >= 8 ? 'moderate time cost increase' : 'slightly higher time cost'
+                              const burdenTextNegative = Math.abs(tbiDiff) >= 15 ? 'lower daily time cost' : Math.abs(tbiDiff) >= 8 ? 'moderate time cost reduction' : 'slightly lower time cost'
+                              return `${tbiDiff > 0 ? '+' : ''}${tbiDiff} (${tbiDiff > 0 ? burdenText : burdenTextNegative})`
                             })()}
                           </span>
                         </div>
