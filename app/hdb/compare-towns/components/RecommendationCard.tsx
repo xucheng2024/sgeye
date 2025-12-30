@@ -16,6 +16,8 @@ interface RecommendationCardProps {
   townB: string
   evidenceOpen: boolean
   onToggleEvidence: () => void
+  familyProfileType?: 'long_term' | 'budget_first' | 'education_sensitive' | 'balanced'
+  onFamilyProfileChange?: () => void
 }
 
 export default function RecommendationCard({
@@ -26,13 +28,38 @@ export default function RecommendationCard({
   townB,
   evidenceOpen,
   onToggleEvidence,
+  familyProfileType,
+  onFamilyProfileChange,
 }: RecommendationCardProps) {
   if (!compareSummary.recommendation) return null
+
+  const getFamilyProfileLabel = () => {
+    if (familyProfileType === 'long_term') return 'Long-term family'
+    if (familyProfileType === 'budget_first') return 'Budget-first family'
+    if (familyProfileType === 'education_sensitive') return 'Education-sensitive family'
+    return 'Balanced family'
+  }
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-gray-900">Recommendation</h3>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Recommendation</h3>
+          {familyProfileType && (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-gray-600">Recommendation based on:</span>
+              <span className="text-xs font-medium text-gray-700">{getFamilyProfileLabel()}</span>
+              {onFamilyProfileChange && (
+                <button
+                  onClick={onFamilyProfileChange}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium underline"
+                >
+                  Change
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         {compareSummary.recommendation.confidence === 'clear_winner' && (
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
             Clear winner

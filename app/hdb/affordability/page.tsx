@@ -568,6 +568,25 @@ export default function HDBAffordabilityPage() {
           </ChartCard>
           </div>
         )}
+
+        {/* Redirect CTA to Compare Towns */}
+        <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+          <div className="text-center">
+            <p className="text-base font-semibold text-gray-900 mb-2">
+              Ready to decide?
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Compare towns with your budget →
+            </p>
+            <Link
+              href="/hdb/compare-towns"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+            >
+              Compare Towns
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   )

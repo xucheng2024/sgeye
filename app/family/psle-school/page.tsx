@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GraduationCap, AlertCircle, Home, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
+import { GraduationCap, AlertCircle, Home, TrendingUp, ArrowRight } from 'lucide-react'
 import ChartCard from '@/components/ChartCard'
 import { 
   calculateSchoolPressureIndex, 
@@ -466,6 +467,22 @@ export default function PSLESchoolPage() {
                 </div>
               </div>
             </ChartCard>
+
+            {/* Redirect CTA to Compare Towns */}
+            <div className="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+              <div className="text-center">
+                <p className="text-base font-semibold text-gray-900 mb-2">
+                  Compare education impact between two towns →
+                </p>
+                <Link
+                  href="/hdb/compare-towns"
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+                >
+                  Compare Towns
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
           </>
         )}
       </main>

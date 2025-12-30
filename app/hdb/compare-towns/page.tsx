@@ -46,6 +46,51 @@ function CompareTownsPageContent() {
   const [schoolAccessOpen, setSchoolAccessOpen] = useState(false)
   const [familyProfile, setFamilyProfile] = useState<FamilyProfile | null>(null)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
+  
+  // Family profile type mapping
+  type FamilyProfileType = 'long_term' | 'budget_first' | 'education_sensitive' | 'balanced'
+  const [familyProfileType, setFamilyProfileType] = useState<FamilyProfileType>('balanced')
+
+  // Map family profile type to decision rules
+  useEffect(() => {
+    if (familyProfileType === 'long_term') {
+      setPreferenceLens('lease_safety')
+      setHoldingPeriod('long')
+      setFamilyProfile({
+        stage: 'primary_family',
+        holdingYears: 'long',
+        costVsValue: 'value',
+        schoolSensitivity: 'neutral'
+      })
+    } else if (familyProfileType === 'budget_first') {
+      setPreferenceLens('lower_cost')
+      setHoldingPeriod('medium')
+      setFamilyProfile({
+        stage: 'primary_family',
+        holdingYears: 'medium',
+        costVsValue: 'cost',
+        schoolSensitivity: 'neutral'
+      })
+    } else if (familyProfileType === 'education_sensitive') {
+      setPreferenceLens('school_pressure')
+      setHoldingPeriod('medium')
+      setFamilyProfile({
+        stage: 'primary_family',
+        holdingYears: 'medium',
+        costVsValue: 'balanced',
+        schoolSensitivity: 'high'
+      })
+    } else {
+      setPreferenceLens('balanced')
+      setHoldingPeriod('medium')
+      setFamilyProfile({
+        stage: 'primary_family',
+        holdingYears: 'medium',
+        costVsValue: 'balanced',
+        schoolSensitivity: 'neutral'
+      })
+    }
+  }, [familyProfileType])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,12 +156,90 @@ function CompareTownsPageContent() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-semibold text-gray-900">
+              This is where we help you decide.
+              <br />
+              <span className="text-gray-600 font-normal">Everything else explains why.</span>
+            </p>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live — given our priorities?</h1>
           <p className="text-lg text-gray-600 mb-2">Compare towns by cost, lease safety, rent pressure, and primary school competition — and see what changes when you move.</p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Family Profile Selector */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">Which family best describes you?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              familyProfileType === 'long_term' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="familyProfile"
+                value="long_term"
+                checked={familyProfileType === 'long_term'}
+                onChange={(e) => setFamilyProfileType(e.target.value as FamilyProfileType)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">1️⃣ Long-term family (15+ years)</div>
+                <div className="text-xs text-gray-600">Focus on lease safety and resale flexibility</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              familyProfileType === 'budget_first' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="familyProfile"
+                value="budget_first"
+                checked={familyProfileType === 'budget_first'}
+                onChange={(e) => setFamilyProfileType(e.target.value as FamilyProfileType)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">2️⃣ Budget-first family</div>
+                <div className="text-xs text-gray-600">Focus on upfront price and monthly cash flow</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              familyProfileType === 'education_sensitive' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="familyProfile"
+                value="education_sensitive"
+                checked={familyProfileType === 'education_sensitive'}
+                onChange={(e) => setFamilyProfileType(e.target.value as FamilyProfileType)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">3️⃣ Education-sensitive family</div>
+                <div className="text-xs text-gray-600">Focus on lower school competition</div>
+              </div>
+            </label>
+            <label className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all hover:bg-gray-50 ${
+              familyProfileType === 'balanced' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <input
+                type="radio"
+                name="familyProfile"
+                value="balanced"
+                checked={familyProfileType === 'balanced'}
+                onChange={(e) => setFamilyProfileType(e.target.value as FamilyProfileType)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-semibold text-sm text-gray-900 mb-1">4️⃣ Balanced (default)</div>
+                <div className="text-xs text-gray-600">Balanced across all factors</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Family Profile Display Bar */}
         {effectiveFamilyProfile && (
           <FamilyProfileDisplay
@@ -238,6 +361,11 @@ function CompareTownsPageContent() {
             townB={townB}
             evidenceOpen={evidenceOpen}
             onToggleEvidence={() => setEvidenceOpen(!evidenceOpen)}
+            familyProfileType={familyProfileType}
+            onFamilyProfileChange={() => {
+              // Scroll to family profile selector
+              document.querySelector('[name="familyProfile"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }}
           />
         )}
 

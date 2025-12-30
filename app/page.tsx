@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AlertTriangle, Scale, CheckCircle2, ArrowRight, GraduationCap, Users, Star } from 'lucide-react'
+import { CheckCircle2, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -12,31 +12,16 @@ export default function Home() {
               Where should my family live in Singapore?
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
-              Compare towns by price, lease risk, rent pressure, and primary school pressure.
+              Compare towns and see real trade-offs — cost, lease risk, rent pressure, and school competition.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center">
               <Link
                 href="/hdb/compare-towns"
-                className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 bg-white text-blue-600 px-10 py-5 rounded-lg font-semibold text-xl hover:bg-blue-50 transition-colors shadow-lg"
               >
-                Start Comparison
-                <ArrowRight className="w-5 h-5" />
+                Start comparison
+                <ArrowRight className="w-6 h-6" />
               </Link>
-              <div className="flex gap-3">
-                <Link
-                  href="/hdb"
-                  className="text-white/80 hover:text-white text-sm underline"
-                >
-                  Explore trends
-                </Link>
-                <span className="text-white/40">|</span>
-                <Link
-                  href="/hdb/lease-price"
-                  className="text-white/80 hover:text-white text-sm underline"
-                >
-                  See heatmap
-                </Link>
-              </div>
             </div>
             <p className="mt-6 text-sm text-blue-200">
               Based on official public data. No sign-up required.
@@ -45,202 +30,112 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section 3: Core Entry Points */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Explore Your Housing Decision</h2>
-          <p className="text-gray-600 mb-3">Prices, rent pressure, and lease risks — leading to a clear comparison.</p>
-          <p className="text-xs text-gray-500 italic">
-            This is not a listing site. We help you understand trade-offs before you choose where to live.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Card 1: Affordability / Rent vs Buy (merged) */}
-          <Link href="/hdb/affordability" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Scale className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">Affordability / Rent vs Buy</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Calculate your budget and compare buying vs renting costs.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center text-green-600 text-sm font-medium group-hover:gap-2 transition-all">
-                Check Affordability
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </div>
-              <span className="text-xs text-gray-400">Analysis</span>
-            </div>
-          </Link>
-
-          {/* Card 2: Lease & Risk */}
-          <Link href="/hdb/lease-price" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">Lease & Risk</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Why cheaper flats may carry long-term resale and financing risks.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center text-amber-600 text-sm font-medium group-hover:gap-2 transition-all">
-                Analyze Lease Risk
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </div>
-              <span className="text-xs text-gray-400">Analysis</span>
-            </div>
-          </Link>
-
-          {/* Card 3: Compare Towns (Decision Tool - emphasized) */}
-          <Link href="/hdb/compare-towns" className="bg-white rounded-lg shadow-md border-2 border-blue-300 p-6 hover:shadow-lg transition-shadow group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Star className="w-6 h-6 text-amber-500 fill-amber-500" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900">Compare Towns</h3>
-                <span className="text-xs text-blue-600 font-medium">Decision Tool</span>
+      {/* Section 2: Why Trust Us */}
+      <section className="bg-white py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
+            This is not a listing site.
+            <br />
+            It&apos;s a decision tool.
+          </h2>
+          <div className="space-y-4 mt-8">
+            <div className="flex items-start gap-4">
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Uses official public data (HDB, data.gov.sg)</h3>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Side-by-side comparison of two towns: prices, lease risks, and trade-offs.
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center text-blue-600 text-sm font-medium group-hover:gap-2 transition-all">
-                Compare Now
-                <ArrowRight className="w-4 h-4 ml-1" />
+            <div className="flex items-start gap-4">
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Highlights hidden risks (lease decay, school pressure)</h3>
               </div>
-              <span className="text-xs text-blue-600 font-medium">Final comparison</span>
             </div>
-          </Link>
-        </div>
-
-        {/* Family with Children Section */}
-        <div className="text-center mb-12 mt-20">
-          <p className="text-sm text-gray-500 mb-4 italic">
-            Housing decisions don&apos;t exist in isolation — especially for families.
-          </p>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Family with Children</h2>
-          <p className="text-gray-600">Make informed decisions about education and location</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: PSLE & School Location */}
-          <Link href="/family/psle-school" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <GraduationCap className="w-6 h-6 text-purple-600" />
+            <div className="flex items-start gap-4">
+              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Designed for family decisions, not speculation</h3>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900">PSLE & School Location</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-6">
-              Understand school zones, PSLE cut-off points, and how housing choices affect school options.
-            </p>
-            <div className="flex items-center text-purple-600 text-sm font-medium group-hover:gap-2 transition-all">
-              Explore Schools
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </div>
-          </Link>
-
-          {/* Card 2: Childcare (Coming later) */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 opacity-60">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Users className="w-6 h-6 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-400">Childcare</h3>
-            </div>
-            <p className="text-sm text-gray-400 mb-6">
-              Childcare availability and costs by location.
-            </p>
-            <div className="text-xs text-gray-400 font-medium">
-              Coming later
-            </div>
-          </div>
-
-          {/* Card 3: Secondary (Coming later) */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 opacity-60">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <GraduationCap className="w-6 h-6 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-400">Secondary</h3>
-            </div>
-            <p className="text-sm text-gray-400 mb-6">
-              Secondary school options and admission criteria.
-            </p>
-            <div className="text-xs text-gray-400 font-medium">
-              Coming later
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section 4: Value Proposition (Compressed) */}
-      <section className="bg-gray-100 py-16">
+      {/* Section 3: What You Can Decide */}
+      <section className="bg-gray-50 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
-            Why This Tool Is Different
+            What you can decide here
           </h2>
           <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Uses official public data</h3>
-              </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <p className="text-lg text-gray-800 mb-3">
+                &quot;Is renting actually cheaper than buying here?&quot;
+              </p>
+              <Link
+                href="/hdb/compare-towns"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                Compare →
+              </Link>
             </div>
-            <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Highlights risks and constraints</h3>
-              </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <p className="text-lg text-gray-800 mb-3">
+                &quot;Does moving reduce school pressure — or just raise prices?&quot;
+              </p>
+              <Link
+                href="/hdb/compare-towns"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                Compare →
+              </Link>
             </div>
-            <div className="flex items-start gap-4">
-              <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 shrink-0" />
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Designed for decision-making</h3>
-              </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <p className="text-lg text-gray-800 mb-3">
+                &quot;Which trade-offs matter most for my family?&quot;
+              </p>
+              <Link
+                href="/hdb/compare-towns"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                Compare →
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Section 5: Final CTA */}
+      {/* Section 4: Other Modules (Optional) */}
       <section className="bg-white py-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-lg text-gray-700 mb-6">Start with your own situation</p>
-          <Link
-            href="/hdb/affordability"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-10 py-5 rounded-lg font-semibold text-xl hover:bg-blue-700 transition-colors shadow-lg"
-          >
-            See What You Can Really Afford
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-          <p className="mt-3 text-sm text-gray-500 italic">
-            Start with affordability, then compare towns that fit your budget.
-          </p>
-          <p className="mt-4 text-sm text-gray-500">
-            No sign-up. No ads. Just data.
-          </p>
-        </div>
-      </section>
-
-      {/* Section 6: Future Dimensions (Reserved for Future) */}
-      <section className="bg-gray-50 py-12 border-t border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-gray-400 text-center mb-6">More Coming Soon</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-50">
-            <div className="text-center p-4">
-              <div className="text-sm font-medium text-gray-500">Transport</div>
-              <div className="text-xs text-gray-400 mt-1">Coming later</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-sm font-medium text-gray-500">Healthcare</div>
-              <div className="text-xs text-gray-400 mt-1">Coming later</div>
-            </div>
+          <h2 className="text-2xl font-bold text-gray-400 text-center mb-8">
+            Explore the data (optional)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link
+              href="/hdb/affordability"
+              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              Price trends
+            </Link>
+            <Link
+              href="/hdb/heatmap"
+              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              Heatmap
+            </Link>
+            <Link
+              href="/hdb/lease-price"
+              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              Lease & risk
+            </Link>
+            <Link
+              href="/family/psle-school"
+              className="text-center p-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              PSLE overview
+            </Link>
           </div>
         </div>
       </section>
