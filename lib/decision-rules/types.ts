@@ -24,7 +24,6 @@ export interface RuleProfile {
     school: number
     lease: number
     price: number
-    rent: number
     stability: number
   }
   personalizedContext: {
@@ -43,7 +42,6 @@ export interface ComparisonMetrics {
   deltaPrice: number        // Entry price difference (B - A) in S$
   deltaLeaseYears: number   // Remaining lease years difference (B - A)
   deltaSPI: number          // School Pressure Index change (B - A)
-  deltaRentGap: number      // Rent vs Buy gap difference (B - A) in S$/month
   deltaStability: number    // Market stability difference (qualitative → numeric)
   
   // Additional context
@@ -65,7 +63,6 @@ export interface PreferenceMode {
     price: number
     lease: number
     school: number
-    rent: number
     stability: number
   }
   description: string

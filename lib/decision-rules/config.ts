@@ -185,12 +185,6 @@ export const SUITABILITY_RULES: SuitabilityRule[] = [
         text: 'Long-term owners valuing lease security'
       },
       {
-        metric: 'rent_gap',
-        operator: '>',
-        value: 0,
-        text: 'Buyers seeking monthly cash flow advantage'
-      },
-      {
         metric: 'spi_level',
         operator: '==',
         value: 'Low',

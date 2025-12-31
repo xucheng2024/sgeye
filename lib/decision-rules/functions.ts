@@ -50,14 +50,12 @@ export function calculateWeightedScore(
   const priceScore = metrics.deltaPrice < 0 ? 100 : 0  // Negative = B cheaper = better
   const leaseScore = metrics.deltaLeaseYears > 0 ? 100 : 0  // Positive = B healthier = better
   const schoolScore = metrics.deltaSPI < 0 ? 100 : 0  // Negative = B lower pressure = better
-  const rentScore = metrics.deltaRentGap > 0 ? 100 : 0  // Positive = B better cash flow = better
   const stabilityScore = metrics.deltaStability > 0 ? 50 : 0  // Neutral for now
   
   return (
     priceScore * mode.weights.price +
     leaseScore * mode.weights.lease +
     schoolScore * mode.weights.school +
-    rentScore * mode.weights.rent +
     stabilityScore * mode.weights.stability
   )
 }
@@ -157,7 +155,6 @@ export function mapFamilyProfileToRuleProfile(profile: FamilyProfile): RuleProfi
     school: 0,
     lease: 0,
     price: 0,
-    rent: 0,
     stability: 0
   }
   
@@ -236,7 +233,6 @@ export function applyRuleProfile(baseMode: PreferenceMode, ruleProfile: RuleProf
     price: Math.max(0, Math.min(1, baseMode.weights.price + ruleProfile.weightAdjustments.price)),
     lease: Math.max(0, Math.min(1, baseMode.weights.lease + ruleProfile.weightAdjustments.lease)),
     school: Math.max(0, Math.min(1, baseMode.weights.school + ruleProfile.weightAdjustments.school)),
-    rent: Math.max(0, Math.min(1, baseMode.weights.rent + ruleProfile.weightAdjustments.rent)),
     stability: Math.max(0, Math.min(1, baseMode.weights.stability + ruleProfile.weightAdjustments.stability))
   }
   

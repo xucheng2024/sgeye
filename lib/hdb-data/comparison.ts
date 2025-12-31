@@ -21,6 +21,7 @@ import {
 } from '../constants'
 import { getAggregatedMonthly, getNeighbourhoodTimeAccess } from './fetch'
 import { getNeighbourhoodTransportProfile } from './transport-data'
+import { supabase } from '../supabase'
 import type { NeighbourhoodProfile, NeighbourhoodComparisonData, CompareSummary, PreferenceLens, NeighbourhoodTimeAccess, ThreeNeighbourhoodCompareSummary } from './types'
 import { getTimeBurdenLevel, calculateTBI, getTBILevel } from './types'
 
@@ -707,7 +708,7 @@ export async function generateCompareSummary(
   // ============================================
   let recommendation: CompareSummary['recommendation'] = null
   if (scoresWithOverall) {
-    const overallDiff = scoresWithOverall.townB.overall - scoresWithOverall.townA.overall
+    const overallDiff = scoresWithOverall.neighbourhoodB.overall - scoresWithOverall.neighbourhoodA.overall
     const winner = overallDiff > 0 ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId
     const winnerIsB = overallDiff > 0
     
@@ -999,12 +1000,12 @@ export async function generateCompareSummary(
   
   // Badges
   if (A.signals.leaseRisk === 'high' || A.signals.leaseRisk === 'critical')
-    badges.push({ town: 'A', label: A.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
-  else badges.push({ town: 'A', label: 'Lease healthier', tone: 'good' })
+    badges.push({ neighbourhood: 'A', label: A.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
+  else badges.push({ neighbourhood: 'A', label: 'Lease healthier', tone: 'good' })
 
   if (B.signals.leaseRisk === 'high' || B.signals.leaseRisk === 'critical')
-    badges.push({ town: 'B', label: B.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
-  else badges.push({ town: 'B', label: 'Lease healthier', tone: 'good' })
+    badges.push({ neighbourhood: 'B', label: B.signals.leaseRisk === 'critical' ? 'High lease risk' : 'Lease risk', tone: 'warn' })
+  else badges.push({ neighbourhood: 'B', label: 'Lease healthier', tone: 'good' })
 
   return {
     // Bottom Line (top section)
@@ -1025,8 +1026,8 @@ export async function generateCompareSummary(
     
     // Time & Access comparison
     timeAccess: timeAccessA || timeAccessB ? {
-      townA: timeAccessA,
-      townB: timeAccessB,
+      neighbourhoodA: timeAccessA,
+      neighbourhoodB: timeAccessB,
       timeBurdenA,
       timeBurdenB,
       movingImpact: timeAccessMovingImpact,

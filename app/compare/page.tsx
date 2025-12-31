@@ -100,7 +100,7 @@ function ComparePageContent() {
     return `${(meters / 1000).toFixed(1)}km`
   }
 
-  function getMRTAccessLabel(type: string | null): string {
+  function getMRTAccessLabel(type: string | null | undefined): string {
     const labels: Record<string, string> = {
       high: 'High',
       medium: 'Medium',
@@ -226,7 +226,7 @@ function ComparePageContent() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Median Price</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {formatCurrency(c.summary?.median_price_12m)}
+                        {formatCurrency(c.summary?.median_price_12m ?? null)}
                       </td>
                     ))}
                   </tr>
@@ -266,7 +266,7 @@ function ComparePageContent() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Distance to MRT</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {formatDistance(c.access?.avg_distance_to_mrt)}
+                        {formatDistance(c.access?.avg_distance_to_mrt ?? null)}
                       </td>
                     ))}
                   </tr>
