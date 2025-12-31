@@ -23,7 +23,7 @@ export default function Home() {
                 <ArrowRight className="w-6 h-6" />
               </Link>
               <Link
-                href="/neighbourhoods?group=planning-area"
+                href="/planning-areas"
                 className="inline-flex items-center gap-2 bg-blue-700 text-white px-8 py-5 rounded-lg font-semibold text-lg hover:bg-blue-600 transition-colors"
               >
                 Browse by Planning Area

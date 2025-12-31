@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTownAggregated } from '@/lib/hdb-data'
+import { getNeighbourhoodAggregated } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { Map, ArrowRight } from 'lucide-react'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
@@ -9,17 +9,26 @@ import Link from 'next/link'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
+interface NeighbourhoodData {
+  neighbourhoodId: string
+  neighbourhoodName: string
+  planningAreaName: string | null
+  medianPrice: number
+  txCount: number
+  flatType: string
+}
+
 export default function HDBHeatmapPage() {
   const [flatType, setFlatType] = useState('All')
   const [months, setMonths] = useState(3)
-  const [data, setData] = useState<Array<{ town: string; medianPrice: number; txCount: number }>>([])
+  const [data, setData] = useState<NeighbourhoodData[]>([])
   const [loading, setLoading] = useState(true)
-  const [hoveredTown, setHoveredTown] = useState<string | null>(null)
-  const [tooltipTown, setTooltipTown] = useState<string | null>(null)
+  const [hoveredNeighbourhood, setHoveredNeighbourhood] = useState<string | null>(null)
+  const [tooltipNeighbourhood, setTooltipNeighbourhood] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
-    getTownAggregated(months, flatType === 'All' ? undefined : flatType)
+    getNeighbourhoodAggregated(months, flatType === 'All' ? undefined : flatType)
       .then(result => {
         setData(result.sort((a, b) => b.medianPrice - a.medianPrice))
         setLoading(false)
@@ -152,7 +161,7 @@ export default function HDBHeatmapPage() {
 
         <ChartCard
           title="Neighbourhood Price Heatmap"
-          description={`Neighbourhoods grouped by town, ranked by typical resale price (${months} month${months > 1 ? 's' : ''} rolling).`}
+          description={`Neighbourhoods grouped by planning area, ranked by typical resale price (${months} month${months > 1 ? 's' : ''} rolling). Click any neighbourhood to view details.`}
           icon={<Map className="w-6 h-6" />}
         >
           {loading ? (
@@ -202,46 +211,66 @@ export default function HDBHeatmapPage() {
                 </div>
               )}
 
-              {/* Town Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {data.map((item) => {
-                  const { bg, border, textColor } = getColorAndStyle(item.medianPrice)
-                  const borderStyle = border !== 'transparent' ? `2px solid ${border}` : hoveredTown === item.town ? '2px solid #3b82f6' : '2px solid transparent'
-                  
-                  return (
-                    <div
-                      key={item.town}
-                      className="p-4 rounded-lg transition-all cursor-pointer relative group"
-                      style={{
-                        backgroundColor: bg,
-                        border: borderStyle,
-                      }}
-                      onMouseEnter={() => setHoveredTown(item.town)}
-                      onMouseLeave={() => setHoveredTown(null)}
-                    >
-                      <div className={`font-semibold text-sm mb-1 ${textColor}`}>{item.town}</div>
-                      <div className={`text-xs ${textColor} ${textColor === 'text-white' ? 'opacity-90' : 'opacity-80'}`}>
-                        <div>Median: {formatCurrency(item.medianPrice)}</div>
-                        <div>Volume: {item.txCount} transactions</div>
-                        {item.txCount < 50 && (
-                          <div 
-                            className="mt-1 relative"
-                            onMouseEnter={() => setTooltipTown(item.town)}
-                            onMouseLeave={() => setTooltipTown(null)}
-                          >
-                            <span className={`${textColor === 'text-white' ? 'text-blue-200' : 'text-blue-600'} cursor-help`}>Fewer recent transactions</span>
-                            {tooltipTown === item.town && (
-                              <div className="absolute bottom-full left-0 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50">
-                                Prices may fluctuate more due to limited data.
+              {/* Neighbourhood Grid - Grouped by Planning Area */}
+              {(() => {
+                // Group by planning area
+                const groupedByPA = new Map<string, NeighbourhoodData[]>()
+                data.forEach(item => {
+                  const paKey = item.planningAreaName || 'Other'
+                  if (!groupedByPA.has(paKey)) {
+                    groupedByPA.set(paKey, [])
+                  }
+                  groupedByPA.get(paKey)!.push(item)
+                })
+
+                return Array.from(groupedByPA.entries())
+                  .sort((a, b) => a[0].localeCompare(b[0]))
+                  .map(([planningArea, neighbourhoods]) => (
+                    <div key={planningArea} className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">{planningArea}</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {neighbourhoods.map((item) => {
+                          const { bg, border, textColor } = getColorAndStyle(item.medianPrice)
+                          const borderStyle = border !== 'transparent' ? `2px solid ${border}` : hoveredNeighbourhood === item.neighbourhoodId ? '2px solid #3b82f6' : '2px solid transparent'
+                          
+                          return (
+                            <Link
+                              key={item.neighbourhoodId}
+                              href={`/neighbourhood/${item.neighbourhoodId}`}
+                              className="p-4 rounded-lg transition-all cursor-pointer relative group"
+                              style={{
+                                backgroundColor: bg,
+                                border: borderStyle,
+                              }}
+                              onMouseEnter={() => setHoveredNeighbourhood(item.neighbourhoodId)}
+                              onMouseLeave={() => setHoveredNeighbourhood(null)}
+                            >
+                              <div className={`font-semibold text-sm mb-1 ${textColor}`}>{item.neighbourhoodName}</div>
+                              <div className={`text-xs ${textColor} ${textColor === 'text-white' ? 'opacity-90' : 'opacity-80'}`}>
+                                <div>Median: {formatCurrency(item.medianPrice)}</div>
+                                <div>Volume: {item.txCount} transactions</div>
+                                {item.txCount < 50 && (
+                                  <div 
+                                    className="mt-1 relative"
+                                    onMouseEnter={() => setTooltipNeighbourhood(item.neighbourhoodId)}
+                                    onMouseLeave={() => setTooltipNeighbourhood(null)}
+                                  >
+                                    <span className={`${textColor === 'text-white' ? 'text-blue-200' : 'text-blue-600'} cursor-help`}>Fewer recent transactions</span>
+                                    {tooltipNeighbourhood === item.neighbourhoodId && (
+                                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl z-50">
+                                        Prices may fluctuate more due to limited data.
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        )}
+                            </Link>
+                          )
+                        })}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                  ))
+              })()}
             </div>
           )}
         </ChartCard>

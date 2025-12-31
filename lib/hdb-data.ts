@@ -37,6 +37,7 @@ export type {
 export {
   getAggregatedMonthly,
   getTownAggregated,
+  getNeighbourhoodAggregated,
   getLeasePriceData,
   getBinnedLeasePriceData,
   findAffordableProperties,

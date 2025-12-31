@@ -8,11 +8,20 @@ import { TrendingUp } from 'lucide-react'
 import { formatNumber, formatCurrency, formatCurrencyFull } from '@/lib/utils'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
-const TOWNS = ['All', 'ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
+
+interface Neighbourhood {
+  id: string
+  name: string
+  planning_area: {
+    id: string
+    name: string
+  } | null
+}
 
 export default function HDBTrendsPage() {
   const [flatType, setFlatType] = useState('All')
-  const [town, setTown] = useState('All')
+  const [selectedNeighbourhoods, setSelectedNeighbourhoods] = useState<string[]>([])
+  const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
   const [data, setData] = useState<Array<{
     month: string
     monthDate?: Date
@@ -22,6 +31,24 @@ export default function HDBTrendsPage() {
     volume: number
   }>>([])
   const [loading, setLoading] = useState(true)
+  const [loadingNeighbourhoods, setLoadingNeighbourhoods] = useState(true)
+
+  useEffect(() => {
+    const loadNeighbourhoods = async () => {
+      try {
+        const res = await fetch('/api/neighbourhoods?limit=500')
+        const data = await res.json()
+        if (res.ok && data.neighbourhoods) {
+          setNeighbourhoods(data.neighbourhoods)
+        }
+      } catch (err) {
+        console.error('Error loading neighbourhoods:', err)
+      } finally {
+        setLoadingNeighbourhoods(false)
+      }
+    }
+    loadNeighbourhoods()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -29,60 +56,58 @@ export default function HDBTrendsPage() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const result = await getAggregatedMonthly(flatType === 'All' ? undefined : flatType, town === 'All' ? undefined : town)
+        // If no neighbourhoods selected, show island-wide (all neighbourhoods)
+        // Otherwise, fetch data for selected neighbourhoods
+        let allResults: any[] = []
+        
+        if (selectedNeighbourhoods.length === 0) {
+          // Island-wide: fetch all neighbourhoods
+          const result = await getAggregatedMonthly(flatType === 'All' ? undefined : flatType)
+          allResults = result
+        } else {
+          // Fetch data for each selected neighbourhood
+          const promises = selectedNeighbourhoods.map(id => 
+            getAggregatedMonthly(flatType === 'All' ? undefined : flatType, undefined, undefined, undefined, id)
+          )
+          const results = await Promise.all(promises)
+          allResults = results.flat()
+        }
+        
         if (cancelled) return
         
-        // When town is 'All', we need to aggregate across all towns for each month
-        // When town is specific, we can use data directly
-        let formatted
-        if (town === 'All') {
-          // Group by month and aggregate across all towns
-          const monthMap = new Map<string, { month: string; prices: number[]; volumes: number[] }>()
-          result.forEach(item => {
-            const monthKey = item.month
-            if (!monthMap.has(monthKey)) {
-              monthMap.set(monthKey, {
-                month: monthKey,
-                prices: [],
-                volumes: [],
-              })
-            }
-            const entry = monthMap.get(monthKey)!
-            entry.prices.push(item.median_price)
-            entry.volumes.push(item.tx_count)
-          })
+        // Group by month and aggregate across selected neighbourhoods
+        const monthMap = new Map<string, { month: string; prices: number[]; volumes: number[] }>()
+        allResults.forEach(item => {
+          const monthKey = item.month
+          if (!monthMap.has(monthKey)) {
+            monthMap.set(monthKey, {
+              month: monthKey,
+              prices: [],
+              volumes: [],
+            })
+          }
+          const entry = monthMap.get(monthKey)!
+          entry.prices.push(item.median_price)
+          entry.volumes.push(item.tx_count)
+        })
+        
+        // Calculate aggregated values per month
+        const formatted = Array.from(monthMap.values()).map(entry => {
+          const sortedPrices = entry.prices.sort((a: number, b: number) => a - b)
+          const median = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : 0
+          const p25 = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.25)] : 0
+          const p75 = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.75)] : 0
           
-          // Calculate aggregated values per month
-          formatted = Array.from(monthMap.values()).map(entry => {
-            const sortedPrices = entry.prices.sort((a: number, b: number) => a - b)
-            const median = sortedPrices[Math.floor(sortedPrices.length / 2)]
-            const p25 = sortedPrices[Math.floor(sortedPrices.length * 0.25)]
-            const p75 = sortedPrices[Math.floor(sortedPrices.length * 0.75)]
-            
-            const monthDate = new Date(entry.month)
-            return {
-              month: monthDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
-              monthDate: monthDate,
-              median: Math.round(median),
-              p25: Math.round(p25),
-              p75: Math.round(p75),
-              volume: entry.volumes.reduce((a: number, b: number) => a + b, 0),
-            }
-          }).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
-        } else {
-          // Direct mapping when town is specific
-          formatted = result.map(item => {
-            const monthDate = new Date(item.month)
-            return {
-              month: monthDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
-              monthDate: monthDate,
-              median: Math.round(item.median_price),
-              p25: Math.round(item.p25_price),
-              p75: Math.round(item.p75_price),
-              volume: item.tx_count,
-            }
-          })
-        }
+          const monthDate = new Date(entry.month)
+          return {
+            month: monthDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+            monthDate: monthDate,
+            median: Math.round(median),
+            p25: Math.round(p25),
+            p75: Math.round(p75),
+            volume: entry.volumes.reduce((a: number, b: number) => a + b, 0),
+          }
+        }).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
         
         if (!cancelled) {
           setData(formatted)
@@ -101,7 +126,7 @@ export default function HDBTrendsPage() {
     return () => {
       cancelled = true
     }
-  }, [flatType, town])
+  }, [flatType, selectedNeighbourhoods])
 
   // Format Y-axis tick for prices
   const formatPriceTick = (value: number) => formatCurrency(value)
@@ -113,8 +138,8 @@ export default function HDBTrendsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">HDB Resale Price Trends</h1>
-          <p className="text-lg text-gray-600">Island-wide resale prices have risen steadily since 2020, despite fluctuations in transaction volume</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Neighbourhood Price Trends</h1>
+          <p className="text-lg text-gray-600">Compare price trends across selected neighbourhoods or view island-wide patterns</p>
         </div>
       </header>
 
@@ -159,26 +184,40 @@ export default function HDBTrendsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Town</label>
-              <select
-                value={town}
-                onChange={(e) => setTown(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-              >
-                {TOWNS.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Neighbourhoods {selectedNeighbourhoods.length > 0 && `(${selectedNeighbourhoods.length} selected)`}
+              </label>
+              {loadingNeighbourhoods ? (
+                <div className="text-sm text-gray-500">Loading neighbourhoods...</div>
+              ) : (
+                <select
+                  multiple
+                  value={selectedNeighbourhoods}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value)
+                    setSelectedNeighbourhoods(selected)
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all min-h-[120px]"
+                  size={5}
+                >
+                  {neighbourhoods.map(n => (
+                    <option key={n.id} value={n.id}>
+                      {n.name} {n.planning_area && `(${n.planning_area.name})`}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Hold Ctrl/Cmd to select multiple. Leave empty for island-wide view.
+              </p>
             </div>
           </div>
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500">
-              {town === 'All' && flatType === 'All' ? (
-                <>By default, trends reflect island-wide median prices across all flat types and towns.</>
-              ) : town !== 'All' ? (
-                <>Trends for {town} may differ from island-wide patterns due to location and flat mix.</>
+              {selectedNeighbourhoods.length === 0 ? (
+                <>Showing island-wide trends aggregated across all neighbourhoods.</>
               ) : (
-                <>By default, trends reflect island-wide median prices across all flat types and towns.</>
+                <>Showing trends for {selectedNeighbourhoods.length} selected neighbourhood{selectedNeighbourhoods.length !== 1 ? 's' : ''}.</>
               )}
             </p>
           </div>

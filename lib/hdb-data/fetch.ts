@@ -162,7 +162,109 @@ export async function getAggregatedMonthly(
   }))
 }
 
-// Get neighbourhood-level aggregated data for heatmap
+// Get neighbourhood-level aggregated data for heatmap (returns neighbourhood data directly)
+export async function getNeighbourhoodAggregated(
+  months: number = 3,
+  flatType?: string
+): Promise<Array<{
+  neighbourhoodId: string
+  neighbourhoodName: string
+  planningAreaName: string | null
+  medianPrice: number
+  txCount: number
+  flatType: string
+}>> {
+  try {
+    if (supabase) {
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setMonth(startDate.getMonth() - months)
+
+      // Query from neighbourhood-based aggregation table
+      let query = supabase
+        .from('agg_neighbourhood_monthly')
+        .select('neighbourhood_id, flat_type, median_price, tx_count')
+        .gte('month', startDate.toISOString().split('T')[0])
+        .lte('month', endDate.toISOString().split('T')[0])
+
+      if (flatType && flatType !== 'All') {
+        query = query.eq('flat_type', flatType)
+      }
+
+      // Fetch all data with pagination
+      const allData = await paginateQuery<{ neighbourhood_id: string; flat_type: string; median_price: number; tx_count: number }>(
+        query,
+        DATA_FETCHING.PAGE_SIZE
+      )
+
+      if (allData.length > 0) {
+        // Get neighbourhood info
+        const neighbourhoodIds = [...new Set(allData.map(item => item.neighbourhood_id).filter(Boolean))]
+        const { data: neighbourhoodData } = await supabase
+          .from('neighbourhoods')
+          .select('id, name, planning_area_id, planning_areas(name)')
+          .in('id', neighbourhoodIds)
+
+        const neighbourhoodInfo = new Map<string, { name: string; planningAreaName: string | null }>()
+        if (neighbourhoodData) {
+          neighbourhoodData.forEach(nbhd => {
+            const planningArea = Array.isArray(nbhd.planning_areas) && nbhd.planning_areas.length > 0
+              ? nbhd.planning_areas[0]?.name
+              : null
+            neighbourhoodInfo.set(nbhd.id, {
+              name: nbhd.name,
+              planningAreaName: planningArea
+            })
+          })
+        }
+
+        // Aggregate by neighbourhood_id (combine multiple months)
+        const neighbourhoodMap = new Map<string, {
+          neighbourhoodId: string
+          neighbourhoodName: string
+          planningAreaName: string | null
+          prices: number[]
+          txCount: number
+          flatType: string
+        }>()
+
+        allData.forEach(item => {
+          const nbhdId = item.neighbourhood_id
+          const info = neighbourhoodInfo.get(nbhdId) || { name: 'Unknown', planningAreaName: null }
+
+          if (!neighbourhoodMap.has(nbhdId)) {
+            neighbourhoodMap.set(nbhdId, {
+              neighbourhoodId: nbhdId,
+              neighbourhoodName: info.name,
+              planningAreaName: info.planningAreaName,
+              prices: [],
+              txCount: 0,
+              flatType: item.flat_type,
+            })
+          }
+          const entry = neighbourhoodMap.get(nbhdId)!
+          entry.prices.push(Number(item.median_price))
+          entry.txCount += Number(item.tx_count)
+        })
+
+        return Array.from(neighbourhoodMap.values()).map(entry => ({
+          neighbourhoodId: entry.neighbourhoodId,
+          neighbourhoodName: entry.neighbourhoodName,
+          planningAreaName: entry.planningAreaName,
+          medianPrice: entry.prices.sort((a, b) => a - b)[Math.floor(entry.prices.length / 2)],
+          txCount: entry.txCount,
+          flatType: entry.flatType,
+        }))
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching neighbourhood aggregated data:', error)
+  }
+
+  return []
+}
+
+// Get neighbourhood-level aggregated data for heatmap (legacy - returns town data for backward compatibility)
 // Data is aggregated by neighbourhood_id, then grouped by town for display (town is for UI context only, not for analysis)
 // Get aggregated data by neighbourhood, then group by town for display
 // Note: Data is aggregated by neighbourhood_id internally, but returned grouped by town for UI display

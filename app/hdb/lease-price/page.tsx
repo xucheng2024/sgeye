@@ -10,11 +10,9 @@ import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
-const TOWNS = ['All', 'ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
 
 export default function HDBLeasePricePage() {
   const [flatType, setFlatType] = useState('All')
-  const [town, setTown] = useState('All')
   const [binnedData, setBinnedData] = useState<BinnedLeaseData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -26,7 +24,7 @@ export default function HDBLeasePricePage() {
       try {
         const result = await getBinnedLeasePriceData(
           flatType === 'All' ? undefined : flatType,
-          town === 'All' ? undefined : town,
+          undefined, // No town filter - island-wide only
           10000
         )
         if (!cancelled) {
@@ -47,7 +45,7 @@ export default function HDBLeasePricePage() {
     return () => {
       cancelled = true
     }
-  }, [flatType, town])
+  }, [flatType])
 
   // Format data for total price chart
   const totalPriceChartData = binnedData.map(bin => ({
@@ -72,7 +70,7 @@ export default function HDBLeasePricePage() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">Lease Depreciation Analysis</h1>
-          <p className="mt-2 text-gray-600">Relationship between remaining lease years and resale prices (binned with median, P25, P75)</p>
+          <p className="mt-2 text-gray-600">Island-wide analysis showing how lease decay affects prices structurally across all neighbourhoods</p>
         </div>
       </header>
 
@@ -135,6 +133,14 @@ export default function HDBLeasePricePage() {
           </div>
         </div>
 
+        {/* Info Box */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> This analysis is island-wide, showing how lease decay affects prices structurally. 
+            Lease risk patterns are consistent across all neighbourhoods - location does not change the fundamental relationship between remaining lease and price.
+          </p>
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,16 +157,13 @@ export default function HDBLeasePricePage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Town</label>
-              <select
-                value={town}
-                onChange={(e) => setTown(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {TOWNS.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Analysis Scope</label>
+              <div className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                Island-wide (all neighbourhoods)
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                This is a structural analysis, not a location comparison
+              </p>
             </div>
           </div>
         </div>
