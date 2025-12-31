@@ -142,7 +142,7 @@ export default function HDBHeatmapPage() {
 
         <div className="mb-4 flex items-center justify-end">
           <Link
-            href={`/hdb/compare-towns?flatType=${encodeURIComponent(flatType === 'All' ? '4 ROOM' : flatType)}`}
+            href="/compare"
             className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
           >
             Compare neighbourhoods

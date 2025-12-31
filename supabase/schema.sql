@@ -83,22 +83,8 @@ CREATE TABLE IF NOT EXISTS agg_neighbourhood_monthly (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Aggregated monthly data by town (DEPRECATED - Use agg_neighbourhood_monthly instead)
-CREATE TABLE IF NOT EXISTS agg_monthly (
-  id SERIAL PRIMARY KEY,
-  month DATE NOT NULL,
-  town VARCHAR(100),
-  flat_type VARCHAR(50),
-  tx_count INTEGER,
-  median_price NUMERIC,
-  p25_price NUMERIC,
-  p75_price NUMERIC,
-  median_psm NUMERIC,
-  median_lease_years NUMERIC,
-  avg_floor_area NUMERIC,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(month, town, flat_type)
-);
+-- Aggregated monthly data by town (REMOVED - Replaced by agg_neighbourhood_monthly)
+-- This table has been dropped. All queries should use agg_neighbourhood_monthly instead.
 
 -- ============================================
 -- Transport & Access Tables
@@ -276,7 +262,7 @@ ALTER TABLE subzones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE neighbourhoods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE raw_resale_2017 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agg_neighbourhood_monthly ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agg_monthly ENABLE ROW LEVEL SECURITY;
+-- agg_monthly table has been removed (replaced by agg_neighbourhood_monthly)
 ALTER TABLE mrt_stations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bus_stops ENABLE ROW LEVEL SECURITY;
 ALTER TABLE neighbourhood_access ENABLE ROW LEVEL SECURITY;
@@ -305,8 +291,7 @@ CREATE POLICY "Allow public read access" ON raw_resale_2017 FOR SELECT USING (tr
 DROP POLICY IF EXISTS "Allow public read access" ON agg_neighbourhood_monthly;
 CREATE POLICY "Allow public read access" ON agg_neighbourhood_monthly FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Allow public read access" ON agg_monthly;
-CREATE POLICY "Allow public read access" ON agg_monthly FOR SELECT USING (true);
+-- agg_monthly table has been removed (replaced by agg_neighbourhood_monthly)
 
 DROP POLICY IF EXISTS "Allow public read access" ON mrt_stations;
 CREATE POLICY "Allow public read access" ON mrt_stations FOR SELECT USING (true);
@@ -441,55 +426,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to aggregate monthly data by town (DEPRECATED - Use aggregate_neighbourhood_monthly_data() instead)
-CREATE OR REPLACE FUNCTION aggregate_monthly_data()
-RETURNS TABLE(
-  total_records INTEGER,
-  earliest_month DATE,
-  latest_month DATE,
-  total_transactions BIGINT
-) AS $$
-BEGIN
-  -- DEPRECATED: This aggregates by town. Use aggregate_neighbourhood_monthly_data() instead.
-  INSERT INTO agg_monthly (month, town, flat_type, tx_count, median_price, p25_price, p75_price, median_psm, median_lease_years, avg_floor_area)
-  SELECT 
-    DATE_TRUNC('month', month)::DATE as month,
-    town,
-    flat_type,
-    COUNT(*) as tx_count,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY resale_price) as median_price,
-    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY resale_price) as p25_price,
-    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY resale_price) as p75_price,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY resale_price / NULLIF(floor_area_sqm, 0)) as median_psm,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY parse_lease_years(remaining_lease)) as median_lease_years,
-    AVG(floor_area_sqm) as avg_floor_area
-  FROM raw_resale_2017
-  WHERE resale_price IS NOT NULL
-    AND resale_price > 0
-    AND floor_area_sqm IS NOT NULL
-    AND floor_area_sqm > 0
-    AND remaining_lease IS NOT NULL
-    AND remaining_lease != ''
-  GROUP BY DATE_TRUNC('month', month)::DATE, town, flat_type
-  ON CONFLICT (month, town, flat_type) 
-  DO UPDATE SET
-    tx_count = EXCLUDED.tx_count,
-    median_price = EXCLUDED.median_price,
-    p25_price = EXCLUDED.p25_price,
-    p75_price = EXCLUDED.p75_price,
-    median_psm = EXCLUDED.median_psm,
-    median_lease_years = EXCLUDED.median_lease_years,
-    avg_floor_area = EXCLUDED.avg_floor_area,
-    created_at = NOW();
-
-  RETURN QUERY
-  SELECT 
-    COUNT(*)::INTEGER as total_records,
-    MIN(month) as earliest_month,
-    MAX(month) as latest_month,
-    SUM(tx_count)::BIGINT as total_transactions
-  FROM agg_monthly;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Function aggregate_monthly_data() has been removed (replaced by aggregate_neighbourhood_monthly_data)
+-- Use aggregate_neighbourhood_monthly_data() instead
 
 -- Function to calculate neighbourhood access metrics
 CREATE OR REPLACE FUNCTION calculate_neighbourhood_access()
@@ -564,6 +502,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. Added agg_neighbourhood_monthly as primary aggregation table (replaces agg_monthly)
 -- 3. Added neighbourhood_access for transport metrics
 -- 4. Added neighbourhood_id foreign keys to raw_resale_2017, mrt_stations, bus_stops, primary_schools
--- 5. agg_monthly is kept for backward compatibility but marked as DEPRECATED
+-- 5. agg_monthly has been removed (replaced by agg_neighbourhood_monthly)
 -- 
 -- For actual database setup, use migration files in supabase/migrations/ directory.

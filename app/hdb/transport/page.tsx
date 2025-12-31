@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
 import { getNeighbourhoodTransportProfile, getNeighbourhoodIdFromTown, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
-import { TOWNS } from '../compare-towns/constants'
+import { TOWNS } from './constants'
 import type { NeighbourhoodTransportProfile } from '@/lib/hdb-data'
 
 export default function TransportPage() {
@@ -292,10 +292,10 @@ export default function TransportPage() {
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-8 text-center">
           <Train className="w-12 h-12 text-blue-600 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-4">
-            See how transport trade-offs affect your town comparison
+            See how transport trade-offs affect your neighbourhood comparison
           </h3>
           <Link
-            href="/hdb/compare-towns"
+            href="/compare"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
           >
             Compare Towns

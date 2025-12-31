@@ -16,7 +16,7 @@ export default function GlobalNav() {
     { href: '/hdb', label: 'Market Trends', icon: TrendingUp },
     { href: '/hdb/heatmap', label: 'Prices by Neighbourhood', icon: Map },
     { href: '/hdb/lease-price', label: 'Lease & Long-term Risk', icon: Clock },
-    { href: '/hdb/compare-towns', label: 'Compare Neighbourhoods', icon: GitCompare, recommended: true },
+    { href: '/compare', label: 'Compare Neighbourhoods', icon: GitCompare, recommended: true },
   ]
 
   // Family with Children items

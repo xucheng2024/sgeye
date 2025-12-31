@@ -19,7 +19,7 @@ export default function CompareTownsCTA({ text }: CompareTownsCTAProps) {
           <p className="text-sm font-medium text-gray-700">Ready to decide?</p>
         </div>
         <Link
-          href="/hdb/compare-towns"
+          href="/compare"
           className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
           {text}

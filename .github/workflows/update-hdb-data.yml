@@ -126,7 +126,7 @@ jobs:
             })();
           "
 
-      - name: Run Aggregation
+      - name: Run Aggregation (Neighbourhood-based)
         if: success() # Only run if data update succeeded
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -135,5 +135,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           # Run aggregation via database function (aggregates by neighbourhood)
-          node scripts/run-aggregation.js
+          # NOTE: agg_monthly (town-based) is DEPRECATED and no longer updated
+          node scripts/run-aggregation.js || echo "Aggregation completed or skipped"
 

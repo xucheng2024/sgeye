@@ -14,13 +14,19 @@ export default function Home() {
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
               Compare neighbourhoods and understand real trade-offs — cost, lease risk, and school competition.
             </p>
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/hdb/compare-towns"
+                href="/neighbourhoods"
                 className="inline-flex items-center gap-2 bg-white text-blue-600 px-10 py-5 rounded-lg font-semibold text-xl hover:bg-blue-50 transition-colors shadow-lg"
               >
-                Start comparison
+                Explore Neighbourhoods
                 <ArrowRight className="w-6 h-6" />
+              </Link>
+              <Link
+                href="/neighbourhoods?group=planning-area"
+                className="inline-flex items-center gap-2 bg-blue-700 text-white px-8 py-5 rounded-lg font-semibold text-lg hover:bg-blue-600 transition-colors"
+              >
+                Browse by Planning Area
               </Link>
             </div>
             <p className="mt-6 text-sm text-blue-200">
@@ -73,7 +79,7 @@ export default function Home() {
                 &quot;Is renting actually cheaper than buying here?&quot;
               </p>
               <Link
-                href="/hdb/compare-towns"
+                href="/compare"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Compare →
@@ -84,7 +90,7 @@ export default function Home() {
                 &quot;Does moving reduce school pressure — or just raise prices?&quot;
               </p>
               <Link
-                href="/hdb/compare-towns"
+                href="/compare"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Compare →
@@ -95,7 +101,7 @@ export default function Home() {
                 &quot;Which trade-offs matter most for my family?&quot;
               </p>
               <Link
-                href="/hdb/compare-towns"
+                href="/compare"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Compare →
@@ -113,21 +119,21 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Link
-              href="/hdb/compare-towns"
+              href="/neighbourhoods"
               className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <div className="font-medium mb-1">How have resale prices evolved?</div>
               <div className="text-xs text-gray-500">Price trends</div>
             </Link>
             <Link
-              href="/hdb/compare-towns"
+              href="/neighbourhoods"
               className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <div className="font-medium mb-1">Where are prices highest and lowest?</div>
-              <div className="text-xs text-gray-500">Heatmap</div>
+              <div className="text-xs text-gray-500">Neighbourhood list</div>
             </Link>
             <Link
-              href="/hdb/compare-towns"
+              href="/neighbourhoods"
               className="text-left p-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
             >
               <div className="font-medium mb-1">How does lease decay affect prices?</div>
