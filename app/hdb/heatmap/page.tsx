@@ -214,7 +214,7 @@ export default function HDBHeatmapPage() {
               {/* Neighbourhood Grid - Grouped by Planning Area */}
               {(() => {
                 // Group by planning area
-                const groupedByPA = new Map<string, NeighbourhoodData[]>()
+                const groupedByPA: Map<string, NeighbourhoodData[]> = new Map()
                 data.forEach(item => {
                   const paKey = item.planningAreaName || 'Other'
                   if (!groupedByPA.has(paKey)) {
