@@ -64,27 +64,38 @@ export async function GET(
     }
 
     // Transform data
+    // Supabase returns related data as arrays even for one-to-one relationships
+    const planningArea = Array.isArray(data.planning_areas) && data.planning_areas.length > 0 
+      ? data.planning_areas[0] 
+      : null
+    const summary = Array.isArray(data.neighbourhood_summary) && data.neighbourhood_summary.length > 0
+      ? data.neighbourhood_summary[0]
+      : null
+    const access = Array.isArray(data.neighbourhood_access) && data.neighbourhood_access.length > 0
+      ? data.neighbourhood_access[0]
+      : null
+
     const neighbourhood = {
       id: data.id,
       name: data.name,
       one_liner: data.one_liner,
-      planning_area: data.planning_areas ? {
-        id: data.planning_areas.id,
-        name: data.planning_areas.name
+      planning_area: planningArea ? {
+        id: planningArea.id,
+        name: planningArea.name
       } : null,
       type: data.type,
-      summary: data.neighbourhood_summary ? {
-        tx_12m: data.neighbourhood_summary.tx_12m,
-        median_price_12m: data.neighbourhood_summary.median_price_12m,
-        median_psm_12m: data.neighbourhood_summary.median_psm_12m,
-        median_lease_years_12m: data.neighbourhood_summary.median_lease_years_12m,
-        updated_at: data.neighbourhood_summary.updated_at
+      summary: summary ? {
+        tx_12m: summary.tx_12m,
+        median_price_12m: summary.median_price_12m,
+        median_psm_12m: summary.median_psm_12m,
+        median_lease_years_12m: summary.median_lease_years_12m,
+        updated_at: summary.updated_at
       } : null,
-      access: data.neighbourhood_access ? {
-        mrt_station_count: data.neighbourhood_access.mrt_station_count,
-        mrt_access_type: data.neighbourhood_access.mrt_access_type,
-        avg_distance_to_mrt: data.neighbourhood_access.avg_distance_to_mrt,
-        updated_at: data.neighbourhood_access.updated_at
+      access: access ? {
+        mrt_station_count: access.mrt_station_count,
+        mrt_access_type: access.mrt_access_type,
+        avg_distance_to_mrt: access.avg_distance_to_mrt,
+        updated_at: access.updated_at
       } : null,
       created_at: data.created_at,
       updated_at: data.updated_at
