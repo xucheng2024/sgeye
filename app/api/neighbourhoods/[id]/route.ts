@@ -15,10 +15,10 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Fetch neighbourhood with summary, access, and planning area
     const { data, error } = await supabase
