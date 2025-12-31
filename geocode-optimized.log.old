@@ -1,0 +1,45 @@
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 213,000
+
+Pre-loading coordinates cache from database...
+  Found 433 unique block+street combinations
+  Pre-loaded 0 coordinates into cache
+
+Processing batch: 1 to 500 of 213000
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 458 records (417 geocoded, 41 reused)
+Progress: 500/213000 | Geocoded: 417 | Reused: 41 | Failed: 42 | Skipped: 0
+
+Processing batch: 501 to 1000 of 213000
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 493 records (840 geocoded, 111 reused)
+Progress: 1000/213000 | Geocoded: 840 | Reused: 111 | Failed: 49 | Skipped: 0
+
+Processing batch: 1001 to 1500 of 213000
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (1200 geocoded, 251 reused)
+Progress: 1500/213000 | Geocoded: 1200 | Reused: 251 | Failed: 49 | Skipped: 0
+
+Processing batch: 1501 to 2000 of 213000
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 492 records (1511 geocoded, 432 reused)
+Progress: 2000/213000 | Geocoded: 1511 | Reused: 432 | Failed: 57 | Skipped: 0
+
+Processing batch: 2001 to 2500 of 213000
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window

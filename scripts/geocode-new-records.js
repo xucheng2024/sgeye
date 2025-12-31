@@ -40,22 +40,117 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 const ONEMAP_API = 'https://www.onemap.gov.sg/api/common/elastic/search'
 
 /**
+ * Normalize street name (expand abbreviations, handle special cases)
+ */
+function normalizeStreetName(streetName) {
+  if (!streetName) return streetName
+  
+  let normalized = streetName.trim()
+  
+  // Special cases that must be handled before general abbreviations
+  // "ST. GEORGE'S" -> "SAINT GEORGES" (not "STREET GEORGE'S")
+  normalized = normalized.replace(/\bST\.\s+GEORGE'S?\b/gi, 'SAINT GEORGES')
+  normalized = normalized.replace(/\bST\s+GEORGE'S?\b/gi, 'SAINT GEORGES')
+  
+  // "KG" -> "KAMPONG" (but only if it's at the start or after a space)
+  normalized = normalized.replace(/\bKG\s+/gi, 'KAMPONG ')
+  
+  // Common Singapore address abbreviations
+  const abbreviations = {
+    "C'WEALTH": "COMMONWEALTH",
+    "C'WEALTH CL": "COMMONWEALTH CLOSE",
+    "C'WEALTH CRES": "COMMONWEALTH CRESCENT",
+    "C'WEALTH DR": "COMMONWEALTH DRIVE",
+    "C'WEALTH AVE": "COMMONWEALTH AVENUE",
+    "RD.": "ROAD",
+    "RD": "ROAD",
+    "AVE.": "AVENUE",
+    "AVE": "AVENUE",
+    "DR.": "DRIVE",
+    "DR": "DRIVE",
+    "ST.": "STREET",
+    "ST": "STREET",
+    "CRES": "CRESCENT",
+    "CRES.": "CRESCENT",
+    "CL": "CLOSE",
+    "CL.": "CLOSE",
+    "TER": "TERRACE",
+    "TER.": "TERRACE",
+    "PL": "PLACE",
+    "PL.": "PLACE",
+  }
+  
+  // Replace abbreviations (case-insensitive)
+  const sortedAbbrs = Object.entries(abbreviations).sort((a, b) => b[0].length - a[0].length)
+  
+  for (const [abbr, full] of sortedAbbrs) {
+    const escapedAbbr = abbr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`\\b${escapedAbbr}\\.?\\b`, 'gi')
+    normalized = normalized.replace(regex, full)
+  }
+  
+  // Handle apostrophes
+  normalized = normalized.replace(/([A-Z])'([A-Z])/g, '$1 $2')
+  normalized = normalized.replace(/'S\b/g, 'S')
+  normalized = normalized.replace(/'/g, '')
+  
+  // Clean up
+  normalized = normalized.replace(/\s+/g, ' ')
+  normalized = normalized.replace(/\b(\w+)\.(\s|$)/g, '$1$2')
+  
+  return normalized.trim()
+}
+
+/**
  * Build address variations for better geocoding success
  */
 function buildAddresses(block, streetName) {
-  const addresses = []
+  const addresses = new Set()
+  const normalizedStreet = normalizeStreetName(streetName)
   
+  // Original format
   if (block && streetName) {
-    addresses.push(`Block ${block} ${streetName} Singapore`)
-    addresses.push(`${block} ${streetName} Singapore`)
-    addresses.push(`${streetName} Singapore`)
-  } else if (streetName) {
-    addresses.push(`${streetName} Singapore`)
-  } else if (block) {
-    addresses.push(`Block ${block} Singapore`)
+    addresses.add(`Block ${block} ${streetName} Singapore`)
+    addresses.add(`${block} ${streetName} Singapore`)
+  }
+  if (streetName) {
+    addresses.add(`${streetName} Singapore`)
   }
   
-  return addresses.filter(Boolean)
+  // Normalized format (expanded abbreviations)
+  if (block && normalizedStreet && normalizedStreet !== streetName) {
+    addresses.add(`Block ${block} ${normalizedStreet} Singapore`)
+    addresses.add(`${block} ${normalizedStreet} Singapore`)
+  }
+  if (normalizedStreet && normalizedStreet !== streetName) {
+    addresses.add(`${normalizedStreet} Singapore`)
+  }
+  
+  // Special handling for ST. GEORGE'S RD -> SAINT GEORGE'S ROAD
+  // OneMap API recognizes "SAINT GEORGE'S ROAD" format (without "Block" prefix works better)
+  if (streetName && /ST\.?\s+GEORGE'S?\s+RD/i.test(streetName)) {
+    if (block) {
+      addresses.add(`${block} SAINT GEORGE'S ROAD Singapore`) // This format works!
+      addresses.add(`Block ${block} SAINT GEORGE'S ROAD Singapore`)
+    }
+    addresses.add(`SAINT GEORGE'S ROAD Singapore`)
+  }
+  
+  // Special handling for KG ARANG RD -> KAMPONG ARANG ROAD
+  if (streetName && /^KG\s+ARANG/i.test(streetName)) {
+    if (block) {
+      addresses.add(`Block ${block} KAMPONG ARANG ROAD Singapore`)
+      addresses.add(`${block} KAMPONG ARANG ROAD Singapore`)
+    }
+    addresses.add(`KAMPONG ARANG ROAD Singapore`)
+  }
+  
+  // Block only (fallback)
+  if (block) {
+    addresses.add(`Block ${block} Singapore`)
+  }
+  
+  return Array.from(addresses).filter(Boolean)
 }
 
 /**
@@ -127,44 +222,55 @@ async function main() {
   console.log(`Found ${records.length} records to geocode`)
   console.log('')
   
-  // Pre-load cache: Collect unique block+street_name combinations
-  console.log('Pre-loading coordinates from database...')
-  const uniqueCombinations = new Map() // block+street -> first occurrence
-  records.forEach(r => {
-    if (r.block && r.street_name && !r.latitude && !r.longitude) {
-      const key = `${r.block || ''}-${r.street_name || ''}`.toLowerCase()
-      if (!uniqueCombinations.has(key)) {
-        uniqueCombinations.set(key, { block: r.block, street_name: r.street_name })
-      }
-    }
-  })
+  // Pre-load ALL existing coordinates from database (maximize reuse)
+  console.log('Pre-loading ALL coordinates from database...')
+  console.log('  (This maximizes coordinate reuse and minimizes API calls)')
   
-  console.log(`  Found ${uniqueCombinations.size} unique block+street combinations`)
-  
-  // Pre-load cache by querying database for existing coordinates
   const geocodedCache = new Map()
-  if (uniqueCombinations.size > 0) {
-    let preloaded = 0
-    // Query each unique combination (can be optimized further with batch queries if needed)
-    for (const [key, combo] of uniqueCombinations) {
-      const { data: existingCoords } = await supabase
-        .from('raw_resale_2017')
-        .select('latitude, longitude')
-        .eq('block', combo.block)
-        .eq('street_name', combo.street_name)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (existingCoords && existingCoords.latitude && existingCoords.longitude) {
-        geocodedCache.set(key, { lat: existingCoords.latitude, lng: existingCoords.longitude })
-        preloaded++
-      }
+  let offset = 0
+  const batchSize = 1000 // Supabase limit per query
+  let totalProcessed = 0
+  
+  while (true) {
+    const { data: existingRecords, error } = await supabase
+      .from('raw_resale_2017')
+      .select('block, street_name, latitude, longitude')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .not('block', 'is', null)
+      .not('street_name', 'is', null)
+      .range(offset, offset + batchSize - 1)
+    
+    if (error || !existingRecords || existingRecords.length === 0) {
+      break
     }
     
-    console.log(`  Pre-loaded ${preloaded} coordinates into cache (${((preloaded/uniqueCombinations.size)*100).toFixed(1)}% hit rate)`)
+    // Add unique combinations to cache
+    existingRecords.forEach(rec => {
+      const key = `${rec.block || ''}-${rec.street_name || ''}`.toLowerCase()
+      if (!geocodedCache.has(key) && rec.latitude && rec.longitude) {
+        geocodedCache.set(key, { lat: rec.latitude, lng: rec.longitude })
+      }
+    })
+    
+    totalProcessed += existingRecords.length
+    
+    // Progress indicator (every 10k records)
+    if (totalProcessed % 10000 === 0 || totalProcessed < 10000) {
+      process.stdout.write(`  Loaded ${geocodedCache.size.toLocaleString()} unique combinations from ${totalProcessed.toLocaleString()} records...\r`)
+    }
+    
+    // Check if we got fewer records than requested (last batch)
+    if (existingRecords.length < batchSize) {
+      break
+    } else {
+      offset += batchSize
+    }
   }
+  
+  console.log('') // New line after progress indicator
+  console.log(`  Pre-loaded ${geocodedCache.size.toLocaleString()} unique block+street combinations into cache`)
+  console.log(`  (Processed ${totalProcessed.toLocaleString()} records with coordinates)`)
   console.log('')
   
   let geocoded = 0
@@ -185,47 +291,30 @@ async function main() {
       continue
     }
     
-    // Check cache (pre-loaded from database)
+    // Check cache (pre-loaded from database - contains ALL existing coordinates)
     if (geocodedCache.has(cacheKey)) {
       geo = geocodedCache.get(cacheKey)
       source = 'reused'
     } else {
-      // Fallback: Check database for existing coordinates (should rarely happen now)
-      const { data: existingCoords } = await supabase
-        .from('raw_resale_2017')
-        .select('latitude, longitude')
-        .eq('block', record.block)
-        .eq('street_name', record.street_name)
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .limit(1)
-        .single()
+      // Call OneMap API (cache miss means this is a new block+street combination)
+      const addresses = buildAddresses(record.block, record.street_name)
       
-      if (existingCoords && existingCoords.latitude && existingCoords.longitude) {
-        geo = { lat: existingCoords.latitude, lng: existingCoords.longitude }
-        geocodedCache.set(cacheKey, geo)
-        source = 'reused'
-      } else {
-        // Call OneMap API
-        const addresses = buildAddresses(record.block, record.street_name)
-        
-        if (addresses.length === 0) {
-          skipped++
-          continue
-        }
-        
-        for (const address of addresses) {
-          geo = await geocodeAddress(address)
-          if (geo.lat && geo.lng) {
-            geocodedCache.set(cacheKey, geo)
-            break
-          }
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
-        
-        // Rate limiting
-        await new Promise(resolve => setTimeout(resolve, 300))
+      if (addresses.length === 0) {
+        skipped++
+        continue
       }
+      
+      for (const address of addresses) {
+        geo = await geocodeAddress(address)
+        if (geo.lat && geo.lng) {
+          geocodedCache.set(cacheKey, geo) // Add to cache for future use
+          break
+        }
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      
+      // Rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300))
     }
     
     if (geo.lat && geo.lng) {

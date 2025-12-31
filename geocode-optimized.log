@@ -1,0 +1,2917 @@
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 211,057
+
+Pre-loading coordinates cache from database...
+  Found 424 unique block+street combinations
+  Pre-loaded 0 coordinates into cache
+
+Processing batch: 1 to 500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 491 records (429 geocoded, 62 reused)
+Progress: 500/211057 | Geocoded: 429 | Reused: 62 | Failed: 9 | Skipped: 0
+
+Processing batch: 501 to 1000 of 211057
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 500 records (807 geocoded, 184 reused)
+Progress: 1000/211057 | Geocoded: 807 | Reused: 184 | Failed: 9 | Skipped: 0
+
+Processing batch: 1001 to 1500 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 500 records (1186 geocoded, 305 reused)
+Progress: 1500/211057 | Geocoded: 1186 | Reused: 305 | Failed: 9 | Skipped: 0
+
+Processing batch: 1501 to 2000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  Warning: 500 records failed to update in batch 1
+  ✓ Updated 0 records (1610 geocoded, 381 reused)
+Progress: 2000/211057 | Geocoded: 1610 | Reused: 381 | Failed: 9 | Skipped: 0
+
+Processing batch: 2001 to 2500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (1937 geocoded, 554 reused)
+Progress: 2500/211057 | Geocoded: 1937 | Reused: 554 | Failed: 9 | Skipped: 0
+
+Processing batch: 2501 to 3000 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (2246 geocoded, 745 reused)
+Progress: 3000/211057 | Geocoded: 2246 | Reused: 745 | Failed: 9 | Skipped: 0
+
+Processing batch: 3001 to 3500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 500 records (2505 geocoded, 986 reused)
+Progress: 3500/211057 | Geocoded: 2505 | Reused: 986 | Failed: 9 | Skipped: 0
+
+Processing batch: 3501 to 4000 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (2808 geocoded, 1183 reused)
+Progress: 4000/211057 | Geocoded: 2808 | Reused: 1183 | Failed: 9 | Skipped: 0
+
+Processing batch: 4001 to 4500 of 211057
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 500 records (3066 geocoded, 1425 reused)
+Progress: 4500/211057 | Geocoded: 3066 | Reused: 1425 | Failed: 9 | Skipped: 0
+
+Processing batch: 4501 to 5000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (3381 geocoded, 1610 reused)
+Progress: 5000/211057 | Geocoded: 3381 | Reused: 1610 | Failed: 9 | Skipped: 0
+
+Processing batch: 5001 to 5500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 498 records (3688 geocoded, 1801 reused)
+Progress: 5500/211057 | Geocoded: 3688 | Reused: 1801 | Failed: 11 | Skipped: 0
+
+Processing batch: 5501 to 6000 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (3929 geocoded, 2060 reused)
+Progress: 6000/211057 | Geocoded: 3929 | Reused: 2060 | Failed: 11 | Skipped: 0
+
+Processing batch: 6001 to 6500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (4129 geocoded, 2360 reused)
+Progress: 6500/211057 | Geocoded: 4129 | Reused: 2360 | Failed: 11 | Skipped: 0
+
+Processing batch: 6501 to 7000 of 211057
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 500 records (4367 geocoded, 2622 reused)
+Progress: 7000/211057 | Geocoded: 4367 | Reused: 2622 | Failed: 11 | Skipped: 0
+
+Processing batch: 7001 to 7500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 498 records (4573 geocoded, 2914 reused)
+Progress: 7500/211057 | Geocoded: 4573 | Reused: 2914 | Failed: 13 | Skipped: 0
+
+Processing batch: 7501 to 8000 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 500 records (4749 geocoded, 3238 reused)
+Progress: 8000/211057 | Geocoded: 4749 | Reused: 3238 | Failed: 13 | Skipped: 0
+
+Processing batch: 8001 to 8500 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 498 records (4915 geocoded, 3570 reused)
+Progress: 8500/211057 | Geocoded: 4915 | Reused: 3570 | Failed: 15 | Skipped: 0
+
+Processing batch: 8501 to 9000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 500 records (5046 geocoded, 3939 reused)
+Progress: 9000/211057 | Geocoded: 5046 | Reused: 3939 | Failed: 15 | Skipped: 0
+
+Processing batch: 9001 to 9500 of 211057
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 500 records (5219 geocoded, 4266 reused)
+Progress: 9500/211057 | Geocoded: 5219 | Reused: 4266 | Failed: 15 | Skipped: 0
+
+Processing batch: 9501 to 10000 of 211057
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 500 records (5337 geocoded, 4648 reused)
+Progress: 10000/211057 | Geocoded: 5337 | Reused: 4648 | Failed: 15 | Skipped: 0
+
+Processing batch: 10001 to 10500 of 211057
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 500 records (5491 geocoded, 4994 reused)
+Progress: 10500/211057 | Geocoded: 5491 | Reused: 4994 | Failed: 15 | Skipped: 0
+
+Processing batch: 10501 to 11000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (5585 geocoded, 5400 reused)
+Progress: 11000/211057 | Geocoded: 5585 | Reused: 5400 | Failed: 15 | Skipped: 0
+
+Processing batch: 11001 to 11500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 496 records (5677 geocoded, 5804 reused)
+Progress: 11500/211057 | Geocoded: 5677 | Reused: 5804 | Failed: 19 | Skipped: 0
+
+Processing batch: 11501 to 12000 of 211057
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 500 records (5833 geocoded, 6148 reused)
+Progress: 12000/211057 | Geocoded: 5833 | Reused: 6148 | Failed: 19 | Skipped: 0
+
+Processing batch: 12001 to 12500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 498 records (5948 geocoded, 6531 reused)
+Progress: 12500/211057 | Geocoded: 5948 | Reused: 6531 | Failed: 21 | Skipped: 0
+
+Processing batch: 12501 to 13000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (6069 geocoded, 6910 reused)
+Progress: 13000/211057 | Geocoded: 6069 | Reused: 6910 | Failed: 21 | Skipped: 0
+
+Processing batch: 13001 to 13500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 498 records (6164 geocoded, 7313 reused)
+Progress: 13500/211057 | Geocoded: 6164 | Reused: 7313 | Failed: 23 | Skipped: 0
+
+Processing batch: 13501 to 14000 of 211057
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 500 records (6262 geocoded, 7715 reused)
+Progress: 14000/211057 | Geocoded: 6262 | Reused: 7715 | Failed: 23 | Skipped: 0
+
+Processing batch: 14001 to 14500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 499 records (6347 geocoded, 8129 reused)
+Progress: 14500/211057 | Geocoded: 6347 | Reused: 8129 | Failed: 24 | Skipped: 0
+
+Processing batch: 14501 to 15000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (6423 geocoded, 8553 reused)
+Progress: 15000/211057 | Geocoded: 6423 | Reused: 8553 | Failed: 24 | Skipped: 0
+
+Processing batch: 15001 to 15500 of 211057
+  ✓ Updated 497 records (6502 geocoded, 8971 reused)
+Progress: 15500/211057 | Geocoded: 6502 | Reused: 8971 | Failed: 27 | Skipped: 0
+
+Processing batch: 15501 to 16000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (6575 geocoded, 9398 reused)
+Progress: 16000/211057 | Geocoded: 6575 | Reused: 9398 | Failed: 27 | Skipped: 0
+
+Processing batch: 16001 to 16500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (6680 geocoded, 9793 reused)
+Progress: 16500/211057 | Geocoded: 6680 | Reused: 9793 | Failed: 27 | Skipped: 0
+
+Processing batch: 16501 to 17000 of 211057
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 499 records (6771 geocoded, 10201 reused)
+Progress: 17000/211057 | Geocoded: 6771 | Reused: 10201 | Failed: 28 | Skipped: 0
+
+Processing batch: 17001 to 17500 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (6821 geocoded, 10651 reused)
+Progress: 17500/211057 | Geocoded: 6821 | Reused: 10651 | Failed: 28 | Skipped: 0
+
+Processing batch: 17501 to 18000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (6921 geocoded, 11051 reused)
+Progress: 18000/211057 | Geocoded: 6921 | Reused: 11051 | Failed: 28 | Skipped: 0
+
+Processing batch: 18001 to 18500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 498 records (7005 geocoded, 11465 reused)
+Progress: 18500/211057 | Geocoded: 7005 | Reused: 11465 | Failed: 30 | Skipped: 0
+
+Processing batch: 18501 to 19000 of 211057
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 498 records (7051 geocoded, 11917 reused)
+Progress: 19000/211057 | Geocoded: 7051 | Reused: 11917 | Failed: 32 | Skipped: 0
+
+Processing batch: 19001 to 19500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 497 records (7113 geocoded, 12352 reused)
+Progress: 19500/211057 | Geocoded: 7113 | Reused: 12352 | Failed: 35 | Skipped: 0
+
+Processing batch: 19501 to 20000 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 500 records (7161 geocoded, 12804 reused)
+Progress: 20000/211057 | Geocoded: 7161 | Reused: 12804 | Failed: 35 | Skipped: 0
+
+Processing batch: 20001 to 20500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (7208 geocoded, 13257 reused)
+Progress: 20500/211057 | Geocoded: 7208 | Reused: 13257 | Failed: 35 | Skipped: 0
+
+Processing batch: 20501 to 21000 of 211057
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 500 records (7243 geocoded, 13722 reused)
+Progress: 21000/211057 | Geocoded: 7243 | Reused: 13722 | Failed: 35 | Skipped: 0
+
+Processing batch: 21001 to 21500 of 211057
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 500 records (7297 geocoded, 14168 reused)
+Progress: 21500/211057 | Geocoded: 7297 | Reused: 14168 | Failed: 35 | Skipped: 0
+
+Processing batch: 21501 to 22000 of 211057
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 500 records (7331 geocoded, 14634 reused)
+Progress: 22000/211057 | Geocoded: 7331 | Reused: 14634 | Failed: 35 | Skipped: 0
+
+Processing batch: 22001 to 22500 of 211057
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 500 records (7376 geocoded, 15089 reused)
+Progress: 22500/211057 | Geocoded: 7376 | Reused: 15089 | Failed: 35 | Skipped: 0
+
+Processing batch: 22501 to 23000 of 211057
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 500 records (7429 geocoded, 15536 reused)
+Progress: 23000/211057 | Geocoded: 7429 | Reused: 15536 | Failed: 35 | Skipped: 0
+
+Processing batch: 23001 to 23500 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 500 records (7518 geocoded, 15947 reused)
+Progress: 23500/211057 | Geocoded: 7518 | Reused: 15947 | Failed: 35 | Skipped: 0
+
+Processing batch: 23501 to 24000 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (7592 geocoded, 16373 reused)
+Progress: 24000/211057 | Geocoded: 7592 | Reused: 16373 | Failed: 35 | Skipped: 0
+
+Processing batch: 24001 to 24500 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (7660 geocoded, 16805 reused)
+Progress: 24500/211057 | Geocoded: 7660 | Reused: 16805 | Failed: 35 | Skipped: 0
+
+Processing batch: 24501 to 25000 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ✓ Updated 500 records (7709 geocoded, 17256 reused)
+Progress: 25000/211057 | Geocoded: 7709 | Reused: 17256 | Failed: 35 | Skipped: 0
+
+Processing batch: 25001 to 25500 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ✓ Updated 500 records (7747 geocoded, 17718 reused)
+Progress: 25500/211057 | Geocoded: 7747 | Reused: 17718 | Failed: 35 | Skipped: 0
+
+Processing batch: 25501 to 26000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (7781 geocoded, 18184 reused)
+Progress: 26000/211057 | Geocoded: 7781 | Reused: 18184 | Failed: 35 | Skipped: 0
+
+Processing batch: 26001 to 26500 of 211057
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 500 records (7817 geocoded, 18648 reused)
+Progress: 26500/211057 | Geocoded: 7817 | Reused: 18648 | Failed: 35 | Skipped: 0
+
+Processing batch: 26501 to 27000 of 211057
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 500 records (7860 geocoded, 19105 reused)
+Progress: 27000/211057 | Geocoded: 7860 | Reused: 19105 | Failed: 35 | Skipped: 0
+
+Processing batch: 27001 to 27500 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 500 records (7906 geocoded, 19559 reused)
+Progress: 27500/211057 | Geocoded: 7906 | Reused: 19559 | Failed: 35 | Skipped: 0
+
+Processing batch: 27501 to 28000 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (7958 geocoded, 20007 reused)
+Progress: 28000/211057 | Geocoded: 7958 | Reused: 20007 | Failed: 35 | Skipped: 0
+
+Processing batch: 28001 to 28500 of 211057
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 500 records (8005 geocoded, 20460 reused)
+Progress: 28500/211057 | Geocoded: 8005 | Reused: 20460 | Failed: 35 | Skipped: 0
+
+Processing batch: 28501 to 29000 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ✓ Updated 497 records (8054 geocoded, 20908 reused)
+Progress: 29000/211057 | Geocoded: 8054 | Reused: 20908 | Failed: 38 | Skipped: 0
+
+Processing batch: 29001 to 29500 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (8104 geocoded, 21358 reused)
+Progress: 29500/211057 | Geocoded: 8104 | Reused: 21358 | Failed: 38 | Skipped: 0
+
+Processing batch: 29501 to 30000 of 211057
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ✓ Updated 499 records (8156 geocoded, 21805 reused)
+Progress: 30000/211057 | Geocoded: 8156 | Reused: 21805 | Failed: 39 | Skipped: 0
+
+Processing batch: 30001 to 30500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (8191 geocoded, 22270 reused)
+Progress: 30500/211057 | Geocoded: 8191 | Reused: 22270 | Failed: 39 | Skipped: 0
+
+Processing batch: 30501 to 31000 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (8219 geocoded, 22742 reused)
+Progress: 31000/211057 | Geocoded: 8219 | Reused: 22742 | Failed: 39 | Skipped: 0
+
+Processing batch: 31001 to 31500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 499 records (8263 geocoded, 23197 reused)
+Progress: 31500/211057 | Geocoded: 8263 | Reused: 23197 | Failed: 40 | Skipped: 0
+
+Processing batch: 31501 to 32000 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (8299 geocoded, 23661 reused)
+Progress: 32000/211057 | Geocoded: 8299 | Reused: 23661 | Failed: 40 | Skipped: 0
+
+Processing batch: 32001 to 32500 of 211057
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 498 records (8344 geocoded, 24114 reused)
+Progress: 32500/211057 | Geocoded: 8344 | Reused: 24114 | Failed: 42 | Skipped: 0
+
+Processing batch: 32501 to 33000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (8384 geocoded, 24574 reused)
+Progress: 33000/211057 | Geocoded: 8384 | Reused: 24574 | Failed: 42 | Skipped: 0
+
+Processing batch: 33001 to 33500 of 211057
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ✓ Updated 500 records (8420 geocoded, 25038 reused)
+Progress: 33500/211057 | Geocoded: 8420 | Reused: 25038 | Failed: 42 | Skipped: 0
+
+Processing batch: 33501 to 34000 of 211057
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 500 records (8452 geocoded, 25506 reused)
+Progress: 34000/211057 | Geocoded: 8452 | Reused: 25506 | Failed: 42 | Skipped: 0
+
+Processing batch: 34001 to 34500 of 211057
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (8476 geocoded, 25982 reused)
+Progress: 34500/211057 | Geocoded: 8476 | Reused: 25982 | Failed: 42 | Skipped: 0
+
+Processing batch: 34501 to 35000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 496 records (8527 geocoded, 26427 reused)
+Progress: 35000/211057 | Geocoded: 8527 | Reused: 26427 | Failed: 46 | Skipped: 0
+
+Processing batch: 35001 to 35500 of 211057
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 500 records (8561 geocoded, 26893 reused)
+Progress: 35500/211057 | Geocoded: 8561 | Reused: 26893 | Failed: 46 | Skipped: 0
+
+Processing batch: 35501 to 36000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (8592 geocoded, 27362 reused)
+Progress: 36000/211057 | Geocoded: 8592 | Reused: 27362 | Failed: 46 | Skipped: 0
+
+Processing batch: 36001 to 36500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (8621 geocoded, 27833 reused)
+Progress: 36500/211057 | Geocoded: 8621 | Reused: 27833 | Failed: 46 | Skipped: 0
+
+Processing batch: 36501 to 37000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (8647 geocoded, 28307 reused)
+Progress: 37000/211057 | Geocoded: 8647 | Reused: 28307 | Failed: 46 | Skipped: 0
+
+Processing batch: 37001 to 37500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 495 records (8681 geocoded, 28768 reused)
+Progress: 37500/211057 | Geocoded: 8681 | Reused: 28768 | Failed: 51 | Skipped: 0
+
+Processing batch: 37501 to 38000 of 211057
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 500 records (8715 geocoded, 29234 reused)
+Progress: 38000/211057 | Geocoded: 8715 | Reused: 29234 | Failed: 51 | Skipped: 0
+
+Processing batch: 38001 to 38500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (8744 geocoded, 29705 reused)
+Progress: 38500/211057 | Geocoded: 8744 | Reused: 29705 | Failed: 51 | Skipped: 0
+
+Processing batch: 38501 to 39000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (8758 geocoded, 30191 reused)
+Progress: 39000/211057 | Geocoded: 8758 | Reused: 30191 | Failed: 51 | Skipped: 0
+
+Processing batch: 39001 to 39500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (8772 geocoded, 30677 reused)
+Progress: 39500/211057 | Geocoded: 8772 | Reused: 30677 | Failed: 51 | Skipped: 0
+
+Processing batch: 39501 to 40000 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 499 records (8801 geocoded, 31147 reused)
+Progress: 40000/211057 | Geocoded: 8801 | Reused: 31147 | Failed: 52 | Skipped: 0
+
+Processing batch: 40001 to 40500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (8822 geocoded, 31626 reused)
+Progress: 40500/211057 | Geocoded: 8822 | Reused: 31626 | Failed: 52 | Skipped: 0
+
+Processing batch: 40501 to 41000 of 211057
+  ✓ Updated 499 records (8835 geocoded, 32112 reused)
+Progress: 41000/211057 | Geocoded: 8835 | Reused: 32112 | Failed: 53 | Skipped: 0
+
+Processing batch: 41001 to 41500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (8853 geocoded, 32594 reused)
+Progress: 41500/211057 | Geocoded: 8853 | Reused: 32594 | Failed: 53 | Skipped: 0
+
+Processing batch: 41501 to 42000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (8890 geocoded, 33057 reused)
+Progress: 42000/211057 | Geocoded: 8890 | Reused: 33057 | Failed: 53 | Skipped: 0
+
+Processing batch: 42001 to 42500 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (8911 geocoded, 33536 reused)
+Progress: 42500/211057 | Geocoded: 8911 | Reused: 33536 | Failed: 53 | Skipped: 0
+
+Processing batch: 42501 to 43000 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (8925 geocoded, 34022 reused)
+Progress: 43000/211057 | Geocoded: 8925 | Reused: 34022 | Failed: 53 | Skipped: 0
+
+Processing batch: 43001 to 43500 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 498 records (8955 geocoded, 34490 reused)
+Progress: 43500/211057 | Geocoded: 8955 | Reused: 34490 | Failed: 55 | Skipped: 0
+
+Processing batch: 43501 to 44000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (8975 geocoded, 34970 reused)
+Progress: 44000/211057 | Geocoded: 8975 | Reused: 34970 | Failed: 55 | Skipped: 0
+
+Processing batch: 44001 to 44500 of 211057
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 499 records (8996 geocoded, 35448 reused)
+Progress: 44500/211057 | Geocoded: 8996 | Reused: 35448 | Failed: 56 | Skipped: 0
+
+Processing batch: 44501 to 45000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9010 geocoded, 35934 reused)
+Progress: 45000/211057 | Geocoded: 9010 | Reused: 35934 | Failed: 56 | Skipped: 0
+
+Processing batch: 45001 to 45500 of 211057
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 498 records (9024 geocoded, 36418 reused)
+Progress: 45500/211057 | Geocoded: 9024 | Reused: 36418 | Failed: 58 | Skipped: 0
+
+Processing batch: 45501 to 46000 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (9043 geocoded, 36899 reused)
+Progress: 46000/211057 | Geocoded: 9043 | Reused: 36899 | Failed: 58 | Skipped: 0
+
+Processing batch: 46001 to 46500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ✓ Updated 500 records (9067 geocoded, 37375 reused)
+Progress: 46500/211057 | Geocoded: 9067 | Reused: 37375 | Failed: 58 | Skipped: 0
+
+Processing batch: 46501 to 47000 of 211057
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (9081 geocoded, 37861 reused)
+Progress: 47000/211057 | Geocoded: 9081 | Reused: 37861 | Failed: 58 | Skipped: 0
+
+Processing batch: 47001 to 47500 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 500 records (9096 geocoded, 38346 reused)
+Progress: 47500/211057 | Geocoded: 9096 | Reused: 38346 | Failed: 58 | Skipped: 0
+
+Processing batch: 47501 to 48000 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 499 records (9121 geocoded, 38820 reused)
+Progress: 48000/211057 | Geocoded: 9121 | Reused: 38820 | Failed: 59 | Skipped: 0
+
+Processing batch: 48001 to 48500 of 211057
+  ✓ Updated 500 records (9142 geocoded, 39299 reused)
+Progress: 48500/211057 | Geocoded: 9142 | Reused: 39299 | Failed: 59 | Skipped: 0
+
+Processing batch: 48501 to 49000 of 211057
+  ✓ Updated 500 records (9148 geocoded, 39793 reused)
+Progress: 49000/211057 | Geocoded: 9148 | Reused: 39793 | Failed: 59 | Skipped: 0
+
+Processing batch: 49001 to 49500 of 211057
+  ✓ Updated 498 records (9159 geocoded, 40280 reused)
+Progress: 49500/211057 | Geocoded: 9159 | Reused: 40280 | Failed: 61 | Skipped: 0
+
+Processing batch: 49501 to 50000 of 211057
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (9175 geocoded, 40764 reused)
+Progress: 50000/211057 | Geocoded: 9175 | Reused: 40764 | Failed: 61 | Skipped: 0
+
+Processing batch: 50001 to 50500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9200 geocoded, 41239 reused)
+Progress: 50500/211057 | Geocoded: 9200 | Reused: 41239 | Failed: 61 | Skipped: 0
+
+Processing batch: 50501 to 51000 of 211057
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 500 records (9211 geocoded, 41728 reused)
+Progress: 51000/211057 | Geocoded: 9211 | Reused: 41728 | Failed: 61 | Skipped: 0
+
+Processing batch: 51001 to 51500 of 211057
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ✓ Updated 500 records (9218 geocoded, 42221 reused)
+Progress: 51500/211057 | Geocoded: 9218 | Reused: 42221 | Failed: 61 | Skipped: 0
+
+Processing batch: 51501 to 52000 of 211057
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 499 records (9237 geocoded, 42701 reused)
+Progress: 52000/211057 | Geocoded: 9237 | Reused: 42701 | Failed: 62 | Skipped: 0
+
+Processing batch: 52001 to 52500 of 211057
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 500 records (9248 geocoded, 43190 reused)
+Progress: 52500/211057 | Geocoded: 9248 | Reused: 43190 | Failed: 62 | Skipped: 0
+
+Processing batch: 52501 to 53000 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (9273 geocoded, 43665 reused)
+Progress: 53000/211057 | Geocoded: 9273 | Reused: 43665 | Failed: 62 | Skipped: 0
+
+Processing batch: 53001 to 53500 of 211057
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 500 records (9287 geocoded, 44151 reused)
+Progress: 53500/211057 | Geocoded: 9287 | Reused: 44151 | Failed: 62 | Skipped: 0
+
+Processing batch: 53501 to 54000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9305 geocoded, 44633 reused)
+Progress: 54000/211057 | Geocoded: 9305 | Reused: 44633 | Failed: 62 | Skipped: 0
+
+Processing batch: 54001 to 54500 of 211057
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 500 records (9314 geocoded, 45124 reused)
+Progress: 54500/211057 | Geocoded: 9314 | Reused: 45124 | Failed: 62 | Skipped: 0
+
+Processing batch: 54501 to 55000 of 211057
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 500 records (9316 geocoded, 45622 reused)
+Progress: 55000/211057 | Geocoded: 9316 | Reused: 45622 | Failed: 62 | Skipped: 0
+
+Processing batch: 55001 to 55500 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (9334 geocoded, 46104 reused)
+Progress: 55500/211057 | Geocoded: 9334 | Reused: 46104 | Failed: 62 | Skipped: 0
+
+Processing batch: 55501 to 56000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (9340 geocoded, 46598 reused)
+Progress: 56000/211057 | Geocoded: 9340 | Reused: 46598 | Failed: 62 | Skipped: 0
+
+Processing batch: 56001 to 56500 of 211057
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 500 records (9342 geocoded, 47096 reused)
+Progress: 56500/211057 | Geocoded: 9342 | Reused: 47096 | Failed: 62 | Skipped: 0
+
+Processing batch: 56501 to 57000 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (9353 geocoded, 47585 reused)
+Progress: 57000/211057 | Geocoded: 9353 | Reused: 47585 | Failed: 62 | Skipped: 0
+
+Processing batch: 57001 to 57500 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (9362 geocoded, 48076 reused)
+Progress: 57500/211057 | Geocoded: 9362 | Reused: 48076 | Failed: 62 | Skipped: 0
+
+Processing batch: 57501 to 58000 of 211057
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 500 records (9375 geocoded, 48563 reused)
+Progress: 58000/211057 | Geocoded: 9375 | Reused: 48563 | Failed: 62 | Skipped: 0
+
+Processing batch: 58001 to 58500 of 211057
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 500 records (9386 geocoded, 49052 reused)
+Progress: 58500/211057 | Geocoded: 9386 | Reused: 49052 | Failed: 62 | Skipped: 0
+
+Processing batch: 58501 to 59000 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (9400 geocoded, 49538 reused)
+Progress: 59000/211057 | Geocoded: 9400 | Reused: 49538 | Failed: 62 | Skipped: 0
+
+Processing batch: 59001 to 59500 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (9426 geocoded, 50012 reused)
+Progress: 59500/211057 | Geocoded: 9426 | Reused: 50012 | Failed: 62 | Skipped: 0
+
+Processing batch: 59501 to 60000 of 211057
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 490 records (9434 geocoded, 50494 reused)
+Progress: 60000/211057 | Geocoded: 9434 | Reused: 50494 | Failed: 72 | Skipped: 0
+
+Processing batch: 60001 to 60500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9450 geocoded, 50978 reused)
+Progress: 60500/211057 | Geocoded: 9450 | Reused: 50978 | Failed: 72 | Skipped: 0
+
+Processing batch: 60501 to 61000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (9461 geocoded, 51467 reused)
+Progress: 61000/211057 | Geocoded: 9461 | Reused: 51467 | Failed: 72 | Skipped: 0
+
+Processing batch: 61001 to 61500 of 211057
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 500 records (9479 geocoded, 51949 reused)
+Progress: 61500/211057 | Geocoded: 9479 | Reused: 51949 | Failed: 72 | Skipped: 0
+
+Processing batch: 61501 to 62000 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (9492 geocoded, 52436 reused)
+Progress: 62000/211057 | Geocoded: 9492 | Reused: 52436 | Failed: 72 | Skipped: 0
+
+Processing batch: 62001 to 62500 of 211057
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 500 records (9535 geocoded, 52893 reused)
+Progress: 62500/211057 | Geocoded: 9535 | Reused: 52893 | Failed: 72 | Skipped: 0
+
+Processing batch: 62501 to 63000 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ✓ Updated 500 records (9543 geocoded, 53385 reused)
+Progress: 63000/211057 | Geocoded: 9543 | Reused: 53385 | Failed: 72 | Skipped: 0
+
+Processing batch: 63001 to 63500 of 211057
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 500 records (9548 geocoded, 53880 reused)
+Progress: 63500/211057 | Geocoded: 9548 | Reused: 53880 | Failed: 72 | Skipped: 0
+
+Processing batch: 63501 to 64000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9556 geocoded, 54372 reused)
+Progress: 64000/211057 | Geocoded: 9556 | Reused: 54372 | Failed: 72 | Skipped: 0
+
+Processing batch: 64001 to 64500 of 211057
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (9569 geocoded, 54859 reused)
+Progress: 64500/211057 | Geocoded: 9569 | Reused: 54859 | Failed: 72 | Skipped: 0
+
+Processing batch: 64501 to 65000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9581 geocoded, 55347 reused)
+Progress: 65000/211057 | Geocoded: 9581 | Reused: 55347 | Failed: 72 | Skipped: 0
+
+Processing batch: 65001 to 65500 of 211057
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 500 records (9598 geocoded, 55830 reused)
+Progress: 65500/211057 | Geocoded: 9598 | Reused: 55830 | Failed: 72 | Skipped: 0
+
+Processing batch: 65501 to 66000 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (9636 geocoded, 56292 reused)
+Progress: 66000/211057 | Geocoded: 9636 | Reused: 56292 | Failed: 72 | Skipped: 0
+
+Processing batch: 66001 to 66500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9662 geocoded, 56766 reused)
+Progress: 66500/211057 | Geocoded: 9662 | Reused: 56766 | Failed: 72 | Skipped: 0
+
+Processing batch: 66501 to 67000 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (9681 geocoded, 57247 reused)
+Progress: 67000/211057 | Geocoded: 9681 | Reused: 57247 | Failed: 72 | Skipped: 0
+
+Processing batch: 67001 to 67500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (9686 geocoded, 57742 reused)
+Progress: 67500/211057 | Geocoded: 9686 | Reused: 57742 | Failed: 72 | Skipped: 0
+
+Processing batch: 67501 to 68000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9699 geocoded, 58229 reused)
+Progress: 68000/211057 | Geocoded: 9699 | Reused: 58229 | Failed: 72 | Skipped: 0
+
+Processing batch: 68001 to 68500 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (9740 geocoded, 58688 reused)
+Progress: 68500/211057 | Geocoded: 9740 | Reused: 58688 | Failed: 72 | Skipped: 0
+
+Processing batch: 68501 to 69000 of 211057
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 500 records (9770 geocoded, 59158 reused)
+Progress: 69000/211057 | Geocoded: 9770 | Reused: 59158 | Failed: 72 | Skipped: 0
+
+Processing batch: 69001 to 69500 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (9776 geocoded, 59652 reused)
+Progress: 69500/211057 | Geocoded: 9776 | Reused: 59652 | Failed: 72 | Skipped: 0
+
+Processing batch: 69501 to 70000 of 211057
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 500 records (9777 geocoded, 60151 reused)
+Progress: 70000/211057 | Geocoded: 9777 | Reused: 60151 | Failed: 72 | Skipped: 0
+
+Processing batch: 70001 to 70500 of 211057
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 500 records (9779 geocoded, 60649 reused)
+Progress: 70500/211057 | Geocoded: 9779 | Reused: 60649 | Failed: 72 | Skipped: 0
+
+Processing batch: 70501 to 71000 of 211057
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 500 records (9780 geocoded, 61148 reused)
+Progress: 71000/211057 | Geocoded: 9780 | Reused: 61148 | Failed: 72 | Skipped: 0
+
+Processing batch: 71001 to 71500 of 211057
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 500 records (9793 geocoded, 61635 reused)
+Progress: 71500/211057 | Geocoded: 9793 | Reused: 61635 | Failed: 72 | Skipped: 0
+
+Processing batch: 71501 to 72000 of 211057
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ✓ Updated 500 records (9813 geocoded, 62115 reused)
+Progress: 72000/211057 | Geocoded: 9813 | Reused: 62115 | Failed: 72 | Skipped: 0
+
+Processing batch: 72001 to 72500 of 211057
+  ✓ Updated 500 records (9822 geocoded, 62606 reused)
+Progress: 72500/211057 | Geocoded: 9822 | Reused: 62606 | Failed: 72 | Skipped: 0
+
+Processing batch: 72501 to 73000 of 211057
+  ✓ Updated 499 records (9833 geocoded, 63094 reused)
+Progress: 73000/211057 | Geocoded: 9833 | Reused: 63094 | Failed: 73 | Skipped: 0
+
+Processing batch: 73001 to 73500 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 493 records (9837 geocoded, 63583 reused)
+Progress: 73500/211057 | Geocoded: 9837 | Reused: 63583 | Failed: 80 | Skipped: 0
+
+Processing batch: 73501 to 74000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (9856 geocoded, 64064 reused)
+Progress: 74000/211057 | Geocoded: 9856 | Reused: 64064 | Failed: 80 | Skipped: 0
+
+Processing batch: 74001 to 74500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (9863 geocoded, 64557 reused)
+Progress: 74500/211057 | Geocoded: 9863 | Reused: 64557 | Failed: 80 | Skipped: 0
+
+Processing batch: 74501 to 75000 of 211057
+  ✓ Updated 500 records (9870 geocoded, 65050 reused)
+Progress: 75000/211057 | Geocoded: 9870 | Reused: 65050 | Failed: 80 | Skipped: 0
+
+Processing batch: 75001 to 75500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (9879 geocoded, 65541 reused)
+Progress: 75500/211057 | Geocoded: 9879 | Reused: 65541 | Failed: 80 | Skipped: 0
+
+Processing batch: 75501 to 76000 of 211057
+  ✓ Updated 500 records (9882 geocoded, 66038 reused)
+Progress: 76000/211057 | Geocoded: 9882 | Reused: 66038 | Failed: 80 | Skipped: 0
+
+Processing batch: 76001 to 76500 of 211057
+  ✓ Updated 500 records (9888 geocoded, 66532 reused)
+Progress: 76500/211057 | Geocoded: 9888 | Reused: 66532 | Failed: 80 | Skipped: 0
+
+Processing batch: 76501 to 77000 of 211057
+  ✓ Updated 500 records (9895 geocoded, 67025 reused)
+Progress: 77000/211057 | Geocoded: 9895 | Reused: 67025 | Failed: 80 | Skipped: 0
+
+Processing batch: 77001 to 77500 of 211057
+  ✓ Updated 500 records (9907 geocoded, 67513 reused)
+Progress: 77500/211057 | Geocoded: 9907 | Reused: 67513 | Failed: 80 | Skipped: 0
+
+Processing batch: 77501 to 78000 of 211057
+  ✓ Updated 500 records (9920 geocoded, 68000 reused)
+Progress: 78000/211057 | Geocoded: 9920 | Reused: 68000 | Failed: 80 | Skipped: 0
+
+Processing batch: 78001 to 78500 of 211057
+  ✓ Updated 500 records (9923 geocoded, 68497 reused)
+Progress: 78500/211057 | Geocoded: 9923 | Reused: 68497 | Failed: 80 | Skipped: 0
+
+Processing batch: 78501 to 79000 of 211057
+  ✓ Updated 500 records (9934 geocoded, 68986 reused)
+Progress: 79000/211057 | Geocoded: 9934 | Reused: 68986 | Failed: 80 | Skipped: 0
+
+Processing batch: 79001 to 79500 of 211057
+  ✓ Updated 500 records (9938 geocoded, 69482 reused)
+Progress: 79500/211057 | Geocoded: 9938 | Reused: 69482 | Failed: 80 | Skipped: 0
+
+Processing batch: 79501 to 80000 of 211057
+  ✓ Updated 500 records (9956 geocoded, 69964 reused)
+Progress: 80000/211057 | Geocoded: 9956 | Reused: 69964 | Failed: 80 | Skipped: 0
+
+Processing batch: 80001 to 80500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (9964 geocoded, 70456 reused)
+Progress: 80500/211057 | Geocoded: 9964 | Reused: 70456 | Failed: 80 | Skipped: 0
+
+Processing batch: 80501 to 81000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (9967 geocoded, 70953 reused)
+Progress: 81000/211057 | Geocoded: 9967 | Reused: 70953 | Failed: 80 | Skipped: 0
+
+Processing batch: 81001 to 81500 of 211057
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 500 records (9973 geocoded, 71447 reused)
+Progress: 81500/211057 | Geocoded: 9973 | Reused: 71447 | Failed: 80 | Skipped: 0
+
+Processing batch: 81501 to 82000 of 211057
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 500 records (9976 geocoded, 71944 reused)
+Progress: 82000/211057 | Geocoded: 9976 | Reused: 71944 | Failed: 80 | Skipped: 0
+
+Processing batch: 82001 to 82500 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 500 records (9988 geocoded, 72432 reused)
+Progress: 82500/211057 | Geocoded: 9988 | Reused: 72432 | Failed: 80 | Skipped: 0
+
+Processing batch: 82501 to 83000 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (9988 geocoded, 72932 reused)
+Progress: 83000/211057 | Geocoded: 9988 | Reused: 72932 | Failed: 80 | Skipped: 0
+
+Processing batch: 83001 to 83500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (9997 geocoded, 73423 reused)
+Progress: 83500/211057 | Geocoded: 9997 | Reused: 73423 | Failed: 80 | Skipped: 0
+
+Processing batch: 83501 to 84000 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 500 records (10001 geocoded, 73919 reused)
+Progress: 84000/211057 | Geocoded: 10001 | Reused: 73919 | Failed: 80 | Skipped: 0
+
+Processing batch: 84001 to 84500 of 211057
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 500 records (10009 geocoded, 74411 reused)
+Progress: 84500/211057 | Geocoded: 10009 | Reused: 74411 | Failed: 80 | Skipped: 0
+
+Processing batch: 84501 to 85000 of 211057
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 500 records (10009 geocoded, 74911 reused)
+Progress: 85000/211057 | Geocoded: 10009 | Reused: 74911 | Failed: 80 | Skipped: 0
+
+Processing batch: 85001 to 85500 of 211057
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 491 records (10011 geocoded, 75400 reused)
+Progress: 85500/211057 | Geocoded: 10011 | Reused: 75400 | Failed: 89 | Skipped: 0
+
+Processing batch: 85501 to 86000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (10013 geocoded, 75898 reused)
+Progress: 86000/211057 | Geocoded: 10013 | Reused: 75898 | Failed: 89 | Skipped: 0
+
+Processing batch: 86001 to 86500 of 211057
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ✓ Updated 500 records (10023 geocoded, 76388 reused)
+Progress: 86500/211057 | Geocoded: 10023 | Reused: 76388 | Failed: 89 | Skipped: 0
+
+Processing batch: 86501 to 87000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (10032 geocoded, 76879 reused)
+Progress: 87000/211057 | Geocoded: 10032 | Reused: 76879 | Failed: 89 | Skipped: 0
+
+Processing batch: 87001 to 87500 of 211057
+  ✓ Updated 500 records (10032 geocoded, 77379 reused)
+Progress: 87500/211057 | Geocoded: 10032 | Reused: 77379 | Failed: 89 | Skipped: 0
+
+Processing batch: 87501 to 88000 of 211057
+  ✓ Updated 500 records (10032 geocoded, 77879 reused)
+Progress: 88000/211057 | Geocoded: 10032 | Reused: 77879 | Failed: 89 | Skipped: 0
+
+Processing batch: 88001 to 88500 of 211057
+  ✓ Updated 500 records (10034 geocoded, 78377 reused)
+Progress: 88500/211057 | Geocoded: 10034 | Reused: 78377 | Failed: 89 | Skipped: 0
+
+Processing batch: 88501 to 89000 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (10049 geocoded, 78862 reused)
+Progress: 89000/211057 | Geocoded: 10049 | Reused: 78862 | Failed: 89 | Skipped: 0
+
+Processing batch: 89001 to 89500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 500 records (10057 geocoded, 79354 reused)
+Progress: 89500/211057 | Geocoded: 10057 | Reused: 79354 | Failed: 89 | Skipped: 0
+
+Processing batch: 89501 to 90000 of 211057
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 500 records (10057 geocoded, 79854 reused)
+Progress: 90000/211057 | Geocoded: 10057 | Reused: 79854 | Failed: 89 | Skipped: 0
+
+Processing batch: 90001 to 90500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (10069 geocoded, 80342 reused)
+Progress: 90500/211057 | Geocoded: 10069 | Reused: 80342 | Failed: 89 | Skipped: 0
+
+Processing batch: 90501 to 91000 of 211057
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 500 records (10083 geocoded, 80828 reused)
+Progress: 91000/211057 | Geocoded: 10083 | Reused: 80828 | Failed: 89 | Skipped: 0
+
+Processing batch: 91001 to 91500 of 211057
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 500 records (10091 geocoded, 81320 reused)
+Progress: 91500/211057 | Geocoded: 10091 | Reused: 81320 | Failed: 89 | Skipped: 0
+
+Processing batch: 91501 to 92000 of 211057
+  ✓ Updated 500 records (10095 geocoded, 81816 reused)
+Progress: 92000/211057 | Geocoded: 10095 | Reused: 81816 | Failed: 89 | Skipped: 0
+
+Processing batch: 92001 to 92500 of 211057
+  ✓ Updated 500 records (10097 geocoded, 82314 reused)
+Progress: 92500/211057 | Geocoded: 10097 | Reused: 82314 | Failed: 89 | Skipped: 0
+
+Processing batch: 92501 to 93000 of 211057
+  ✓ Updated 500 records (10103 geocoded, 82808 reused)
+Progress: 93000/211057 | Geocoded: 10103 | Reused: 82808 | Failed: 89 | Skipped: 0
+
+Processing batch: 93001 to 93500 of 211057
+  ✓ Updated 500 records (10103 geocoded, 83308 reused)
+Progress: 93500/211057 | Geocoded: 10103 | Reused: 83308 | Failed: 89 | Skipped: 0
+
+Processing batch: 93501 to 94000 of 211057
+  ✓ Updated 500 records (10105 geocoded, 83806 reused)
+Progress: 94000/211057 | Geocoded: 10105 | Reused: 83806 | Failed: 89 | Skipped: 0
+
+Processing batch: 94001 to 94500 of 211057
+  ✓ Updated 500 records (10117 geocoded, 84294 reused)
+Progress: 94500/211057 | Geocoded: 10117 | Reused: 84294 | Failed: 89 | Skipped: 0
+
+Processing batch: 94501 to 95000 of 211057
+  ✓ Updated 500 records (10117 geocoded, 84794 reused)
+Progress: 95000/211057 | Geocoded: 10117 | Reused: 84794 | Failed: 89 | Skipped: 0
+
+Processing batch: 95001 to 95500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (10126 geocoded, 85285 reused)
+Progress: 95500/211057 | Geocoded: 10126 | Reused: 85285 | Failed: 89 | Skipped: 0
+
+Processing batch: 95501 to 96000 of 211057
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 500 records (10128 geocoded, 85783 reused)
+Progress: 96000/211057 | Geocoded: 10128 | Reused: 85783 | Failed: 89 | Skipped: 0
+
+Processing batch: 96001 to 96500 of 211057
+  ✓ Updated 500 records (10128 geocoded, 86283 reused)
+Progress: 96500/211057 | Geocoded: 10128 | Reused: 86283 | Failed: 89 | Skipped: 0
+
+Processing batch: 96501 to 97000 of 211057
+  ✓ Updated 500 records (10129 geocoded, 86782 reused)
+Progress: 97000/211057 | Geocoded: 10129 | Reused: 86782 | Failed: 89 | Skipped: 0
+
+Processing batch: 97001 to 97500 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (10134 geocoded, 87277 reused)
+Progress: 97500/211057 | Geocoded: 10134 | Reused: 87277 | Failed: 89 | Skipped: 0
+
+Processing batch: 97501 to 98000 of 211057
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 500 records (10146 geocoded, 87765 reused)
+Progress: 98000/211057 | Geocoded: 10146 | Reused: 87765 | Failed: 89 | Skipped: 0
+
+Processing batch: 98001 to 98500 of 211057
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 500 records (10158 geocoded, 88253 reused)
+Progress: 98500/211057 | Geocoded: 10158 | Reused: 88253 | Failed: 89 | Skipped: 0
+
+Processing batch: 98501 to 99000 of 211057
+  ✓ Updated 500 records (10161 geocoded, 88750 reused)
+Progress: 99000/211057 | Geocoded: 10161 | Reused: 88750 | Failed: 89 | Skipped: 0
+
+Processing batch: 99001 to 99500 of 211057
+  ✓ Updated 500 records (10164 geocoded, 89247 reused)
+Progress: 99500/211057 | Geocoded: 10164 | Reused: 89247 | Failed: 89 | Skipped: 0
+
+Processing batch: 99501 to 100000 of 211057
+  ✓ Updated 500 records (10167 geocoded, 89744 reused)
+Progress: 100000/211057 | Geocoded: 10167 | Reused: 89744 | Failed: 89 | Skipped: 0
+
+Processing batch: 100001 to 100500 of 211057
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 500 records (10186 geocoded, 90225 reused)
+Progress: 100500/211057 | Geocoded: 10186 | Reused: 90225 | Failed: 89 | Skipped: 0
+
+Processing batch: 100501 to 101000 of 211057
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 500 records (10188 geocoded, 90723 reused)
+Progress: 101000/211057 | Geocoded: 10188 | Reused: 90723 | Failed: 89 | Skipped: 0
+
+Processing batch: 101001 to 101500 of 211057
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 500 records (10191 geocoded, 91220 reused)
+Progress: 101500/211057 | Geocoded: 10191 | Reused: 91220 | Failed: 89 | Skipped: 0
+
+Processing batch: 101501 to 102000 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (10204 geocoded, 91707 reused)
+Progress: 102000/211057 | Geocoded: 10204 | Reused: 91707 | Failed: 89 | Skipped: 0
+
+Processing batch: 102001 to 102500 of 211057
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 500 records (10204 geocoded, 92207 reused)
+Progress: 102500/211057 | Geocoded: 10204 | Reused: 92207 | Failed: 89 | Skipped: 0
+
+Processing batch: 102501 to 103000 of 211057
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 500 records (10209 geocoded, 92702 reused)
+Progress: 103000/211057 | Geocoded: 10209 | Reused: 92702 | Failed: 89 | Skipped: 0
+
+Processing batch: 103001 to 103500 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (10209 geocoded, 93202 reused)
+Progress: 103500/211057 | Geocoded: 10209 | Reused: 93202 | Failed: 89 | Skipped: 0
+
+Processing batch: 103501 to 104000 of 211057
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 500 records (10219 geocoded, 93692 reused)
+Progress: 104000/211057 | Geocoded: 10219 | Reused: 93692 | Failed: 89 | Skipped: 0
+
+Processing batch: 104001 to 104500 of 211057
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 500 records (10220 geocoded, 94191 reused)
+Progress: 104500/211057 | Geocoded: 10220 | Reused: 94191 | Failed: 89 | Skipped: 0
+
+Processing batch: 104501 to 105000 of 211057
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 500 records (10223 geocoded, 94688 reused)
+Progress: 105000/211057 | Geocoded: 10223 | Reused: 94688 | Failed: 89 | Skipped: 0
+
+Processing batch: 105001 to 105500 of 211057
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 500 records (10232 geocoded, 95179 reused)
+Progress: 105500/211057 | Geocoded: 10232 | Reused: 95179 | Failed: 89 | Skipped: 0
+
+Processing batch: 105501 to 105921 of 211057
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ✓ Updated 421 records (10235 geocoded, 95597 reused)
+Progress: 105921/211057 | Geocoded: 10235 | Reused: 95597 | Failed: 89 | Skipped: 0
+
+============================================================
+Geocoding completed!
+Total processed: 105921
+  ✓ Geocoded: 10235
+  ♻️  Reused: 95597
+  ✗ Failed: 89
+  ⊘ Skipped: 0
+============================================================
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 105,500
+
+Pre-loading coordinates cache from database...
+  Found 442 unique block+street combinations
+  Pre-loaded 0 coordinates into cache
+
+Processing batch: 1 to 500 of 105500 (remaining: 105500)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  Warning: 248 records failed to update in batch 1
+  ✓ Updated 243 records (447 geocoded, 44 reused)
+Progress: 500/105500 | Geocoded: 447 | Reused: 44 | Failed: 9 | Skipped: 0
+
+Processing batch: 501 to 1000 of 105500 (remaining: 105000)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 491 records (624 geocoded, 358 reused)
+Progress: 1000/105500 | Geocoded: 624 | Reused: 358 | Failed: 18 | Skipped: 0
+
+Processing batch: 1001 to 1500 of 105500 (remaining: 104500)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 491 records (1041 geocoded, 432 reused)
+Progress: 1500/105500 | Geocoded: 1041 | Reused: 432 | Failed: 27 | Skipped: 0
+
+Processing batch: 1501 to 2000 of 105500 (remaining: 104000)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  Warning: 78 records failed to update in batch 1
+  ✓ Updated 411 records (1416 geocoded, 546 reused)
+Progress: 2000/105500 | Geocoded: 1416 | Reused: 546 | Failed: 38 | Skipped: 0
+
+Processing batch: 2001 to 2500 of 105500 (remaining: 103500)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ✓ Updated 489 records (1658 geocoded, 793 reused)
+Progress: 2500/105500 | Geocoded: 1658 | Reused: 793 | Failed: 49 | Skipped: 0
+
+Processing batch: 2501 to 3000 of 105500 (remaining: 103000)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 487 records (1970 geocoded, 968 reused)
+Progress: 3000/105500 | Geocoded: 1970 | Reused: 968 | Failed: 62 | Skipped: 0
+
+Processing batch: 3001 to 3500 of 105500 (remaining: 102500)
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 487 records (2309 geocoded, 1116 reused)
+Progress: 3500/105500 | Geocoded: 2309 | Reused: 1116 | Failed: 75 | Skipped: 0
+
+Processing batch: 3501 to 4000 of 105500 (remaining: 102000)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 485 records (2613 geocoded, 1297 reused)
+Progress: 4000/105500 | Geocoded: 2613 | Reused: 1297 | Failed: 90 | Skipped: 0
+
+Processing batch: 4001 to 4500 of 105500 (remaining: 101500)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 481 records (2932 geocoded, 1459 reused)
+Progress: 4500/105500 | Geocoded: 2932 | Reused: 1459 | Failed: 109 | Skipped: 0
+
+Processing batch: 4501 to 5000 of 105500 (remaining: 101000)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 480 records (3181 geocoded, 1691 reused)
+Progress: 5000/105500 | Geocoded: 3181 | Reused: 1691 | Failed: 128 | Skipped: 0
+
+Processing batch: 5001 to 5500 of 100954 (remaining: 95954)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 479 records (3502 geocoded, 1849 reused)
+Progress: 5500/100954 | Geocoded: 3502 | Reused: 1849 | Failed: 149 | Skipped: 0
+
+Processing batch: 5501 to 6000 of 100954 (remaining: 95454)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 479 records (3716 geocoded, 2114 reused)
+Progress: 6000/100954 | Geocoded: 3716 | Reused: 2114 | Failed: 170 | Skipped: 0
+
+Processing batch: 6001 to 6500 of 100954 (remaining: 94954)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 479 records (3885 geocoded, 2424 reused)
+Progress: 6500/100954 | Geocoded: 3885 | Reused: 2424 | Failed: 191 | Skipped: 0
+
+Processing batch: 6501 to 7000 of 100954 (remaining: 94454)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 478 records (4036 geocoded, 2751 reused)
+Progress: 7000/100954 | Geocoded: 4036 | Reused: 2751 | Failed: 213 | Skipped: 0
+
+Processing batch: 7001 to 7500 of 100954 (remaining: 93954)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 478 records (4329 geocoded, 2936 reused)
+Progress: 7500/100954 | Geocoded: 4329 | Reused: 2936 | Failed: 235 | Skipped: 0
+
+Processing batch: 7501 to 8000 of 100954 (remaining: 93454)
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 476 records (4479 geocoded, 3262 reused)
+Progress: 8000/100954 | Geocoded: 4479 | Reused: 3262 | Failed: 259 | Skipped: 0
+
+Processing batch: 8001 to 8500 of 100954 (remaining: 92954)
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 476 records (4674 geocoded, 3543 reused)
+Progress: 8500/100954 | Geocoded: 4674 | Reused: 3543 | Failed: 283 | Skipped: 0
+
+Processing batch: 8501 to 9000 of 100954 (remaining: 92454)
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 474 records (4806 geocoded, 3885 reused)
+Progress: 9000/100954 | Geocoded: 4806 | Reused: 3885 | Failed: 309 | Skipped: 0
+
+Processing batch: 9001 to 9500 of 100954 (remaining: 91954)
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 474 records (4987 geocoded, 4178 reused)
+Progress: 9500/100954 | Geocoded: 4987 | Reused: 4178 | Failed: 335 | Skipped: 0
+
+Processing batch: 9501 to 10000 of 100954 (remaining: 91454)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 472 records (5142 geocoded, 4495 reused)
+Progress: 10000/100954 | Geocoded: 5142 | Reused: 4495 | Failed: 363 | Skipped: 0
+
+Processing batch: 10001 to 10500 of 96189 (remaining: 86189)
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 472 records (5304 geocoded, 4805 reused)
+Progress: 10500/96189 | Geocoded: 5304 | Reused: 4805 | Failed: 391 | Skipped: 0
+
+Processing batch: 10501 to 11000 of 96189 (remaining: 85689)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 472 records (5417 geocoded, 5164 reused)
+Progress: 11000/96189 | Geocoded: 5417 | Reused: 5164 | Failed: 419 | Skipped: 0
+
+Processing batch: 11001 to 11500 of 96189 (remaining: 85189)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 472 records (5587 geocoded, 5466 reused)
+Progress: 11500/96189 | Geocoded: 5587 | Reused: 5466 | Failed: 447 | Skipped: 0
+
+Processing batch: 11501 to 12000 of 96189 (remaining: 84689)
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 467 records (5689 geocoded, 5831 reused)
+Progress: 12000/96189 | Geocoded: 5689 | Reused: 5831 | Failed: 480 | Skipped: 0
+
+Processing batch: 12001 to 12500 of 96189 (remaining: 84189)
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ✓ Updated 467 records (5825 geocoded, 6162 reused)
+Progress: 12500/96189 | Geocoded: 5825 | Reused: 6162 | Failed: 513 | Skipped: 0
+
+Processing batch: 12501 to 13000 of 96189 (remaining: 83689)
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 465 records (5957 geocoded, 6495 reused)
+Progress: 13000/96189 | Geocoded: 5957 | Reused: 6495 | Failed: 548 | Skipped: 0
+
+Processing batch: 13001 to 13500 of 96189 (remaining: 83189)
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 465 records (6052 geocoded, 6865 reused)
+Progress: 13500/96189 | Geocoded: 6052 | Reused: 6865 | Failed: 583 | Skipped: 0
+
+Processing batch: 13501 to 14000 of 96189 (remaining: 82689)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 463 records (6174 geocoded, 7206 reused)
+Progress: 14000/96189 | Geocoded: 6174 | Reused: 7206 | Failed: 620 | Skipped: 0
+
+Processing batch: 14001 to 14500 of 96189 (remaining: 82189)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 463 records (6238 geocoded, 7605 reused)
+Progress: 14500/96189 | Geocoded: 6238 | Reused: 7605 | Failed: 657 | Skipped: 0
+
+Processing batch: 14501 to 15000 of 96189 (remaining: 81689)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 462 records (6339 geocoded, 7966 reused)
+Progress: 15000/96189 | Geocoded: 6339 | Reused: 7966 | Failed: 695 | Skipped: 0
+
+Processing batch: 15001 to 15500 of 91521 (remaining: 76521)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 462 records (6396 geocoded, 8371 reused)
+Progress: 15500/91521 | Geocoded: 6396 | Reused: 8371 | Failed: 733 | Skipped: 0
+
+Processing batch: 15501 to 16000 of 91521 (remaining: 76021)
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 462 records (6496 geocoded, 8733 reused)
+Progress: 16000/91521 | Geocoded: 6496 | Reused: 8733 | Failed: 771 | Skipped: 0
+
+Processing batch: 16001 to 16500 of 91521 (remaining: 75521)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 458 records (6559 geocoded, 9129 reused)
+Progress: 16500/91521 | Geocoded: 6559 | Reused: 9129 | Failed: 812 | Skipped: 0
+
+Processing batch: 16501 to 17000 of 91521 (remaining: 75021)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 458 records (6654 geocoded, 9492 reused)
+Progress: 17000/91521 | Geocoded: 6654 | Reused: 9492 | Failed: 854 | Skipped: 0
+
+Processing batch: 17001 to 17500 of 91521 (remaining: 74521)
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ✓ Updated 458 records (6780 geocoded, 9824 reused)
+Progress: 17500/91521 | Geocoded: 6780 | Reused: 9824 | Failed: 896 | Skipped: 0
+
+Processing batch: 17501 to 18000 of 91521 (remaining: 74021)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ✓ Updated 457 records (6847 geocoded, 10214 reused)
+Progress: 18000/91521 | Geocoded: 6847 | Reused: 10214 | Failed: 939 | Skipped: 0
+
+Processing batch: 18001 to 18500 of 91521 (remaining: 73521)
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 457 records (6904 geocoded, 10614 reused)
+Progress: 18500/91521 | Geocoded: 6904 | Reused: 10614 | Failed: 982 | Skipped: 0
+
+Processing batch: 18501 to 19000 of 91521 (remaining: 73021)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 455 records (7009 geocoded, 10964 reused)
+Progress: 19000/91521 | Geocoded: 7009 | Reused: 10964 | Failed: 1027 | Skipped: 0
+
+Processing batch: 19001 to 19500 of 91521 (remaining: 72521)
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 453 records (7071 geocoded, 11355 reused)
+Progress: 19500/91521 | Geocoded: 7071 | Reused: 11355 | Failed: 1074 | Skipped: 0
+
+Processing batch: 19501 to 20000 of 91521 (remaining: 72021)
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 451 records (7128 geocoded, 11749 reused)
+Progress: 20000/91521 | Geocoded: 7128 | Reused: 11749 | Failed: 1123 | Skipped: 0
+
+Processing batch: 20001 to 20500 of 86950 (remaining: 66950)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ✓ Updated 443 records (7180 geocoded, 12140 reused)
+Progress: 20500/86950 | Geocoded: 7180 | Reused: 12140 | Failed: 1180 | Skipped: 0
+
+Processing batch: 20501 to 21000 of 86950 (remaining: 66450)
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 443 records (7232 geocoded, 12531 reused)
+Progress: 21000/86950 | Geocoded: 7232 | Reused: 12531 | Failed: 1237 | Skipped: 0
+
+Processing batch: 21001 to 21500 of 86950 (remaining: 65950)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 443 records (7288 geocoded, 12918 reused)
+Progress: 21500/86950 | Geocoded: 7288 | Reused: 12918 | Failed: 1294 | Skipped: 0
+
+Processing batch: 21501 to 22000 of 86950 (remaining: 65450)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 442 records (7326 geocoded, 13323 reused)
+Progress: 22000/86950 | Geocoded: 7326 | Reused: 13323 | Failed: 1351 | Skipped: 0
+
+Processing batch: 22001 to 22500 of 86950 (remaining: 64950)
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 443 records (7378 geocoded, 13714 reused)
+Progress: 22500/86950 | Geocoded: 7378 | Reused: 13714 | Failed: 1408 | Skipped: 0
+
+Processing batch: 22501 to 23000 of 86950 (remaining: 64450)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 442 records (7412 geocoded, 14122 reused)
+Progress: 23000/86950 | Geocoded: 7412 | Reused: 14122 | Failed: 1466 | Skipped: 0
+
+Processing batch: 23001 to 23500 of 86950 (remaining: 63950)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 442 records (7455 geocoded, 14521 reused)
+Progress: 23500/86950 | Geocoded: 7455 | Reused: 14521 | Failed: 1524 | Skipped: 0
+
+Processing batch: 23501 to 24000 of 86950 (remaining: 63450)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 441 records (7490 geocoded, 14927 reused)
+Progress: 24000/86950 | Geocoded: 7490 | Reused: 14927 | Failed: 1583 | Skipped: 0
+
+Processing batch: 24001 to 24500 of 86950 (remaining: 62950)
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  Warning: 3 records failed to update in batch 1
+  ✓ Updated 438 records (7543 geocoded, 15315 reused)
+Progress: 24500/86950 | Geocoded: 7543 | Reused: 15315 | Failed: 1642 | Skipped: 0
+
+Processing batch: 24501 to 25000 of 86950 (remaining: 62450)
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 441 records (7589 geocoded, 15710 reused)
+Progress: 25000/86950 | Geocoded: 7589 | Reused: 15710 | Failed: 1701 | Skipped: 0
+
+Processing batch: 25001 to 25500 of 82531 (remaining: 57531)
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 441 records (7637 geocoded, 16103 reused)
+Progress: 25500/82531 | Geocoded: 7637 | Reused: 16103 | Failed: 1760 | Skipped: 0
+
+Processing batch: 25501 to 26000 of 82531 (remaining: 57031)
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 440 records (7686 geocoded, 16494 reused)
+Progress: 26000/82531 | Geocoded: 7686 | Reused: 16494 | Failed: 1820 | Skipped: 0
+
+Processing batch: 26001 to 26500 of 82531 (remaining: 56531)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 440 records (7739 geocoded, 16881 reused)
+Progress: 26500/82531 | Geocoded: 7739 | Reused: 16881 | Failed: 1880 | Skipped: 0
+
+Processing batch: 26501 to 27000 of 82531 (remaining: 56031)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ✓ Updated 439 records (7785 geocoded, 17274 reused)
+Progress: 27000/82531 | Geocoded: 7785 | Reused: 17274 | Failed: 1941 | Skipped: 0
+
+Processing batch: 27001 to 27500 of 82531 (remaining: 55531)
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 439 records (7816 geocoded, 17682 reused)
+Progress: 27500/82531 | Geocoded: 7816 | Reused: 17682 | Failed: 2002 | Skipped: 0
+
+Processing batch: 27501 to 28000 of 82531 (remaining: 55031)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 439 records (7843 geocoded, 18094 reused)
+Progress: 28000/82531 | Geocoded: 7843 | Reused: 18094 | Failed: 2063 | Skipped: 0
+
+Processing batch: 28001 to 28500 of 82531 (remaining: 54531)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 436 records (7872 geocoded, 18501 reused)
+Progress: 28500/82531 | Geocoded: 7872 | Reused: 18501 | Failed: 2127 | Skipped: 0
+
+Processing batch: 28501 to 29000 of 82531 (remaining: 54031)
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ✓ Updated 436 records (7915 geocoded, 18894 reused)
+Progress: 29000/82531 | Geocoded: 7915 | Reused: 18894 | Failed: 2191 | Skipped: 0
+
+Processing batch: 29001 to 29500 of 82531 (remaining: 53531)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 433 records (7940 geocoded, 19302 reused)
+Progress: 29500/82531 | Geocoded: 7940 | Reused: 19302 | Failed: 2258 | Skipped: 0
+
+Processing batch: 29501 to 30000 of 82531 (remaining: 53031)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 433 records (7981 geocoded, 19694 reused)
+Progress: 30000/82531 | Geocoded: 7981 | Reused: 19694 | Failed: 2325 | Skipped: 0
+
+Processing batch: 30001 to 30500 of 78155 (remaining: 48155)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 433 records (8020 geocoded, 20088 reused)
+Progress: 30500/78155 | Geocoded: 8020 | Reused: 20088 | Failed: 2392 | Skipped: 0
+
+Processing batch: 30501 to 31000 of 78155 (remaining: 47655)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 433 records (8064 geocoded, 20477 reused)
+Progress: 31000/78155 | Geocoded: 8064 | Reused: 20477 | Failed: 2459 | Skipped: 0
+
+Processing batch: 31001 to 31500 of 78155 (remaining: 47155)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ✓ Updated 430 records (8116 geocoded, 20855 reused)
+Progress: 31500/78155 | Geocoded: 8116 | Reused: 20855 | Failed: 2529 | Skipped: 0
+
+Processing batch: 31501 to 32000 of 78155 (remaining: 46655)
+  ✓ Updated 430 records (8165 geocoded, 21236 reused)
+Progress: 32000/78155 | Geocoded: 8165 | Reused: 21236 | Failed: 2599 | Skipped: 0
+
+Processing batch: 32001 to 32500 of 78155 (remaining: 46155)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 429 records (8210 geocoded, 21620 reused)
+Progress: 32500/78155 | Geocoded: 8210 | Reused: 21620 | Failed: 2670 | Skipped: 0
+
+Processing batch: 32501 to 33000 of 78155 (remaining: 45655)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 429 records (8222 geocoded, 22037 reused)
+Progress: 33000/78155 | Geocoded: 8222 | Reused: 22037 | Failed: 2741 | Skipped: 0
+
+Processing batch: 33001 to 33500 of 78155 (remaining: 45155)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 429 records (8267 geocoded, 22421 reused)
+Progress: 33500/78155 | Geocoded: 8267 | Reused: 22421 | Failed: 2812 | Skipped: 0
+
+Processing batch: 33501 to 34000 of 78155 (remaining: 44655)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 429 records (8295 geocoded, 22822 reused)
+Progress: 34000/78155 | Geocoded: 8295 | Reused: 22822 | Failed: 2883 | Skipped: 0
+
+Processing batch: 34001 to 34500 of 78155 (remaining: 44155)
+  ✓ Updated 428 records (8315 geocoded, 23230 reused)
+Progress: 34500/78155 | Geocoded: 8315 | Reused: 23230 | Failed: 2955 | Skipped: 0
+
+Processing batch: 34501 to 35000 of 78155 (remaining: 43655)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 428 records (8355 geocoded, 23618 reused)
+Progress: 35000/78155 | Geocoded: 8355 | Reused: 23618 | Failed: 3027 | Skipped: 0
+
+Processing batch: 35001 to 35500 of 73857 (remaining: 38857)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 426 records (8402 geocoded, 23997 reused)
+Progress: 35500/73857 | Geocoded: 8402 | Reused: 23997 | Failed: 3101 | Skipped: 0
+
+Processing batch: 35501 to 36000 of 73857 (remaining: 38357)
+  ✓ Updated 426 records (8430 geocoded, 24395 reused)
+Progress: 36000/73857 | Geocoded: 8430 | Reused: 24395 | Failed: 3175 | Skipped: 0
+
+Processing batch: 36001 to 36500 of 73857 (remaining: 37857)
+  ✓ Updated 426 records (8458 geocoded, 24793 reused)
+Progress: 36500/73857 | Geocoded: 8458 | Reused: 24793 | Failed: 3249 | Skipped: 0
+
+Processing batch: 36501 to 37000 of 73857 (remaining: 37357)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 424 records (8478 geocoded, 25197 reused)
+Progress: 37000/73857 | Geocoded: 8478 | Reused: 25197 | Failed: 3325 | Skipped: 0
+
+Processing batch: 37001 to 37500 of 73857 (remaining: 36857)
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 421 records (8496 geocoded, 25601 reused)
+Progress: 37500/73857 | Geocoded: 8496 | Reused: 25601 | Failed: 3403 | Skipped: 0
+
+Processing batch: 37501 to 38000 of 73857 (remaining: 36357)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 422 records (8531 geocoded, 25988 reused)
+Progress: 38000/73857 | Geocoded: 8531 | Reused: 25988 | Failed: 3481 | Skipped: 0
+
+Processing batch: 38001 to 38500 of 73857 (remaining: 35857)
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 418 records (8552 geocoded, 26385 reused)
+Progress: 38500/73857 | Geocoded: 8552 | Reused: 26385 | Failed: 3563 | Skipped: 0
+
+Processing batch: 38501 to 39000 of 73857 (remaining: 35357)
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 418 records (8574 geocoded, 26781 reused)
+Progress: 39000/73857 | Geocoded: 8574 | Reused: 26781 | Failed: 3645 | Skipped: 0
+
+Processing batch: 39001 to 39500 of 73857 (remaining: 34857)
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ✓ Updated 418 records (8609 geocoded, 27164 reused)
+Progress: 39500/73857 | Geocoded: 8609 | Reused: 27164 | Failed: 3727 | Skipped: 0
+
+Processing batch: 39501 to 40000 of 73857 (remaining: 34357)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 415 records (8636 geocoded, 27552 reused)
+Progress: 40000/73857 | Geocoded: 8636 | Reused: 27552 | Failed: 3812 | Skipped: 0
+
+Processing batch: 40001 to 40500 of 69643 (remaining: 29643)
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ✓ Updated 415 records (8651 geocoded, 27952 reused)
+Progress: 40500/69643 | Geocoded: 8651 | Reused: 27952 | Failed: 3897 | Skipped: 0
+
+Processing batch: 40501 to 41000 of 69643 (remaining: 29143)
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 415 records (8682 geocoded, 28336 reused)
+Progress: 41000/69643 | Geocoded: 8682 | Reused: 28336 | Failed: 3982 | Skipped: 0
+
+Processing batch: 41001 to 41500 of 69643 (remaining: 28643)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 410 records (8702 geocoded, 28726 reused)
+Progress: 41500/69643 | Geocoded: 8702 | Reused: 28726 | Failed: 4072 | Skipped: 0
+
+Processing batch: 41501 to 42000 of 69643 (remaining: 28143)
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 410 records (8715 geocoded, 29123 reused)
+Progress: 42000/69643 | Geocoded: 8715 | Reused: 29123 | Failed: 4162 | Skipped: 0
+
+Processing batch: 42001 to 42500 of 69643 (remaining: 27643)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ✓ Updated 410 records (8742 geocoded, 29506 reused)
+Progress: 42500/69643 | Geocoded: 8742 | Reused: 29506 | Failed: 4252 | Skipped: 0
+
+Processing batch: 42501 to 43000 of 69643 (remaining: 27143)
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 409 records (8771 geocoded, 29887 reused)
+Progress: 43000/69643 | Geocoded: 8771 | Reused: 29887 | Failed: 4342 | Skipped: 0
+
+Processing batch: 43001 to 43500 of 69643 (remaining: 26643)
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 409 records (8786 geocoded, 30282 reused)
+Progress: 43500/69643 | Geocoded: 8786 | Reused: 30282 | Failed: 4432 | Skipped: 0
+
+Processing batch: 43501 to 44000 of 69643 (remaining: 26143)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 410 records (8800 geocoded, 30678 reused)
+Progress: 44000/69643 | Geocoded: 8800 | Reused: 30678 | Failed: 4522 | Skipped: 0
+
+Processing batch: 44001 to 44500 of 69643 (remaining: 25643)
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 409 records (8808 geocoded, 31079 reused)
+Progress: 44500/69643 | Geocoded: 8808 | Reused: 31079 | Failed: 4613 | Skipped: 0
+
+Processing batch: 44501 to 45000 of 69643 (remaining: 25143)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ✓ Updated 409 records (8829 geocoded, 31467 reused)
+Progress: 45000/69643 | Geocoded: 8829 | Reused: 31467 | Failed: 4704 | Skipped: 0
+
+Processing batch: 45001 to 45500 of 65535 (remaining: 20535)
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ✓ Updated 409 records (8856 geocoded, 31849 reused)
+Progress: 45500/65535 | Geocoded: 8856 | Reused: 31849 | Failed: 4795 | Skipped: 0
+
+Processing batch: 45501 to 46000 of 65535 (remaining: 20035)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ✓ Updated 408 records (8876 geocoded, 32237 reused)
+Progress: 46000/65535 | Geocoded: 8876 | Reused: 32237 | Failed: 4887 | Skipped: 0
+
+Processing batch: 46001 to 46500 of 65535 (remaining: 19535)
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ⚠️  Rate limit warning: 225/230 requests in window
+  ⚠️  Rate limit warning: 226/230 requests in window
+  ✓ Updated 408 records (8893 geocoded, 32628 reused)
+Progress: 46500/65535 | Geocoded: 8893 | Reused: 32628 | Failed: 4979 | Skipped: 0
+
+Processing batch: 46501 to 47000 of 65535 (remaining: 19035)
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+  ✓ Updated 404 records (8917 geocoded, 33008 reused)
+Progress: 47000/65535 | Geocoded: 8917 | Reused: 33008 | Failed: 5075 | Skipped: 0
+
+Processing batch: 47001 to 47500 of 65535 (remaining: 18535)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ✓ Updated 404 records (8937 geocoded, 33392 reused)
+Progress: 47500/65535 | Geocoded: 8937 | Reused: 33392 | Failed: 5171 | Skipped: 0
+
+Processing batch: 47501 to 48000 of 65535 (remaining: 18035)
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 404 records (8950 geocoded, 33783 reused)
+Progress: 48000/65535 | Geocoded: 8950 | Reused: 33783 | Failed: 5267 | Skipped: 0
+
+Processing batch: 48001 to 48500 of 65535 (remaining: 17535)
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 404 records (8973 geocoded, 34164 reused)
+Progress: 48500/65535 | Geocoded: 8973 | Reused: 34164 | Failed: 5363 | Skipped: 0
+
+Processing batch: 48501 to 49000 of 65535 (remaining: 17035)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  Warning: 2 records failed to update in batch 1
+  ✓ Updated 400 records (8982 geocoded, 34557 reused)
+Progress: 49000/65535 | Geocoded: 8982 | Reused: 34557 | Failed: 5461 | Skipped: 0
+
+Processing batch: 49001 to 49500 of 65535 (remaining: 16535)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ✓ Updated 402 records (9001 geocoded, 34940 reused)
+Progress: 49500/65535 | Geocoded: 9001 | Reused: 34940 | Failed: 5559 | Skipped: 0
+
+Processing batch: 49501 to 50000 of 65535 (remaining: 16035)
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ✓ Updated 401 records (9014 geocoded, 35328 reused)
+Progress: 50000/65535 | Geocoded: 9014 | Reused: 35328 | Failed: 5658 | Skipped: 0
+
+Processing batch: 50001 to 50500 of 61491 (remaining: 11491)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 401 records (9020 geocoded, 35723 reused)
+Progress: 50500/61491 | Geocoded: 9020 | Reused: 35723 | Failed: 5757 | Skipped: 0
+
+Processing batch: 50501 to 51000 of 61491 (remaining: 10991)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ✓ Updated 401 records (9043 geocoded, 36101 reused)
+Progress: 51000/61491 | Geocoded: 9043 | Reused: 36101 | Failed: 5856 | Skipped: 0
+
+Processing batch: 51001 to 51500 of 61491 (remaining: 10491)
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 399 records (9051 geocoded, 36492 reused)
+Progress: 51500/61491 | Geocoded: 9051 | Reused: 36492 | Failed: 5957 | Skipped: 0
+
+Processing batch: 51501 to 52000 of 61491 (remaining: 9991)
+  ⚠️  Rate limit warning: 202/230 requests in window
+  ⚠️  Rate limit warning: 203/230 requests in window
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ✓ Updated 399 records (9065 geocoded, 36877 reused)
+Progress: 52000/61491 | Geocoded: 9065 | Reused: 36877 | Failed: 6058 | Skipped: 0
+
+Processing batch: 52001 to 52500 of 61491 (remaining: 9491)
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ✓ Updated 399 records (9085 geocoded, 37256 reused)
+Progress: 52500/61491 | Geocoded: 9085 | Reused: 37256 | Failed: 6159 | Skipped: 0
+
+Processing batch: 52501 to 53000 of 61491 (remaining: 8991)
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 398 records (9102 geocoded, 37637 reused)
+Progress: 53000/61491 | Geocoded: 9102 | Reused: 37637 | Failed: 6261 | Skipped: 0
+
+Processing batch: 53001 to 53500 of 61491 (remaining: 8491)
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ✓ Updated 398 records (9113 geocoded, 38024 reused)
+Progress: 53500/61491 | Geocoded: 9113 | Reused: 38024 | Failed: 6363 | Skipped: 0
+
+Processing batch: 53501 to 54000 of 61491 (remaining: 7991)
+  ⚠️  Rate limit warning: 206/230 requests in window
+  ⚠️  Rate limit warning: 207/230 requests in window
+  ⚠️  Rate limit warning: 208/230 requests in window
+  ✓ Updated 398 records (9132 geocoded, 38403 reused)
+Progress: 54000/61491 | Geocoded: 9132 | Reused: 38403 | Failed: 6465 | Skipped: 0
+
+Processing batch: 54001 to 54500 of 61491 (remaining: 7491)
+  ⚠️  Rate limit warning: 222/230 requests in window
+  ⚠️  Rate limit warning: 223/230 requests in window
+  ⚠️  Rate limit warning: 224/230 requests in window
+  ✓ Updated 397 records (9142 geocoded, 38790 reused)
+Progress: 54500/61491 | Geocoded: 9142 | Reused: 38790 | Failed: 6568 | Skipped: 0
+
+Processing batch: 54501 to 55000 of 61491 (remaining: 6991)
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 397 records (9149 geocoded, 39180 reused)
+Progress: 55000/61491 | Geocoded: 9149 | Reused: 39180 | Failed: 6671 | Skipped: 0
+
+Processing batch: 55001 to 55500 of 57504 (remaining: 2504)
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ✓ Updated 397 records (9165 geocoded, 39561 reused)
+Progress: 55500/57504 | Geocoded: 9165 | Reused: 39561 | Failed: 6774 | Skipped: 0
+
+Processing batch: 55501 to 56000 of 57504 (remaining: 2004)
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  Warning: 3 records failed to update in batch 1
+  ✓ Updated 394 records (9180 geocoded, 39943 reused)
+Progress: 56000/57504 | Geocoded: 9180 | Reused: 39943 | Failed: 6877 | Skipped: 0
+
+Processing batch: 56001 to 56500 of 57504 (remaining: 1504)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ✓ Updated 395 records (9192 geocoded, 40326 reused)
+Progress: 56500/57504 | Geocoded: 9192 | Reused: 40326 | Failed: 6982 | Skipped: 0
+
+Processing batch: 56501 to 57000 of 57504 (remaining: 1004)
+  ⚠️  Rate limit warning: 214/230 requests in window
+  ⚠️  Rate limit warning: 215/230 requests in window
+  ⚠️  Rate limit warning: 216/230 requests in window
+  ✓ Updated 395 records (9203 geocoded, 40710 reused)
+Progress: 57000/57504 | Geocoded: 9203 | Reused: 40710 | Failed: 7087 | Skipped: 0
+
+Processing batch: 57001 to 57500 of 57504 (remaining: 504)
+  ⚠️  Rate limit warning: 227/230 requests in window
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ✓ Updated 395 records (9221 geocoded, 41087 reused)
+Progress: 57500/57504 | Geocoded: 9221 | Reused: 41087 | Failed: 7192 | Skipped: 0
+
+Processing batch: 57501 to 58000 of 57504 (remaining: 4)
+  ⚠️  Rate limit warning: 217/230 requests in window
+  ⚠️  Rate limit warning: 218/230 requests in window
+  ⚠️  Rate limit warning: 219/230 requests in window
+  ✓ Updated 392 records (9232 geocoded, 41468 reused)
+Progress: 58000/57504 | Geocoded: 9232 | Reused: 41468 | Failed: 7300 | Skipped: 0
+
+Processing batch: 58001 to 58500 of 57504 (remaining: -496)
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ⚠️  Rate limit warning: 222/230 requests in window
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 391 records (9236 geocoded, 41856 reused)
+Progress: 58500/57504 | Geocoded: 9236 | Reused: 41856 | Failed: 7408 | Skipped: 0
+
+Processing batch: 58501 to 59000 of 57504 (remaining: -996)
+  ⚠️  Rate limit warning: 204/230 requests in window
+  ⚠️  Rate limit warning: 205/230 requests in window
+  ⚠️  Rate limit warning: 206/230 requests in window
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 54,741
+
+Pre-loading coordinates cache from database...
+  Found 313 unique block+street combinations
+  Pre-loaded 0 coordinates into cache
+
+Processing batch 1: 500 records (remaining: ~54741)
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 213/230 requests in window
+  ✓ Updated 392 records (this batch: 311 geocoded, 81 reused)
+Progress: Batch 1 | Total: 311 geocoded, 81 reused, 108 failed, 0 skipped
+  Remaining: ~54241 records
+
+Processing batch 2: 500 records (remaining: ~54241)
+  ⚠️  Rate limit warning: 228/230 requests in window
+  ⚠️  Rate limit warning: 229/230 requests in window
+  ⚠️  Rate limit warning: 230/230 requests in window
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 54,349
+
+Fatal error: ReferenceError: preloadAllCoordinatesCache is not defined
+    at main (/Users/mac/Downloads/projects/sgeye/scripts/geocode-raw-resale-optimized.js:473:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 54,349
+
+Pre-loading ALL coordinates cache from database...
+  (This maximizes coordinate reuse and minimizes API calls)
+  Pre-loaded 917 unique block+street combinations into cache
+  (Processed 1,000 records with coordinates)
+
+Processing batch 1: 500 records (remaining: ~54349)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 54,349
+
+Pre-loading ALL coordinates cache from database...
+  (This maximizes coordinate reuse and minimizes API calls)
+  Loaded 917 unique combinations from 1,000 records...
+  Pre-loaded 917 unique block+street combinations into cache
+  (Processed 1,000 records with coordinates)
+
+Processing batch 1: 500 records (remaining: ~54349)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 54,349
+
+Pre-loading ALL coordinates cache from database...
+  (This maximizes coordinate reuse and minimizes API calls)
+  Loaded 917 unique combinations from 1,000 records...  Loaded 1,703 unique combinations from 2,000 records...  Loaded 2,373 unique combinations from 3,000 records...  Loaded 2,992 unique combinations from 4,000 records...  Loaded 3,506 unique combinations from 5,000 records...  Loaded 3,968 unique combinations from 6,000 records...  Loaded 4,396 unique combinations from 7,000 records...  Loaded 4,772 unique combinations from 8,000 records...  Loaded 5,074 unique combinations from 9,000 records...  Loaded 5,346 unique combinations from 10,000 records...  Loaded 7,148 unique combinations from 20,000 records...  Loaded 7,980 unique combinations from 30,000 records...  Loaded 8,418 unique combinations from 40,000 records...  Loaded 8,653 unique combinations from 50,000 records...  Loaded 8,794 unique combinations from 60,000 records...  Loaded 8,907 unique combinations from 70,000 records...  Loaded 9,039 unique combinations from 80,000 records...  Loaded 9,159 unique combinations from 90,000 records...  Loaded 9,348 unique combinations from 100,000 records...  Loaded 9,489 unique combinations from 110,000 records...  Loaded 9,532 unique combinations from 120,000 records...  Loaded 9,567 unique combinations from 130,000 records...  Loaded 9,577 unique combinations from 140,000 records...  Loaded 9,585 unique combinations from 150,000 records...  Loaded 9,595 unique combinations from 160,000 records...
+  Pre-loaded 9,600 unique block+street combinations into cache
+  (Processed 166,313 records with coordinates)
+
+Processing batch 1: 500 records (remaining: ~54349)
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+  ⚠️  Rate limit warning: 212/230 requests in window
+  ✓ Updated 391 records (this batch: 0 geocoded, 391 reused)
+Progress: Batch 1 | Total: 0 geocoded, 391 reused, 109 failed, 0 skipped
+  Remaining: ~53849 records
+
+Processing batch 2: 500 records (remaining: ~53849)
+  ⚠️  Rate limit warning: 201/230 requests in window
+  ⚠️  Rate limit warning: 220/230 requests in window
+  ⚠️  Rate limit warning: 221/230 requests in window
+  ✓ Updated 391 records (this batch: 0 geocoded, 391 reused)
+Progress: Batch 2 | Total: 0 geocoded, 782 reused, 218 failed, 0 skipped
+  Remaining: ~53349 records
+
+Processing batch 3: 500 records (remaining: ~53349)
+  ⚠️  Rate limit warning: 209/230 requests in window
+  ⚠️  Rate limit warning: 210/230 requests in window
+  ⚠️  Rate limit warning: 211/230 requests in window
+[dotenv@17.2.3] injecting env (3) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+============================================================
+Optimized Geocoding Script
+============================================================
+Concurrency: 3
+Batch size: 500
+
+Total records to geocode: 53,567
+
+Pre-loading ALL coordinates cache from database...
+  (This maximizes coordinate reuse and minimizes API calls)
+  Loaded 917 unique combinations from 1,000 records...  Loaded 1,703 unique combinations from 2,000 records...  Loaded 2,373 unique combinations from 3,000 records...  Loaded 2,992 unique combinations from 4,000 records...  Loaded 3,506 unique combinations from 5,000 records...  Loaded 3,968 unique combinations from 6,000 records...  Loaded 4,396 unique combinations from 7,000 records...  Loaded 4,772 unique combinations from 8,000 records...  Loaded 5,074 unique combinations from 9,000 records...  Loaded 5,346 unique combinations from 10,000 records...  Loaded 7,148 unique combinations from 20,000 records...  Loaded 7,980 unique combinations from 30,000 records...  Loaded 8,418 unique combinations from 40,000 records...  Loaded 8,653 unique combinations from 50,000 records...  Loaded 8,794 unique combinations from 60,000 records...  Loaded 8,907 unique combinations from 70,000 records...  Loaded 9,039 unique combinations from 80,000 records...  Loaded 9,150 unique combinations from 90,000 records...  Loaded 9,334 unique combinations from 100,000 records...  Loaded 9,482 unique combinations from 110,000 records...  Loaded 9,531 unique combinations from 120,000 records...  Loaded 9,567 unique combinations from 130,000 records...  Loaded 9,577 unique combinations from 140,000 records...  Loaded 9,585 unique combinations from 150,000 records...  Loaded 9,594 unique combinations from 160,000 records...
+  Pre-loaded 9,600 unique block+street combinations into cache
+  (Processed 167,095 records with coordinates)
+
+Processing batch 1: 500 records (remaining: ~53567)
+  ✓ Updated 500 records (this batch: 16 geocoded, 484 reused)
+Progress: Batch 1 | Total: 16 geocoded, 484 reused, 0 failed, 0 skipped
+  Remaining: ~53067 records
+
+Processing batch 2: 500 records (remaining: ~53067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 2 | Total: 16 geocoded, 984 reused, 0 failed, 0 skipped
+  Remaining: ~52567 records
+
+Processing batch 3: 500 records (remaining: ~52567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 3 | Total: 16 geocoded, 1484 reused, 0 failed, 0 skipped
+  Remaining: ~52067 records
+
+Processing batch 4: 500 records (remaining: ~52067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 4 | Total: 17 geocoded, 1983 reused, 0 failed, 0 skipped
+  Remaining: ~51567 records
+
+Processing batch 5: 500 records (remaining: ~51567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 5 | Total: 17 geocoded, 2483 reused, 0 failed, 0 skipped
+  Remaining: ~51067 records
+
+Processing batch 6: 500 records (remaining: ~51067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 6 | Total: 18 geocoded, 2982 reused, 0 failed, 0 skipped
+  Remaining: ~50567 records
+
+Processing batch 7: 500 records (remaining: ~50567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 7 | Total: 18 geocoded, 3482 reused, 0 failed, 0 skipped
+  Remaining: ~50067 records
+
+Processing batch 8: 500 records (remaining: ~50067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 8 | Total: 19 geocoded, 3981 reused, 0 failed, 0 skipped
+  Remaining: ~49567 records
+
+Processing batch 9: 500 records (remaining: ~49567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 9 | Total: 19 geocoded, 4481 reused, 0 failed, 0 skipped
+  Remaining: ~49067 records
+
+Processing batch 10: 500 records (remaining: ~49067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 10 | Total: 19 geocoded, 4981 reused, 0 failed, 0 skipped
+  Remaining: ~48567 records
+
+Processing batch 11: 500 records (remaining: ~43567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 11 | Total: 19 geocoded, 5481 reused, 0 failed, 0 skipped
+  Remaining: ~43067 records
+
+Processing batch 12: 500 records (remaining: ~43067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 12 | Total: 19 geocoded, 5981 reused, 0 failed, 0 skipped
+  Remaining: ~42567 records
+
+Processing batch 13: 500 records (remaining: ~42567)
+  ✓ Updated 500 records (this batch: 4 geocoded, 496 reused)
+Progress: Batch 13 | Total: 23 geocoded, 6477 reused, 0 failed, 0 skipped
+  Remaining: ~42067 records
+
+Processing batch 14: 500 records (remaining: ~42067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 14 | Total: 23 geocoded, 6977 reused, 0 failed, 0 skipped
+  Remaining: ~41567 records
+
+Processing batch 15: 500 records (remaining: ~41567)
+  ✓ Updated 500 records (this batch: 2 geocoded, 498 reused)
+Progress: Batch 15 | Total: 25 geocoded, 7475 reused, 0 failed, 0 skipped
+  Remaining: ~41067 records
+
+Processing batch 16: 500 records (remaining: ~41067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 16 | Total: 25 geocoded, 7975 reused, 0 failed, 0 skipped
+  Remaining: ~40567 records
+
+Processing batch 17: 500 records (remaining: ~40567)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 17 | Total: 26 geocoded, 8474 reused, 0 failed, 0 skipped
+  Remaining: ~40067 records
+
+Processing batch 18: 500 records (remaining: ~40067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 18 | Total: 26 geocoded, 8974 reused, 0 failed, 0 skipped
+  Remaining: ~39567 records
+
+Processing batch 19: 500 records (remaining: ~39567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 19 | Total: 26 geocoded, 9474 reused, 0 failed, 0 skipped
+  Remaining: ~39067 records
+
+Processing batch 20: 500 records (remaining: ~39067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 20 | Total: 26 geocoded, 9974 reused, 0 failed, 0 skipped
+  Remaining: ~38567 records
+
+Processing batch 21: 500 records (remaining: ~33567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 21 | Total: 26 geocoded, 10474 reused, 0 failed, 0 skipped
+  Remaining: ~33067 records
+
+Processing batch 22: 500 records (remaining: ~33067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 22 | Total: 26 geocoded, 10974 reused, 0 failed, 0 skipped
+  Remaining: ~32567 records
+
+Processing batch 23: 500 records (remaining: ~32567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 23 | Total: 26 geocoded, 11474 reused, 0 failed, 0 skipped
+  Remaining: ~32067 records
+
+Processing batch 24: 500 records (remaining: ~32067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 24 | Total: 27 geocoded, 11973 reused, 0 failed, 0 skipped
+  Remaining: ~31567 records
+
+Processing batch 25: 500 records (remaining: ~31567)
+  ✓ Updated 500 records (this batch: 2 geocoded, 498 reused)
+Progress: Batch 25 | Total: 29 geocoded, 12471 reused, 0 failed, 0 skipped
+  Remaining: ~31067 records
+
+Processing batch 26: 500 records (remaining: ~31067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 26 | Total: 29 geocoded, 12971 reused, 0 failed, 0 skipped
+  Remaining: ~30567 records
+
+Processing batch 27: 500 records (remaining: ~30567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 27 | Total: 29 geocoded, 13471 reused, 0 failed, 0 skipped
+  Remaining: ~30067 records
+
+Processing batch 28: 500 records (remaining: ~30067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 28 | Total: 29 geocoded, 13971 reused, 0 failed, 0 skipped
+  Remaining: ~29567 records
+
+Processing batch 29: 500 records (remaining: ~29567)
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 29 | Total: 29 geocoded, 14471 reused, 0 failed, 0 skipped
+  Remaining: ~29067 records
+
+Processing batch 30: 500 records (remaining: ~29067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 30 | Total: 29 geocoded, 14971 reused, 0 failed, 0 skipped
+  Remaining: ~28567 records
+
+Processing batch 31: 500 records (remaining: ~23567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 31 | Total: 29 geocoded, 15471 reused, 0 failed, 0 skipped
+  Remaining: ~23067 records
+
+Processing batch 32: 500 records (remaining: ~23067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 32 | Total: 29 geocoded, 15971 reused, 0 failed, 0 skipped
+  Remaining: ~22567 records
+
+Processing batch 33: 500 records (remaining: ~22567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 33 | Total: 29 geocoded, 16471 reused, 0 failed, 0 skipped
+  Remaining: ~22067 records
+
+Processing batch 34: 500 records (remaining: ~22067)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 34 | Total: 32 geocoded, 16968 reused, 0 failed, 0 skipped
+  Remaining: ~21567 records
+
+Processing batch 35: 500 records (remaining: ~21567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 35 | Total: 32 geocoded, 17468 reused, 0 failed, 0 skipped
+  Remaining: ~21067 records
+
+Processing batch 36: 500 records (remaining: ~21067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 36 | Total: 33 geocoded, 17967 reused, 0 failed, 0 skipped
+  Remaining: ~20567 records
+
+Processing batch 37: 500 records (remaining: ~20567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 37 | Total: 33 geocoded, 18467 reused, 0 failed, 0 skipped
+  Remaining: ~20067 records
+
+Processing batch 38: 500 records (remaining: ~20067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 38 | Total: 33 geocoded, 18967 reused, 0 failed, 0 skipped
+  Remaining: ~19567 records
+
+Processing batch 39: 500 records (remaining: ~19567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 39 | Total: 33 geocoded, 19467 reused, 0 failed, 0 skipped
+  Remaining: ~19067 records
+
+Processing batch 40: 500 records (remaining: ~19067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 40 | Total: 33 geocoded, 19967 reused, 0 failed, 0 skipped
+  Remaining: ~18567 records
+
+Processing batch 41: 500 records (remaining: ~13567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 41 | Total: 33 geocoded, 20467 reused, 0 failed, 0 skipped
+  Remaining: ~13067 records
+
+Processing batch 42: 500 records (remaining: ~13067)
+  Warning: 1 records failed to update in batch 1
+  ✓ Updated 499 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 42 | Total: 33 geocoded, 20967 reused, 0 failed, 0 skipped
+  Remaining: ~12567 records
+
+Processing batch 43: 500 records (remaining: ~12567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 43 | Total: 33 geocoded, 21467 reused, 0 failed, 0 skipped
+  Remaining: ~12067 records
+
+Processing batch 44: 500 records (remaining: ~12067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 44 | Total: 33 geocoded, 21967 reused, 0 failed, 0 skipped
+  Remaining: ~11567 records
+
+Processing batch 45: 500 records (remaining: ~11567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 45 | Total: 33 geocoded, 22467 reused, 0 failed, 0 skipped
+  Remaining: ~11067 records
+
+Processing batch 46: 500 records (remaining: ~11067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 46 | Total: 33 geocoded, 22967 reused, 0 failed, 0 skipped
+  Remaining: ~10567 records
+
+Processing batch 47: 500 records (remaining: ~10567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 47 | Total: 33 geocoded, 23467 reused, 0 failed, 0 skipped
+  Remaining: ~10067 records
+
+Processing batch 48: 500 records (remaining: ~10067)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 48 | Total: 36 geocoded, 23964 reused, 0 failed, 0 skipped
+  Remaining: ~9567 records
+
+Processing batch 49: 500 records (remaining: ~9567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 49 | Total: 36 geocoded, 24464 reused, 0 failed, 0 skipped
+  Remaining: ~9067 records
+
+Processing batch 50: 500 records (remaining: ~9067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 50 | Total: 36 geocoded, 24964 reused, 0 failed, 0 skipped
+  Remaining: ~8567 records
+
+Processing batch 51: 500 records (remaining: ~3567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 51 | Total: 36 geocoded, 25464 reused, 0 failed, 0 skipped
+  Remaining: ~3067 records
+
+Processing batch 52: 500 records (remaining: ~3067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 52 | Total: 36 geocoded, 25964 reused, 0 failed, 0 skipped
+  Remaining: ~2567 records
+
+Processing batch 53: 500 records (remaining: ~2567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 53 | Total: 36 geocoded, 26464 reused, 0 failed, 0 skipped
+  Remaining: ~2067 records
+
+Processing batch 54: 500 records (remaining: ~2067)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 54 | Total: 36 geocoded, 26964 reused, 0 failed, 0 skipped
+  Remaining: ~1567 records
+
+Processing batch 55: 500 records (remaining: ~1567)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 55 | Total: 36 geocoded, 27464 reused, 0 failed, 0 skipped
+  Remaining: ~1067 records
+
+Processing batch 56: 500 records (remaining: ~1067)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 56 | Total: 37 geocoded, 27963 reused, 0 failed, 0 skipped
+  Remaining: ~567 records
+
+Processing batch 57: 500 records (remaining: ~567)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 57 | Total: 38 geocoded, 28462 reused, 0 failed, 0 skipped
+  Remaining: ~67 records
+
+Processing batch 58: 500 records (remaining: ~67)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 58 | Total: 38 geocoded, 28962 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 59: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 59 | Total: 38 geocoded, 29462 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 60: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 60 | Total: 38 geocoded, 29962 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 61: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 61 | Total: 38 geocoded, 30462 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 62: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 62 | Total: 39 geocoded, 30961 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 63: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 63 | Total: 39 geocoded, 31461 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 64: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 9 geocoded, 491 reused)
+Progress: Batch 64 | Total: 48 geocoded, 31952 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 65: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 65 | Total: 48 geocoded, 32452 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 66: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 66 | Total: 49 geocoded, 32951 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 67: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 67 | Total: 49 geocoded, 33451 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 68: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 68 | Total: 49 geocoded, 33951 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 69: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 69 | Total: 52 geocoded, 34448 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 70: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 70 | Total: 52 geocoded, 34948 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 71: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 71 | Total: 52 geocoded, 35448 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 72: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 72 | Total: 52 geocoded, 35948 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 73: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 2 geocoded, 498 reused)
+Progress: Batch 73 | Total: 54 geocoded, 36446 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 74: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 74 | Total: 54 geocoded, 36946 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 75: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 75 | Total: 54 geocoded, 37446 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 76: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 76 | Total: 54 geocoded, 37946 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 77: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 19 geocoded, 481 reused)
+Progress: Batch 77 | Total: 73 geocoded, 38427 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 78: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 78 | Total: 74 geocoded, 38926 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 79: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 6 geocoded, 494 reused)
+Progress: Batch 79 | Total: 80 geocoded, 39420 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 80: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 80 | Total: 80 geocoded, 39920 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 81: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 81 | Total: 80 geocoded, 40420 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 82: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 2 geocoded, 498 reused)
+Progress: Batch 82 | Total: 82 geocoded, 40918 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 83: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 83 | Total: 82 geocoded, 41418 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 84: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 84 | Total: 83 geocoded, 41917 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 85: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 85 | Total: 83 geocoded, 42417 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 86: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 86 | Total: 84 geocoded, 42916 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 87: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 87 | Total: 84 geocoded, 43416 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 88: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 88 | Total: 84 geocoded, 43916 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 89: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 89 | Total: 84 geocoded, 44416 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 90: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 90 | Total: 84 geocoded, 44916 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 91: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 91 | Total: 84 geocoded, 45416 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 92: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 92 | Total: 87 geocoded, 45913 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 93: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 93 | Total: 87 geocoded, 46413 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 94: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 94 | Total: 87 geocoded, 46913 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 95: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 95 | Total: 87 geocoded, 47413 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 96: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 96 | Total: 87 geocoded, 47913 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 97: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 97 | Total: 87 geocoded, 48413 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 98: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 98 | Total: 90 geocoded, 48910 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 99: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 99 | Total: 90 geocoded, 49410 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 100: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 3 geocoded, 497 reused)
+Progress: Batch 100 | Total: 93 geocoded, 49907 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 101: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 101 | Total: 93 geocoded, 50407 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 102: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 5 geocoded, 495 reused)
+Progress: Batch 102 | Total: 98 geocoded, 50902 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 103: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 1 geocoded, 499 reused)
+Progress: Batch 103 | Total: 99 geocoded, 51401 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 104: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 4 geocoded, 496 reused)
+Progress: Batch 104 | Total: 103 geocoded, 51897 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 105: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 105 | Total: 103 geocoded, 52397 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 106: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 0 geocoded, 500 reused)
+Progress: Batch 106 | Total: 103 geocoded, 52897 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 107: 500 records (remaining: ~0)
+  ✓ Updated 500 records (this batch: 4 geocoded, 496 reused)
+Progress: Batch 107 | Total: 107 geocoded, 53393 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+Processing batch 108: 67 records (remaining: ~0)
+  ✓ Updated 67 records (this batch: 0 geocoded, 67 reused)
+Progress: Batch 108 | Total: 107 geocoded, 53460 reused, 0 failed, 0 skipped
+  Remaining: ~0 records
+
+No more records to process
+============================================================
+Geocoding completed!
+Total batches processed: 108
+  ✓ Geocoded: 107
+  ♻️  Reused: 53460
+  ✗ Failed: 0
+  ⊘ Skipped: 0
+============================================================
+
+✅ All records with addresses have been processed!

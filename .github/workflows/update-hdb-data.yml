@@ -21,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install @supabase/supabase-js
+          npm install @supabase/supabase-js dotenv
 
       - name: Check for New Data
         env:
@@ -60,20 +60,69 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          # Populate neighbourhood_ids for records with coordinates
+          # Populate neighbourhood_ids for newly geocoded records
+          # Use batch function in a loop to process all new records
           node -e "
             require('dotenv').config();
             const {createClient} = require('@supabase/supabase-js');
             const supabase = createClient(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
             (async()=>{
-              console.log('Populating neighbourhood_ids...');
-              const {error} = await supabase.rpc('populate_neighbourhood_ids');
-              if(error) {
-                console.warn('Warning:', error.message);
-                console.log('This is OK if records already have neighbourhood_id or need geocoding first.');
-              } else {
-                console.log('✓ Neighbourhood IDs populated');
+              console.log('Populating neighbourhood_ids for new records...');
+              
+              // Process raw_resale_2017 in batches
+              let totalUpdated = 0;
+              let iterations = 0;
+              const maxIterations = 10; // Safety limit for GitHub Actions
+              
+              while(iterations < maxIterations) {
+                iterations++;
+                const {data: updated, error} = await supabase.rpc('populate_neighbourhood_ids_batch', {
+                  p_table_name: 'raw_resale_2017',
+                  p_batch_size: 1000
+                });
+                
+                if(error) {
+                  console.warn('Warning:', error.message);
+                  break;
+                }
+                
+                const batchUpdated = updated || 0;
+                totalUpdated += batchUpdated;
+                
+                if(batchUpdated > 0) {
+                  console.log(\`  Batch \${iterations}: \${batchUpdated} records updated (Total: \${totalUpdated})\`);
+                }
+                
+                if(batchUpdated === 0) {
+                  break; // No more records to process
+                }
+                
+                // Small delay between batches
+                await new Promise(r => setTimeout(r, 200));
               }
+              
+              if(totalUpdated > 0) {
+                console.log(\`✓ raw_resale_2017: \${totalUpdated} records updated\`);
+              }
+              
+              // Process other tables (usually small)
+              const {data: schoolUpdated, error: schoolError} = await supabase.rpc('populate_neighbourhood_ids_batch', {
+                p_table_name: 'primary_schools',
+                p_batch_size: 100
+              });
+              if(!schoolError && schoolUpdated > 0) {
+                console.log(\`✓ primary_schools: \${schoolUpdated} records updated\`);
+              }
+              
+              const {data: mrtUpdated, error: mrtError} = await supabase.rpc('populate_neighbourhood_ids_batch', {
+                p_table_name: 'mrt_stations',
+                p_batch_size: 100
+              });
+              if(!mrtError && mrtUpdated > 0) {
+                console.log(\`✓ mrt_stations: \${mrtUpdated} records updated\`);
+              }
+              
+              console.log('✓ Neighbourhood IDs population completed');
             })();
           "
 
