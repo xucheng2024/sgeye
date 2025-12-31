@@ -214,16 +214,16 @@ export default function HDBHeatmapPage() {
               {/* Neighbourhood Grid - Grouped by Planning Area */}
               {(() => {
                 // Group by planning area
-                const groupedByPA: Map<string, NeighbourhoodData[]> = new Map()
+                const groupedByPA: Record<string, NeighbourhoodData[]> = {}
                 data.forEach(item => {
                   const paKey = item.planningAreaName || 'Other'
-                  if (!groupedByPA.has(paKey)) {
-                    groupedByPA.set(paKey, [])
+                  if (!groupedByPA[paKey]) {
+                    groupedByPA[paKey] = []
                   }
-                  groupedByPA.get(paKey)!.push(item)
+                  groupedByPA[paKey].push(item)
                 })
 
-                return Array.from(groupedByPA.entries())
+                return Object.entries(groupedByPA)
                   .sort((a, b) => a[0].localeCompare(b[0]))
                   .map(([planningArea, neighbourhoods]) => (
                     <div key={planningArea} className="mb-6">
