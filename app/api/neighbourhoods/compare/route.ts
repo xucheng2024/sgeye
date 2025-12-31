@@ -97,26 +97,37 @@ export async function POST(request: NextRequest) {
       const neighbourhood = neighbourhoods?.find((n: any) => n.id === id)
       const trendsData = trendsResults.find((t: any) => t.id === id)
 
+      // Supabase returns related data as arrays even for one-to-one relationships
+      const planningArea = Array.isArray(neighbourhood?.planning_areas) && neighbourhood.planning_areas.length > 0
+        ? neighbourhood.planning_areas[0]
+        : null
+      const summary = Array.isArray(neighbourhood?.neighbourhood_summary) && neighbourhood.neighbourhood_summary.length > 0
+        ? neighbourhood.neighbourhood_summary[0]
+        : null
+      const access = Array.isArray(neighbourhood?.neighbourhood_access) && neighbourhood.neighbourhood_access.length > 0
+        ? neighbourhood.neighbourhood_access[0]
+        : null
+
       return {
         id,
         name: neighbourhood?.name || null,
         one_liner: neighbourhood?.one_liner || null,
-        planning_area: neighbourhood?.planning_areas ? {
-          id: neighbourhood.planning_areas.id,
-          name: neighbourhood.planning_areas.name
+        planning_area: planningArea ? {
+          id: planningArea.id,
+          name: planningArea.name
         } : null,
-        summary: neighbourhood?.neighbourhood_summary ? {
-          tx_12m: neighbourhood.neighbourhood_summary.tx_12m,
-          median_price_12m: neighbourhood.neighbourhood_summary.median_price_12m,
-          median_psm_12m: neighbourhood.neighbourhood_summary.median_psm_12m,
-          median_lease_years_12m: neighbourhood.neighbourhood_summary.median_lease_years_12m,
-          updated_at: neighbourhood.neighbourhood_summary.updated_at
+        summary: summary ? {
+          tx_12m: summary.tx_12m,
+          median_price_12m: summary.median_price_12m,
+          median_psm_12m: summary.median_psm_12m,
+          median_lease_years_12m: summary.median_lease_years_12m,
+          updated_at: summary.updated_at
         } : null,
-        access: neighbourhood?.neighbourhood_access ? {
-          mrt_station_count: neighbourhood.neighbourhood_access.mrt_station_count,
-          mrt_access_type: neighbourhood.neighbourhood_access.mrt_access_type,
-          avg_distance_to_mrt: neighbourhood.neighbourhood_access.avg_distance_to_mrt,
-          updated_at: neighbourhood.neighbourhood_access.updated_at
+        access: access ? {
+          mrt_station_count: access.mrt_station_count,
+          mrt_access_type: access.mrt_access_type,
+          avg_distance_to_mrt: access.avg_distance_to_mrt,
+          updated_at: access.updated_at
         } : null,
         trends: trendsData?.trends || []
       }

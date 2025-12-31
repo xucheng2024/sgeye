@@ -70,31 +70,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data to flatten structure
-    const neighbourhoods = (data || []).map(n => ({
-      id: n.id,
-      name: n.name,
-      one_liner: n.one_liner,
-      planning_area: n.planning_areas ? {
-        id: n.planning_areas.id,
-        name: n.planning_areas.name
-      } : null,
-      type: n.type,
-      summary: n.neighbourhood_summary ? {
-        tx_12m: n.neighbourhood_summary.tx_12m,
-        median_price_12m: n.neighbourhood_summary.median_price_12m,
-        median_psm_12m: n.neighbourhood_summary.median_psm_12m,
-        median_lease_years_12m: n.neighbourhood_summary.median_lease_years_12m,
-        updated_at: n.neighbourhood_summary.updated_at
-      } : null,
-      access: n.neighbourhood_access ? {
-        mrt_station_count: n.neighbourhood_access.mrt_station_count,
-        mrt_access_type: n.neighbourhood_access.mrt_access_type,
-        avg_distance_to_mrt: n.neighbourhood_access.avg_distance_to_mrt,
-        updated_at: n.neighbourhood_access.updated_at
-      } : null,
-      created_at: n.created_at,
-      updated_at: n.updated_at
-    }))
+    // Supabase returns related data as arrays even for one-to-one relationships
+    const neighbourhoods = (data || []).map(n => {
+      const planningArea = Array.isArray(n.planning_areas) && n.planning_areas.length > 0
+        ? n.planning_areas[0]
+        : null
+      const summary = Array.isArray(n.neighbourhood_summary) && n.neighbourhood_summary.length > 0
+        ? n.neighbourhood_summary[0]
+        : null
+      const access = Array.isArray(n.neighbourhood_access) && n.neighbourhood_access.length > 0
+        ? n.neighbourhood_access[0]
+        : null
+
+      return {
+        id: n.id,
+        name: n.name,
+        one_liner: n.one_liner,
+        planning_area: planningArea ? {
+          id: planningArea.id,
+          name: planningArea.name
+        } : null,
+        type: n.type,
+        summary: summary ? {
+          tx_12m: summary.tx_12m,
+          median_price_12m: summary.median_price_12m,
+          median_psm_12m: summary.median_psm_12m,
+          median_lease_years_12m: summary.median_lease_years_12m,
+          updated_at: summary.updated_at
+        } : null,
+        access: access ? {
+          mrt_station_count: access.mrt_station_count,
+          mrt_access_type: access.mrt_access_type,
+          avg_distance_to_mrt: access.avg_distance_to_mrt,
+          updated_at: access.updated_at
+        } : null,
+        created_at: n.created_at,
+        updated_at: n.updated_at
+      }
+    })
 
     return NextResponse.json({
       neighbourhoods,
