@@ -1,5 +1,7 @@
 /**
- * Constants for Compare Towns page
+ * Constants for Compare Neighbourhoods page
+ * Note: TOWNS list is kept for UI filtering/display only
+ * All data aggregation is done by neighbourhood_id
  */
 
 export const TOWNS = [
@@ -45,13 +47,13 @@ export const RECOMMENDED_PAIRS: RecommendedPair[] = [
     townA: 'ANG MO KIO',
     townB: 'BUKIT BATOK',
     label: 'Popular vs Value',
-    description: 'Compare two popular towns with different price points',
+    description: 'Compare two popular neighbourhoods with different price points',
   },
   {
     townA: 'QUEENSTOWN',
     townB: 'CLEMENTI',
     label: 'Central vs West',
-    description: 'Central location vs established western town',
+    description: 'Central location vs established western neighbourhood',
   },
   {
     townA: 'BISHAN',

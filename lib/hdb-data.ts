@@ -8,7 +8,7 @@
  * - lib/hdb-data/types.ts - Type definitions
  * - lib/hdb-data/fetch.ts - Data fetching functions
  * - lib/hdb-data/calculations.ts - Calculation functions
- * - lib/hdb-data/town-profile.ts - Town profile generation
+ * - lib/hdb-data/neighbourhood-profile.ts - Neighbourhood profile generation
  * - lib/hdb-data/comparison.ts - Comparison summary generation
  * - lib/hdb-data/index.ts - Public API
  */
@@ -20,17 +20,17 @@ export type {
   AffordabilityResult,
   BinnedLeaseData,
   LeaseRiskLevel,
-  TownProfile,
-  TownComparisonData,
+  NeighbourhoodProfile,
+  NeighbourhoodComparisonData,
   CompareSummary,
   PreferenceLens,
-  TownTimeAccess,
+  NeighbourhoodTimeAccess,
   Centrality,
   MrtDensity,
   TransferComplexity,
   RegionalHubAccess,
-  ThreeTownCompareSummary,
-  TownTransportProfile,
+  ThreeNeighbourhoodCompareSummary,
+  NeighbourhoodTransportProfile,
 } from './hdb-data/types'
 
 // Re-export fetch functions from new structure
@@ -40,7 +40,8 @@ export {
   getLeasePriceData,
   getBinnedLeasePriceData,
   findAffordableProperties,
-  getTownTimeAccess,
+  getNeighbourhoodTimeAccess,
+  getNeighbourhoodIdFromTown,
 } from './hdb-data/fetch'
 
 // Re-export calculation functions from new structure
@@ -50,16 +51,16 @@ export {
   computeLeaseRisk,
 } from './hdb-data/calculations'
 
-// Re-export town profile functions from new structure
-export { getTownProfile } from './hdb-data/town-profile'
+// Re-export neighbourhood profile functions from new structure
+export { getNeighbourhoodProfile } from './hdb-data/neighbourhood-profile'
 
 // Re-export comparison functions from new structure
-export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './hdb-data/comparison'
+export { generateCompareSummary, getNeighbourhoodComparisonData, generateThreeNeighbourhoodCompareSummary } from './hdb-data/comparison'
 
 // Re-export helper functions
 export { getTimeBurdenLevel, calculateTBI, getTBILevel, getTBILevelLabel } from './hdb-data/types'
 
 // Re-export transport functions
-export { getTownTransportProfile, TOWN_TRANSPORT_PROFILES } from './hdb-data/transport-data'
+export { getNeighbourhoodTransportProfile } from './hdb-data/transport-data'
 
 // Re-exported above for backward compatibility

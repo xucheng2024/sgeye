@@ -522,7 +522,7 @@ export default function HDBLeasePricePage() {
         </div>
 
         {/* Redirect CTA to Compare Towns */}
-        <CompareTownsCTA text="See how lease risk affects your town choice" />
+        <CompareTownsCTA text="See how lease risk affects your neighbourhood choice" />
       </main>
     </div>
   )

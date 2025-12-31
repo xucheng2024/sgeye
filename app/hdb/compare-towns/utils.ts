@@ -2,14 +2,14 @@
  * Utility functions for Compare Towns page
  */
 
-import { TownComparisonData, TownProfile } from '@/lib/hdb-data'
+import { NeighbourhoodComparisonData, NeighbourhoodProfile } from '@/lib/hdb-data'
 import { TownSignals, SuitabilityResult, DecisionGuidance } from './types'
 
 /**
  * Generate signals from raw data
  */
 export function generateSignals(
-  data: TownComparisonData,
+  data: NeighbourhoodComparisonData,
   userBudget: number,
   estimatedMortgage: number,
   islandAvgVolatility: number = 0.12,
@@ -121,8 +121,8 @@ export function generateSummaryFromSignals(
  * Generate automatic summary as structured bullets (legacy function, kept for compatibility)
  */
 export function generateSummary(
-  townA: TownComparisonData,
-  townB: TownComparisonData,
+  townA: NeighbourhoodComparisonData,
+  townB: NeighbourhoodComparisonData,
   mortgageA: number,
   mortgageB: number
 ): string[] {
@@ -166,10 +166,10 @@ export function generateSummary(
 }
 
 /**
- * Generate "Who this suits" and "Who should avoid" from TownProfile
+ * Generate "Who this suits" and "Who should avoid" from NeighbourhoodProfile
  */
 export function generateSuitabilityFromProfile(
-  profile: TownProfile,
+  profile: NeighbourhoodProfile,
   townName: string
 ): SuitabilityResult {
   const suits: string[] = []
@@ -200,11 +200,11 @@ export function generateSuitabilityFromProfile(
 }
 
 /**
- * Generate decision hint from TownProfiles
+ * Generate decision hint from NeighbourhoodProfiles
  */
 export function generateDecisionHintFromProfiles(
-  profileA: TownProfile,
-  profileB: TownProfile
+  profileA: NeighbourhoodProfile,
+  profileB: NeighbourhoodProfile
 ): string[] {
   const hints: string[] = []
   
@@ -229,11 +229,11 @@ export function generateDecisionHintFromProfiles(
 }
 
 /**
- * Generate decision verdict from TownProfiles
+ * Generate decision verdict from NeighbourhoodProfiles
  */
 export function generateDecisionVerdictFromProfiles(
-  profileA: TownProfile,
-  profileB: TownProfile
+  profileA: NeighbourhoodProfile,
+  profileB: NeighbourhoodProfile
 ): string | null {
   // Affordability-driven, higher long-term risk
   if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical' ||
@@ -300,11 +300,11 @@ export function generateDecisionVerdict(
 }
 
 /**
- * Generate decision guidance from TownProfiles
+ * Generate decision guidance from NeighbourhoodProfiles
  */
 export function generateDecisionGuidanceFromProfiles(
-  profileA: TownProfile,
-  profileB: TownProfile,
+  profileA: NeighbourhoodProfile,
+  profileB: NeighbourhoodProfile,
   townA: string,
   townB: string
 ): DecisionGuidance {
@@ -343,7 +343,7 @@ export function generateDecisionGuidanceFromProfiles(
     chooseB: chooseBParts.length > 0
       ? `Choose ${townB} if you value ${chooseBParts.join(' and ')}.`
       : `Choose ${townB} based on your specific preferences.`,
-    conclusion: 'There is no universally better town — only a better fit for your situation.'
+    conclusion: 'There is no universally better neighbourhood — only a better fit for your situation.'
   }
 }
 

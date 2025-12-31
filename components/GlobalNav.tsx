@@ -14,9 +14,9 @@ export default function GlobalNav() {
   // Housing sub-items: Buy / Rent / Risk
   const buyRentRiskItems = [
     { href: '/hdb', label: 'Market Trends', icon: TrendingUp },
-    { href: '/hdb/heatmap', label: 'Prices by Town', icon: Map },
+    { href: '/hdb/heatmap', label: 'Prices by Neighbourhood', icon: Map },
     { href: '/hdb/lease-price', label: 'Lease & Long-term Risk', icon: Clock },
-    { href: '/hdb/compare-towns', label: 'Compare Towns', icon: GitCompare, recommended: true },
+    { href: '/hdb/compare-towns', label: 'Compare Neighbourhoods', icon: GitCompare, recommended: true },
   ]
 
   // Family with Children items

@@ -1,36 +1,44 @@
 /**
- * Town Profile generation functions
+ * Neighbourhood Profile generation functions
  */
 
 import { supabase } from '../supabase'
 import { DATA_FETCHING, FINANCIAL_CONSTANTS, LEASE_THRESHOLDS, MARKET_THRESHOLDS } from '../constants'
 import { getAggregatedMonthly } from './fetch'
 import { calculateMonthlyMortgage, computeLeaseRisk } from './calculations'
-import type { TownProfile } from './types'
+import type { NeighbourhoodProfile } from './types'
 
-// Get Town Profile with signals (new unified API)
-export async function getTownProfile(
-  town: string,
+// Get Neighbourhood Profile with signals
+export async function getNeighbourhoodProfile(
+  neighbourhoodId: string,
   flatType: string,
-  months: number = DATA_FETCHING.DEFAULT_MONTHS, // Use default months for decision tool
+  months: number = DATA_FETCHING.DEFAULT_MONTHS,
   loanYears: number = FINANCIAL_CONSTANTS.DEFAULT_LOAN_YEARS,
   interestRate: number = FINANCIAL_CONSTANTS.DEFAULT_INTEREST_RATE
-): Promise<TownProfile | null> {
+): Promise<NeighbourhoodProfile | null> {
   try {
     if (supabase) {
       const endDate = new Date()
       const startDate = new Date()
       startDate.setMonth(startDate.getMonth() - months)
 
-      // Get aggregated monthly data
+      // Get aggregated monthly data by neighbourhood_id
       const data = await getAggregatedMonthly(
         flatType,
-        town,
+        undefined, // town - not used
         startDate.toISOString().split('T')[0],
-        endDate.toISOString().split('T')[0]
+        endDate.toISOString().split('T')[0],
+        neighbourhoodId // Use neighbourhood_id directly
       )
 
       if (data.length === 0) return null
+
+      // Get neighbourhood name for display
+      const { data: neighbourhood } = await supabase
+        .from('neighbourhoods')
+        .select('id, name')
+        .eq('id', neighbourhoodId)
+        .single()
 
       // Calculate statistics
       const prices = data.map(d => d.median_price)
@@ -44,16 +52,11 @@ export async function getTownProfile(
       )
       const priceVolatility = avgPrice > 0 ? priceStdDev / avgPrice : 0
 
-      // Calculate lease statistics from monthly aggregated data
-      // Note: We use median_lease_years from aggregated monthly data
-      // For more accurate pctTxBelow60/55, we should ideally query raw transactions
-      // But for now, we use the monthly medians as a proxy
+      // Calculate lease statistics
       const medianLease = leases.length > 0 
         ? leases.sort((a, b) => a - b)[Math.floor(leases.length / 2)]
         : 0
       
-      // For percentage calculations, we approximate using monthly data
-      // A more accurate approach would query raw transactions, but this is acceptable for decision tool
       const below60 = leases.filter(l => l < LEASE_THRESHOLDS.HIGH).length
       const below55 = leases.filter(l => l < LEASE_THRESHOLDS.CRITICAL).length
       const pctTxBelow60 = leases.length > 0 ? below60 / leases.length : 0
@@ -62,7 +65,7 @@ export async function getTownProfile(
       // Calculate mortgage
       const medianPrice = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
       const estimatedMortgage = calculateMonthlyMortgage(
-        medianPrice * FINANCIAL_CONSTANTS.LTV_RESALE, // LTV for resale flats
+        medianPrice * FINANCIAL_CONSTANTS.LTV_RESALE,
         loanYears,
         interestRate
       )
@@ -96,7 +99,8 @@ export async function getTownProfile(
       }
 
       return {
-        town,
+        neighbourhoodId,
+        neighbourhoodName: neighbourhood?.name,
         flatType,
         medianResalePrice: medianPrice,
         estimatedMonthlyMortgage: estimatedMortgage,
@@ -114,7 +118,7 @@ export async function getTownProfile(
       }
     }
   } catch (error) {
-    console.error('Error fetching town profile:', error)
+    console.error('Error fetching neighbourhood profile:', error)
   }
 
   return null

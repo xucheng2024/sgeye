@@ -1,6 +1,6 @@
 /**
- * Unified Compare Towns CTA Component
- * Light UI component for sub-pages to redirect users back to Compare Towns
+ * Unified Compare Neighbourhoods CTA Component
+ * Light UI component for sub-pages to redirect users back to Compare Neighbourhoods
  */
 
 import Link from 'next/link'

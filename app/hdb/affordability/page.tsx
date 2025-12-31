@@ -426,7 +426,7 @@ export default function HDBAffordabilityPage() {
         )}
 
         {/* Redirect CTA to Compare Towns */}
-        <CompareTownsCTA text="Compare towns and see what changes" />
+        <CompareTownsCTA text="Compare neighbourhoods and see what changes" />
       </main>
     </div>
   )

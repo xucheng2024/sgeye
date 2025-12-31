@@ -10,20 +10,20 @@ export type {
   AffordabilityResult,
   BinnedLeaseData,
   LeaseRiskLevel,
-  TownProfile,
-  TownComparisonData,
+  NeighbourhoodProfile,
+  NeighbourhoodComparisonData,
   CompareSummary,
   PreferenceLens,
-  TownTimeAccess,
+  NeighbourhoodTimeAccess,
   Centrality,
   MrtDensity,
   TransferComplexity,
   RegionalHubAccess,
-  ThreeTownCompareSummary,
-  TownTransportProfile,
+  ThreeNeighbourhoodCompareSummary,
+  NeighbourhoodTransportProfile,
 } from './types'
 export { calculateTBI, getTBILevel, getTBILevelLabel } from './types'
-export { getTownTransportProfile, TOWN_TRANSPORT_PROFILES } from './transport-data'
+export { getNeighbourhoodTransportProfile } from './transport-data'
 
 export { getTimeBurdenLevel } from './types'
 
@@ -34,7 +34,8 @@ export {
   getLeasePriceData,
   getBinnedLeasePriceData,
   findAffordableProperties,
-  getTownTimeAccess,
+  getNeighbourhoodTimeAccess,
+  getNeighbourhoodIdFromTown,
 } from './fetch'
 
 // Calculation functions
@@ -44,9 +45,9 @@ export {
   computeLeaseRisk,
 } from './calculations'
 
-// Town profile functions
-export { getTownProfile } from './town-profile'
+// Neighbourhood profile functions
+export { getNeighbourhoodProfile } from './neighbourhood-profile'
 
 // Comparison functions
-export { generateCompareSummary, getTownComparisonData, generateThreeTownCompareSummary } from './comparison'
+export { generateCompareSummary, getNeighbourhoodComparisonData, generateThreeNeighbourhoodCompareSummary } from './comparison'
 

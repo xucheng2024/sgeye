@@ -1,15 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
-import { getTownTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { getNeighbourhoodTransportProfile, getNeighbourhoodIdFromTown, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import { TOWNS } from '../compare-towns/constants'
-import type { TownTransportProfile } from '@/lib/hdb-data'
+import type { NeighbourhoodTransportProfile } from '@/lib/hdb-data'
 
 export default function TransportPage() {
   const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
-  const transportProfile = getTownTransportProfile(selectedTown)
+  const [transportProfile, setTransportProfile] = useState<NeighbourhoodTransportProfile | null>(null)
+  const [loading, setLoading] = useState(false)
+  
+  useEffect(() => {
+    const loadTransportProfile = async () => {
+      setLoading(true)
+      try {
+        const neighbourhoodId = await getNeighbourhoodIdFromTown(selectedTown)
+        if (neighbourhoodId) {
+          const profile = await getNeighbourhoodTransportProfile(neighbourhoodId)
+          setTransportProfile(profile)
+        } else {
+          setTransportProfile(null)
+        }
+      } catch (error) {
+        console.error('Error loading transport profile:', error)
+        setTransportProfile(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadTransportProfile()
+  }, [selectedTown])
+  
   const tbi = transportProfile ? calculateTBI(transportProfile) : null
   const tbiLevel = tbi !== null ? getTBILevel(tbi) : null
   const tbiLabel = tbiLevel ? getTBILevelLabel(tbiLevel) : null

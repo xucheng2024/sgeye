@@ -1,8 +1,9 @@
 /**
- * Type definitions for Compare Towns page
+ * Type definitions for Compare Neighbourhoods page
+ * Note: Data is aggregated by neighbourhood_id, but UI may still reference towns for context
  */
 
-import { TownComparisonData, TownProfile } from '@/lib/hdb-data'
+import { NeighbourhoodComparisonData, NeighbourhoodProfile } from '@/lib/hdb-data'
 
 /**
  * Signal Layer: Convert raw data to signals

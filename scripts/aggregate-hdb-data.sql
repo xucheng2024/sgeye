@@ -1,12 +1,22 @@
 -- ============================================
--- HDB Data Aggregation Script
--- Run this AFTER importing raw data into raw_resale_2017
+-- HDB Data Aggregation Script (DEPRECATED)
 -- ============================================
+-- ⚠️ WARNING: This script aggregates by TOWN, which creates averaging illusions
+-- 
+-- ✅ USE THIS INSTEAD: aggregate_neighbourhood_monthly_data() function
+--    Defined in: supabase/migrations/create_agg_neighbourhood_monthly.sql
+--    Run: SELECT * FROM aggregate_neighbourhood_monthly_data();
+--
+-- This script is kept for reference only. New code should use neighbourhood-based aggregation.
 
+-- ============================================
+-- DEPRECATED: Town-based aggregation (creates averaging illusions)
+-- ============================================
 -- Step 1: Clear existing aggregated data (optional, comment out if you want to keep old data)
 -- TRUNCATE TABLE agg_monthly;
 
--- Step 2: Insert/Update aggregated monthly data
+-- Step 2: Insert/Update aggregated monthly data (DEPRECATED - aggregates by town)
+-- ⚠️ This creates averaging illusions - use aggregate_neighbourhood_monthly_data() instead
 INSERT INTO agg_monthly (month, town, flat_type, tx_count, median_price, p25_price, p75_price, median_psm, median_lease_years, avg_floor_area)
 SELECT 
   DATE_TRUNC('month', month)::DATE as month,

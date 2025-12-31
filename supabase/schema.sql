@@ -241,7 +241,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- Function to aggregate monthly data (can be called from API)
+-- Function to aggregate monthly data (DEPRECATED - Use aggregate_neighbourhood_monthly_data() instead)
+-- This function aggregates by town, which creates averaging illusions
+-- New code should use agg_neighbourhood_monthly table and aggregate_neighbourhood_monthly_data() function
 CREATE OR REPLACE FUNCTION aggregate_monthly_data()
 RETURNS TABLE(
   total_records INTEGER,
@@ -250,6 +252,7 @@ RETURNS TABLE(
   total_transactions BIGINT
 ) AS $$
 BEGIN
+  -- DEPRECATED: This aggregates by town. Use aggregate_neighbourhood_monthly_data() instead.
   -- Insert/Update aggregated monthly data
   INSERT INTO agg_monthly (month, town, flat_type, tx_count, median_price, p25_price, p75_price, median_psm, median_lease_years, avg_floor_area)
   SELECT 

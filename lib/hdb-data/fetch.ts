@@ -5,7 +5,7 @@
 import { supabase } from '../supabase'
 import { DATA_FETCHING, LEASE_BINS } from '../constants'
 import { paginateQuery } from '../utils/pagination'
-import type { AggregatedMonthly, BinnedLeaseData, TownTimeAccess } from './types'
+import type { AggregatedMonthly, BinnedLeaseData, NeighbourhoodTimeAccess, Centrality, MrtDensity, TransferComplexity, RegionalHubAccess } from './types'
 
 // Parse remaining_lease string to decimal years
 // Handles formats like: "84 years 3 months", "61 years", "49 years 11 months"
@@ -41,26 +41,57 @@ function parseLeaseYears(leaseText: string): number | null {
   return leaseYears
 }
 
-// Fetch aggregated monthly data
+// Fetch aggregated monthly data by neighbourhood
+// Note: town parameter is kept for backward compatibility but only used for filtering
+// All aggregation is done by neighbourhood_id
 export async function getAggregatedMonthly(
   flatType?: string,
   town?: string,
   startMonth?: string,
-  endMonth?: string
+  endMonth?: string,
+  neighbourhoodId?: string
 ): Promise<AggregatedMonthly[]> {
   try {
     if (supabase) {
+      // Use neighbourhood-based aggregation table
       let query = supabase
-        .from('agg_monthly')
-        .select('*')
+        .from('agg_neighbourhood_monthly')
+        .select(`
+          *,
+          neighbourhoods!inner(id, name, planning_area_id)
+        `)
         .order('month', { ascending: true })
 
       if (flatType && flatType !== 'All') {
         query = query.eq('flat_type', flatType)
       }
 
-      if (town && town !== 'All') {
-        query = query.eq('town', town)
+      // Filter by neighbourhood_id if provided (primary method)
+      if (neighbourhoodId) {
+        query = query.eq('neighbourhood_id', neighbourhoodId)
+      }
+      // Otherwise, filter by town if provided (for backward compatibility - town is for filtering only)
+      else if (town && town !== 'All') {
+        // Get unique neighbourhood_ids for this town from raw data
+        // Town is only used for filtering, not for aggregation
+        const { data: townNeighbourhoods } = await supabase
+          .from('raw_resale_2017')
+          .select('neighbourhood_id')
+          .eq('town', town)
+          .not('neighbourhood_id', 'is', null)
+          .limit(5000)
+        
+        if (townNeighbourhoods && townNeighbourhoods.length > 0) {
+          const uniqueNeighbourhoodIds = [...new Set(townNeighbourhoods.map(r => r.neighbourhood_id).filter(Boolean))]
+          if (uniqueNeighbourhoodIds.length > 0) {
+            query = query.in('neighbourhood_id', uniqueNeighbourhoodIds)
+          } else {
+            return []
+          }
+        } else {
+          // No data found for this town
+          return []
+        }
       }
 
       if (startMonth) {
@@ -72,15 +103,33 @@ export async function getAggregatedMonthly(
       }
 
       // Fetch all data with pagination
-      const allData = await paginateQuery<AggregatedMonthly>(
+      const allData = await paginateQuery<any>(
         query,
         DATA_FETCHING.PAGE_SIZE
       )
 
       if (allData.length > 0) {
+        // Get town info from raw_resale_2017 for display purposes
+        const neighbourhoodIds = [...new Set(allData.map(item => item.neighbourhood_id).filter(Boolean))]
+        const { data: townMapping } = await supabase
+          .from('raw_resale_2017')
+          .select('neighbourhood_id, town')
+          .in('neighbourhood_id', neighbourhoodIds)
+          .not('town', 'is', null)
+          .limit(10000)
+        
+        const neighbourhoodToTown = new Map<string, string>()
+        if (townMapping) {
+          townMapping.forEach(item => {
+            if (item.neighbourhood_id && item.town && !neighbourhoodToTown.has(item.neighbourhood_id)) {
+              neighbourhoodToTown.set(item.neighbourhood_id, item.town)
+            }
+          })
+        }
+
         return allData.map(item => ({
           month: item.month,
-          town: item.town,
+          town: neighbourhoodToTown.get(item.neighbourhood_id) || null, // For display only
           flat_type: item.flat_type,
           tx_count: Number(item.tx_count),
           median_price: Number(item.median_price),
@@ -113,7 +162,10 @@ export async function getAggregatedMonthly(
   }))
 }
 
-// Get town-level aggregated data for heatmap
+// Get neighbourhood-level aggregated data for heatmap
+// Data is aggregated by neighbourhood_id, then grouped by town for display (town is for UI context only, not for analysis)
+// Get aggregated data by neighbourhood, then group by town for display
+// Note: Data is aggregated by neighbourhood_id internally, but returned grouped by town for UI display
 export async function getTownAggregated(
   months: number = 3, // Keep 3 months for heatmap (different use case)
   flatType?: string
@@ -129,9 +181,10 @@ export async function getTownAggregated(
       const startDate = new Date()
       startDate.setMonth(startDate.getMonth() - months)
 
+      // Query from neighbourhood-based aggregation table
       let query = supabase
-        .from('agg_monthly')
-        .select('town, flat_type, median_price, tx_count')
+        .from('agg_neighbourhood_monthly')
+        .select('neighbourhood_id, flat_type, median_price, tx_count')
         .gte('month', startDate.toISOString().split('T')[0])
         .lte('month', endDate.toISOString().split('T')[0])
 
@@ -140,13 +193,31 @@ export async function getTownAggregated(
       }
 
       // Fetch all data with pagination
-      const allData = await paginateQuery<{ town: string; flat_type: string; median_price: number; tx_count: number }>(
+      const allData = await paginateQuery<{ neighbourhood_id: string; flat_type: string; median_price: number; tx_count: number }>(
         query,
         DATA_FETCHING.PAGE_SIZE
       )
 
       if (allData.length > 0) {
-        // Aggregate by town
+        // Get town mapping from raw_resale_2017 for display
+        const neighbourhoodIds = [...new Set(allData.map(item => item.neighbourhood_id).filter(Boolean))]
+        const { data: townMapping } = await supabase
+          .from('raw_resale_2017')
+          .select('neighbourhood_id, town')
+          .in('neighbourhood_id', neighbourhoodIds)
+          .not('town', 'is', null)
+          .limit(10000)
+        
+        const neighbourhoodToTown = new Map<string, string>()
+        if (townMapping) {
+          townMapping.forEach(item => {
+            if (item.neighbourhood_id && item.town && !neighbourhoodToTown.has(item.neighbourhood_id)) {
+              neighbourhoodToTown.set(item.neighbourhood_id, item.town)
+            }
+          })
+        }
+
+        // Aggregate by town (for display only) - actual data aggregation is by neighbourhood_id
         const townMap = new Map<string, {
           town: string
           prices: number[]
@@ -155,7 +226,7 @@ export async function getTownAggregated(
         }>()
 
         allData.forEach(item => {
-          const town = item.town || 'Unknown'
+          const town = neighbourhoodToTown.get(item.neighbourhood_id) || 'Unknown'
           if (!townMap.has(town)) {
             townMap.set(town, {
               town,
@@ -178,7 +249,7 @@ export async function getTownAggregated(
       }
     }
   } catch (error) {
-    console.error('Error fetching town aggregated data:', error)
+    console.error('Error fetching neighbourhood aggregated data:', error)
   }
 
   // Fallback sample data
@@ -371,7 +442,8 @@ export async function findAffordableProperties(
       }))
       .sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice)) // Sort by closest match to budget
 
-    // Group by town and flat type, take best option per town
+    // Group by town and flat type for display (town is for UI context only)
+    // Data is already aggregated by neighbourhood_id, we group by town only for presentation
     const townMap = new Map<string, typeof affordable[0]>()
     affordable.forEach(item => {
       const key = `${item.town}-${item.flatType}`
@@ -398,35 +470,106 @@ export async function findAffordableProperties(
   })).sort((a, b) => Math.abs(a.medianPrice - maxPrice) - Math.abs(b.medianPrice - maxPrice))
 }
 
-// Get Time & Access data for a town
-export async function getTownTimeAccess(town: string): Promise<TownTimeAccess | null> {
+// Get Time & Access data directly by neighbourhood_id
+export async function getNeighbourhoodTimeAccess(neighbourhoodId: string): Promise<NeighbourhoodTimeAccess | null> {
   try {
     if (supabase) {
-      const normalizedTown = town.toUpperCase().trim()
-      
       const { data, error } = await supabase
-        .from('town_time_access')
+        .from('neighbourhood_access')
         .select('*')
-        .eq('town', normalizedTown)
+        .eq('neighbourhood_id', neighbourhoodId)
         .single()
       
       if (error) {
-        console.error('Error fetching time access data:', error)
+        console.error('Error fetching neighbourhood access data:', error)
         return null
       }
       
       if (data) {
+        // Get neighbourhood name for display
+        const { data: neighbourhood } = await supabase
+          .from('neighbourhoods')
+          .select('id, name')
+          .eq('id', neighbourhoodId)
+          .single()
+
+        // Map mrt_access_type to mrtDensity
+        const getMrtDensity = (accessType: string): MrtDensity => {
+          if (accessType === 'high') return 'high'
+          if (accessType === 'medium') return 'medium'
+          return 'low'
+        }
+
+        const mrtDensity = getMrtDensity(data.mrt_access_type || 'low')
+        const transferComplexity = (data.transfer_complexity || '1_transfer') as TransferComplexity
+        
+        // Infer centrality and regionalHubAccess from MRT access
+        const centrality: Centrality = mrtDensity === 'high' ? 'central' : 'non_central'
+        const regionalHubAccess: RegionalHubAccess = mrtDensity === 'high' ? 'yes' : (mrtDensity === 'medium' ? 'partial' : 'no')
+
         return {
-          town: data.town,
-          centrality: data.centrality as TownTimeAccess['centrality'],
-          mrtDensity: data.mrt_density as TownTimeAccess['mrtDensity'],
-          transferComplexity: data.transfer_complexity as TownTimeAccess['transferComplexity'],
-          regionalHubAccess: data.regional_hub_access as TownTimeAccess['regionalHubAccess'],
+          neighbourhoodId: data.neighbourhood_id,
+          neighbourhoodName: neighbourhood?.name,
+          centrality,
+          mrtDensity,
+          transferComplexity,
+          regionalHubAccess,
         }
       }
     }
   } catch (error) {
-    console.error('Error fetching town time access:', error)
+    console.error('Error fetching neighbourhood time access:', error)
+  }
+  
+  return null
+}
+
+// Helper function: Get a representative neighbourhood_id for a town
+// Returns the most common neighbourhood_id for the given town
+export async function getNeighbourhoodIdFromTown(town: string): Promise<string | null> {
+  try {
+    if (supabase) {
+      const normalizedTown = town.toUpperCase().trim()
+      
+      // Get neighbourhood_ids for this town, ordered by frequency
+      const { data, error } = await supabase
+        .from('raw_resale_2017')
+        .select('neighbourhood_id')
+        .eq('town', normalizedTown)
+        .not('neighbourhood_id', 'is', null)
+        .limit(10000)
+      
+      if (error) {
+        console.error('Error fetching neighbourhood_id from town:', error)
+        return null
+      }
+      
+      if (!data || data.length === 0) {
+        return null
+      }
+      
+      // Count frequency of each neighbourhood_id
+      const frequencyMap = new Map<string, number>()
+      data.forEach(item => {
+        if (item.neighbourhood_id) {
+          frequencyMap.set(item.neighbourhood_id, (frequencyMap.get(item.neighbourhood_id) || 0) + 1)
+        }
+      })
+      
+      // Return the most common neighbourhood_id
+      let maxCount = 0
+      let mostCommonId: string | null = null
+      frequencyMap.forEach((count, id) => {
+        if (count > maxCount) {
+          maxCount = count
+          mostCommonId = id
+        }
+      })
+      
+      return mostCommonId
+    }
+  } catch (error) {
+    console.error('Error getting neighbourhood_id from town:', error)
   }
   
   return null

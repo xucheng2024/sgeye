@@ -54,8 +54,9 @@ export interface BinnedLeaseData {
 
 export type LeaseRiskLevel = 'low' | 'moderate' | 'high' | 'critical'
 
-export interface TownProfile {
-  town: string
+export interface NeighbourhoodProfile {
+  neighbourhoodId: string
+  neighbourhoodName?: string // Optional: for display
   flatType: string
 
   // Price & cashflow
@@ -80,8 +81,9 @@ export interface TownProfile {
   }
 }
 
-export interface TownComparisonData {
-  town: string
+export interface NeighbourhoodComparisonData {
+  neighbourhoodId: string
+  neighbourhoodName?: string
   flatType: string
   medianPrice: number
   p25Price: number
@@ -101,8 +103,9 @@ export type MrtDensity = 'high' | 'medium' | 'low'
 export type TransferComplexity = 'direct' | '1_transfer' | '2_plus'
 export type RegionalHubAccess = 'yes' | 'partial' | 'no'
 
-export interface TownTimeAccess {
-  town: string
+export interface NeighbourhoodTimeAccess {
+  neighbourhoodId: string
+  neighbourhoodName?: string
   centrality: Centrality
   mrtDensity: MrtDensity
   transferComplexity: TransferComplexity
@@ -110,7 +113,7 @@ export interface TownTimeAccess {
 }
 
 // Helper function to determine time burden level
-export function getTimeBurdenLevel(timeAccess: TownTimeAccess | null): 'low' | 'medium' | 'high' {
+export function getTimeBurdenLevel(timeAccess: NeighbourhoodTimeAccess | null): 'low' | 'medium' | 'high' {
   if (!timeAccess) return 'medium'
   
   let score = 0
@@ -136,8 +139,9 @@ export function getTimeBurdenLevel(timeAccess: TownTimeAccess | null): 'low' | '
 }
 
 // Transport Burden Index (TBI) types
-export interface TownTransportProfile {
-  town: string
+export interface NeighbourhoodTransportProfile {
+  neighbourhoodId: string
+  neighbourhoodName?: string
   // Central Access Burden (0-100)
   centralAccessBurden: number // Average transfers to CBD/Orchard/One-North
   // Transfer Burden (0-100)
@@ -154,7 +158,7 @@ export interface TownTransportProfile {
 }
 
 // Calculate TBI from transport profile
-export function calculateTBI(profile: TownTransportProfile): number {
+export function calculateTBI(profile: NeighbourhoodTransportProfile): number {
   const tbi = 
     0.40 * profile.centralAccessBurden +
     0.25 * profile.transferBurden +
@@ -200,14 +204,14 @@ export interface CompareSummary {
   
   // Standardized scores (0-100)
   scores: {
-    townA: {
+    neighbourhoodA: {
       entryCost: number
       leaseSafety: number
       schoolPressure: number
       stability: number
       overall: number
     }
-    townB: {
+    neighbourhoodB: {
       entryCost: number
       leaseSafety: number
       schoolPressure: number
@@ -240,21 +244,21 @@ export interface CompareSummary {
     lease: string | null
   } // Block 3: Housing Trade-off
   bestSuitedFor: {
-    townA: string[]
-    townB: string[]
-  } // Block 4: Who Each Town Is Better For
+    neighbourhoodA: string[]
+    neighbourhoodB: string[]
+  } // Block 4: Who Each Neighbourhood Is Better For
   decisionHint: string // Block 5: Decision Hint
   
   // Legacy fields (kept for compatibility)
   oneLiner: string
   keyDifferences: string[]
   bestFor: {
-    townA: string[]
-    townB: string[]
+    neighbourhoodA: string[]
+    neighbourhoodB: string[]
   }
   beCautious: {
-    townA: string[]
-    townB: string[]
+    neighbourhoodA: string[]
+    neighbourhoodB: string[]
   }
   advanced: {
     stabilityA: string
@@ -262,38 +266,38 @@ export interface CompareSummary {
     leaseRiskReasonsA: string[]
     leaseRiskReasonsB: string[]
   }
-  badges: Array<{ town: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
+  badges: Array<{ neighbourhood: 'A' | 'B'; label: string; tone: 'good' | 'warn' | 'neutral' }>
   
   // Killer phrase: Moving from A to B
   movingPhrase?: string | null
   
   // Time & Access comparison
   timeAccess?: {
-    townA: TownTimeAccess | null
-    townB: TownTimeAccess | null
+    neighbourhoodA: NeighbourhoodTimeAccess | null
+    neighbourhoodB: NeighbourhoodTimeAccess | null
     timeBurdenA: 'low' | 'medium' | 'high'
     timeBurdenB: 'low' | 'medium' | 'high'
     movingImpact: string | null // e.g., "Likely increases daily commuting time"
   } | null
 }
 
-// 3 Town Compare Summary (no ranking, just suitability)
-export interface ThreeTownCompareSummary {
+// 3 Neighbourhood Compare Summary (no ranking, just suitability)
+export interface ThreeNeighbourhoodCompareSummary {
   planningHorizon: 'short' | 'medium' | 'long'
   overallTendencies: {
-    townA: string // e.g., "Best affordability & flexibility"
-    townB: string // e.g., "Most balanced long-term option"
-    townC: string // e.g., "Lowest school pressure"
+    neighbourhoodA: string // e.g., "Best affordability & flexibility"
+    neighbourhoodB: string // e.g., "Most balanced long-term option"
+    neighbourhoodC: string // e.g., "Lowest school pressure"
   }
   keyDifferences: {
-    affordability: string // e.g., "Town A has the lowest entry cost"
-    lease: string // e.g., "Town B shows the healthiest lease profile"
-    schoolPressure: string // e.g., "Town C has consistently lower SPI"
+    affordability: string // e.g., "Neighbourhood A has the lowest entry cost"
+    lease: string // e.g., "Neighbourhood B shows the healthiest lease profile"
+    schoolPressure: string // e.g., "Neighbourhood C has consistently lower SPI"
     timeBurden?: string // Optional
   }
   recommendation: {
-    ifLongTerm: string // e.g., "If long-term stability matters most, Town B stands out."
-    ifAffordability: string // e.g., "If affordability matters more, Town A remains attractive."
+    ifLongTerm: string // e.g., "If long-term stability matters most, Neighbourhood B stands out."
+    ifAffordability: string // e.g., "If affordability matters more, Neighbourhood A remains attractive."
   }
 }
 

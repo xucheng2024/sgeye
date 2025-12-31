@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getTownProfile, generateCompareSummary, generateThreeTownCompareSummary, TownProfile, CompareSummary, PreferenceLens, ThreeTownCompareSummary, getTownTimeAccess, TownTimeAccess, getTimeBurdenLevel, getTownTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { getNeighbourhoodProfile, generateCompareSummary, generateThreeNeighbourhoodCompareSummary, NeighbourhoodProfile, CompareSummary, PreferenceLens, ThreeNeighbourhoodCompareSummary, getNeighbourhoodTimeAccess, NeighbourhoodTimeAccess, getTimeBurdenLevel, getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel, getNeighbourhoodIdFromTown } from '@/lib/hdb-data'
 import { FamilyProfile } from '@/lib/decision-rules'
 import { calculateSchoolPressureIndex, getSchoolLandscape, SchoolPressureIndex, SchoolLandscape } from '@/lib/school-data'
 import { formatCurrency } from '@/lib/utils'
@@ -24,6 +24,11 @@ import RecommendationCard from './components/RecommendationCard'
 
 function CompareTownsPageContent() {
   const searchParams = useSearchParams()
+  
+  // Note: Route still uses /compare-towns?townA=X&townB=Y for backward compatibility
+  // Data layer now aggregates by neighbourhood_id, but UI still uses town names for selection
+  // Future: Can add neighbourhood_id parameter support when UI selector is ready
+  
   // Use URL params if available, otherwise use default recommended pair
   const defaultPair = RECOMMENDED_PAIRS[0]
   const [townA, setTownA] = useState(searchParams.get('townA') || defaultPair.townA)
@@ -42,25 +47,25 @@ function CompareTownsPageContent() {
   }
   
   const [flatType, setFlatType] = useState(searchParams.get('flatType') || '4 ROOM')
-  const [profileA, setProfileA] = useState<TownProfile | null>(null)
-  const [profileB, setProfileB] = useState<TownProfile | null>(null)
-  const [profileC, setProfileC] = useState<TownProfile | null>(null)
+  const [profileA, setProfileA] = useState<NeighbourhoodProfile | null>(null)
+  const [profileB, setProfileB] = useState<NeighbourhoodProfile | null>(null)
+  const [profileC, setProfileC] = useState<NeighbourhoodProfile | null>(null)
   const [spiA, setSpiA] = useState<SchoolPressureIndex | null>(null)
   const [spiB, setSpiB] = useState<SchoolPressureIndex | null>(null)
   const [spiC, setSpiC] = useState<SchoolPressureIndex | null>(null)
   const [landscapeA, setLandscapeA] = useState<SchoolLandscape | null>(null)
   const [landscapeB, setLandscapeB] = useState<SchoolLandscape | null>(null)
   const [landscapeC, setLandscapeC] = useState<SchoolLandscape | null>(null)
-  const [timeAccessA, setTimeAccessA] = useState<TownTimeAccess | null>(null)
-  const [timeAccessB, setTimeAccessB] = useState<TownTimeAccess | null>(null)
-  const [timeAccessC, setTimeAccessC] = useState<TownTimeAccess | null>(null)
-  const [transportProfileA, setTransportProfileA] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
-  const [transportProfileB, setTransportProfileB] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
-  const [transportProfileC, setTransportProfileC] = useState<ReturnType<typeof getTownTransportProfile> | null>(null)
+  const [timeAccessA, setTimeAccessA] = useState<NeighbourhoodTimeAccess | null>(null)
+  const [timeAccessB, setTimeAccessB] = useState<NeighbourhoodTimeAccess | null>(null)
+  const [timeAccessC, setTimeAccessC] = useState<NeighbourhoodTimeAccess | null>(null)
+  const [transportProfileA, setTransportProfileA] = useState<Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null>(null)
+  const [transportProfileB, setTransportProfileB] = useState<Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null>(null)
+  const [transportProfileC, setTransportProfileC] = useState<Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [userBudget, setUserBudget] = useState<number | undefined>(undefined)
   const [compareSummary, setCompareSummary] = useState<CompareSummary | null>(null)
-  const [threeTownSummary, setThreeTownSummary] = useState<ThreeTownCompareSummary | null>(null)
+  const [threeNeighbourhoodSummary, setThreeNeighbourhoodSummary] = useState<ThreeNeighbourhoodCompareSummary | null>(null)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [preferenceLens, setPreferenceLens] = useState<'lower_cost' | 'lease_safety' | 'school_pressure' | 'balanced'>('balanced')
   const [holdingPeriod, setHoldingPeriod] = useState<'short' | 'medium' | 'long'>('medium')
@@ -126,46 +131,62 @@ function CompareTownsPageContent() {
     const fetchData = async () => {
       setLoading(true)
       try {
+        // Get neighbourhood_ids for each town
+        const [neighbourhoodIdA, neighbourhoodIdB, neighbourhoodIdC] = await Promise.all([
+          getNeighbourhoodIdFromTown(townA),
+          getNeighbourhoodIdFromTown(townB),
+          townC ? getNeighbourhoodIdFromTown(townC) : Promise.resolve(null),
+        ])
+        
+        if (!neighbourhoodIdA || !neighbourhoodIdB) {
+          console.error('Failed to get neighbourhood_ids for towns')
+          setLoading(false)
+          return
+        }
+        
         const fetchPromises = [
-          getTownProfile(townA, flatType, 24),
-          getTownProfile(townB, flatType, 24),
+          getNeighbourhoodProfile(neighbourhoodIdA, flatType, 24),
+          getNeighbourhoodProfile(neighbourhoodIdB, flatType, 24),
           calculateSchoolPressureIndex(townA),
           calculateSchoolPressureIndex(townB),
           getSchoolLandscape(townA),
           getSchoolLandscape(townB),
-          getTownTimeAccess(townA),
-          getTownTimeAccess(townB),
+          getNeighbourhoodTimeAccess(neighbourhoodIdA),
+          getNeighbourhoodTimeAccess(neighbourhoodIdB),
+          getNeighbourhoodTransportProfile(neighbourhoodIdA),
+          getNeighbourhoodTransportProfile(neighbourhoodIdB),
         ]
         
         // Add Town C data if selected
-        if (townC) {
+        if (townC && neighbourhoodIdC) {
           fetchPromises.push(
-            getTownProfile(townC, flatType, 24),
+            getNeighbourhoodProfile(neighbourhoodIdC, flatType, 24),
             calculateSchoolPressureIndex(townC),
             getSchoolLandscape(townC),
-            getTownTimeAccess(townC)
+            getNeighbourhoodTimeAccess(neighbourhoodIdC),
+            getNeighbourhoodTransportProfile(neighbourhoodIdC)
           )
         }
         
         const results = await Promise.all(fetchPromises)
         
-        setProfileA(results[0] as TownProfile | null)
-        setProfileB(results[1] as TownProfile | null)
+        setProfileA(results[0] as NeighbourhoodProfile | null)
+        setProfileB(results[1] as NeighbourhoodProfile | null)
         setSpiA(results[2] as SchoolPressureIndex | null)
         setSpiB(results[3] as SchoolPressureIndex | null)
         setLandscapeA(results[4] as SchoolLandscape | null)
         setLandscapeB(results[5] as SchoolLandscape | null)
-        setTimeAccessA(results[6] as TownTimeAccess | null)
-        setTimeAccessB(results[7] as TownTimeAccess | null)
-        setTransportProfileA(getTownTransportProfile(townA))
-        setTransportProfileB(getTownTransportProfile(townB))
+        setTimeAccessA(results[6] as NeighbourhoodTimeAccess | null)
+        setTimeAccessB(results[7] as NeighbourhoodTimeAccess | null)
+        setTransportProfileA(results[8] as Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null)
+        setTransportProfileB(results[9] as Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null)
         
-        if (townC) {
-          setProfileC(results[8] as TownProfile | null)
-          setSpiC(results[9] as SchoolPressureIndex | null)
-          setLandscapeC(results[10] as SchoolLandscape | null)
-          setTimeAccessC(results[11] as TownTimeAccess | null)
-          setTransportProfileC(getTownTransportProfile(townC))
+        if (townC && neighbourhoodIdC) {
+          setProfileC(results[10] as NeighbourhoodProfile | null)
+          setSpiC(results[11] as SchoolPressureIndex | null)
+          setLandscapeC(results[12] as SchoolLandscape | null)
+          setTimeAccessC(results[13] as NeighbourhoodTimeAccess | null)
+          setTransportProfileC(results[14] as Awaited<ReturnType<typeof getNeighbourhoodTransportProfile>> | null)
         } else {
           setProfileC(null)
           setSpiC(null)
@@ -179,9 +200,12 @@ function CompareTownsPageContent() {
           townA,
           townB,
           townC,
+          neighbourhoodIdA,
+          neighbourhoodIdB,
+          neighbourhoodIdC,
           spiA: results[2],
           spiB: results[3],
-          spiC: townC ? results[7] : null,
+          spiC: townC ? results[11] : null,
         })
       } catch (error) {
         console.error('Error fetching comparison data:', error)
@@ -205,7 +229,7 @@ function CompareTownsPageContent() {
     const generateSummary = async () => {
       // 3 Town Compare
       if (profileA && profileB && profileC && townC) {
-        const summary = await generateThreeTownCompareSummary(
+        const summary = await generateThreeNeighbourhoodCompareSummary(
           profileA,
           profileB,
           profileC,
@@ -217,7 +241,7 @@ function CompareTownsPageContent() {
           landscapeC,
           planningHorizon
         )
-        setThreeTownSummary(summary)
+        setThreeNeighbourhoodSummary(summary)
         setCompareSummary(null)
       }
       // 2 Town Compare
@@ -283,7 +307,7 @@ function CompareTownsPageContent() {
             </p>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live — given our priorities?</h1>
-          <p className="text-lg text-gray-600 mb-2">Compare towns by cost, lease safety, and primary school competition — and see what changes when you move.</p>
+          <p className="text-lg text-gray-600 mb-2">Compare neighbourhoods by cost, lease safety, and primary school competition — and see what changes when you move.</p>
         </div>
       </header>
 
@@ -529,44 +553,44 @@ function CompareTownsPageContent() {
         </div>
 
         {/* 3 Town Compare Summary */}
-        {threeTownSummary && profileA && profileB && profileC && townC ? (
+        {threeNeighbourhoodSummary && profileA && profileB && profileC && townC ? (
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Overall Tendencies</h3>
             <div className="space-y-3 mb-8">
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="font-semibold text-gray-900 mb-1">{townA}:</p>
-                <p className="text-gray-700">{threeTownSummary.overallTendencies.townA}</p>
+                <p className="text-gray-700">{threeNeighbourhoodSummary.overallTendencies.neighbourhoodA}</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="font-semibold text-gray-900 mb-1">{townB}:</p>
-                <p className="text-gray-700">{threeTownSummary.overallTendencies.townB}</p>
+                <p className="text-gray-700">{threeNeighbourhoodSummary.overallTendencies.neighbourhoodB}</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="font-semibold text-gray-900 mb-1">{townC}:</p>
-                <p className="text-gray-700">{threeTownSummary.overallTendencies.townC}</p>
+                <p className="text-gray-700">{threeNeighbourhoodSummary.overallTendencies.neighbourhoodC}</p>
               </div>
             </div>
             
             <h3 className="text-xl font-bold text-gray-900 mb-4">Key Differences</h3>
             <div className="space-y-2 mb-6">
-              <p className="text-gray-800"><strong>Affordability:</strong> {threeTownSummary.keyDifferences.affordability}</p>
-              <p className="text-gray-800"><strong>Lease:</strong> {threeTownSummary.keyDifferences.lease}</p>
-              <p className="text-gray-800"><strong>School pressure:</strong> {threeTownSummary.keyDifferences.schoolPressure}</p>
-              {threeTownSummary.keyDifferences.timeBurden && (
-                <p className="text-gray-800"><strong>Time burden:</strong> {threeTownSummary.keyDifferences.timeBurden}</p>
+              <p className="text-gray-800"><strong>Affordability:</strong> {threeNeighbourhoodSummary.keyDifferences.affordability}</p>
+              <p className="text-gray-800"><strong>Lease:</strong> {threeNeighbourhoodSummary.keyDifferences.lease}</p>
+              <p className="text-gray-800"><strong>School pressure:</strong> {threeNeighbourhoodSummary.keyDifferences.schoolPressure}</p>
+              {threeNeighbourhoodSummary.keyDifferences.timeBurden && (
+                <p className="text-gray-800"><strong>Time burden:</strong> {threeNeighbourhoodSummary.keyDifferences.timeBurden}</p>
               )}
             </div>
             
             <div className="p-5 bg-blue-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-gray-900 mb-3">Decision Guidance</h4>
-              <p className="text-gray-800 mb-2">{threeTownSummary.recommendation.ifLongTerm}</p>
-              <p className="text-gray-800">{threeTownSummary.recommendation.ifAffordability}</p>
+              <p className="text-gray-800 mb-2">{threeNeighbourhoodSummary.recommendation.ifLongTerm}</p>
+              <p className="text-gray-800">{threeNeighbourhoodSummary.recommendation.ifAffordability}</p>
             </div>
           </div>
         ) : null}
 
         {/* Recommendation (new format) - Only show for 2 Town Compare */}
-        {compareSummary && compareSummary.recommendation && !threeTownSummary && (
+        {compareSummary && compareSummary.recommendation && !threeNeighbourhoodSummary && (
           <>
             <RecommendationCard
               compareSummary={compareSummary}
@@ -856,7 +880,7 @@ function CompareTownsPageContent() {
             {!townC && spiA && spiB && profileA && profileB && (
               <ChartCard
                 title="Moving Pressure: What Changes"
-                description="Compare the impact of moving from one town to another"
+                  description="Compare the impact of moving from one neighbourhood to another"
                 icon={<Map className="w-6 h-6" />}
               >
                 <div className="space-y-4">

@@ -103,8 +103,8 @@ export default function HDBHeatmapPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">HDB Price Heatmap by Town</h1>
-          <p className="mt-2 text-gray-600">Use this view to compare typical resale prices across towns. Click a town to explore trends, risks, and affordability.</p>
+          <h1 className="text-3xl font-bold text-gray-900">HDB Price Heatmap by Neighbourhood</h1>
+          <p className="mt-2 text-gray-600">Use this view to compare typical resale prices across neighbourhoods. Data is aggregated by neighbourhood for more precise analysis.</p>
         </div>
       </header>
 
@@ -145,14 +145,14 @@ export default function HDBHeatmapPage() {
             href={`/hdb/compare-towns?flatType=${encodeURIComponent(flatType === 'All' ? '4 ROOM' : flatType)}`}
             className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
           >
-            Compare with another town
+            Compare neighbourhoods
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
         <ChartCard
-          title="Town Price Heatmap"
-          description={`Towns ranked by typical resale price (${months} month${months > 1 ? 's' : ''} rolling).`}
+          title="Neighbourhood Price Heatmap"
+          description={`Neighbourhoods grouped by town, ranked by typical resale price (${months} month${months > 1 ? 's' : ''} rolling).`}
           icon={<Map className="w-6 h-6" />}
         >
           {loading ? (
@@ -197,7 +197,7 @@ export default function HDBHeatmapPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
                   <span className="text-blue-600 text-sm">ℹ️</span>
                   <div className="text-xs text-blue-800">
-                    Some towns have fewer recent transactions. Prices may fluctuate more due to limited data.
+                    Some neighbourhoods have fewer recent transactions. Prices may fluctuate more due to limited data.
                   </div>
                 </div>
               )}

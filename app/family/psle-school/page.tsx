@@ -11,7 +11,7 @@ import {
   SchoolPressureIndex,
   SchoolLandscape 
 } from '@/lib/school-data'
-import { getTownProfile, TownProfile } from '@/lib/hdb-data'
+import { getNeighbourhoodProfile, NeighbourhoodProfile, getNeighbourhoodIdFromTown } from '@/lib/hdb-data'
 import { formatCurrency } from '@/lib/utils'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
@@ -20,7 +20,7 @@ export default function PSLESchoolPage() {
   const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
   const [landscape, setLandscape] = useState<SchoolLandscape | null>(null)
   const [spi, setSpi] = useState<SchoolPressureIndex | null>(null)
-  const [housingProfile, setHousingProfile] = useState<TownProfile | null>(null)
+  const [housingProfile, setHousingProfile] = useState<NeighbourhoodProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [availableTowns, setAvailableTowns] = useState<string[]>(TOWNS)
 
@@ -51,10 +51,17 @@ export default function PSLESchoolPage() {
   async function loadData() {
     setLoading(true)
     try {
+      const neighbourhoodId = await getNeighbourhoodIdFromTown(selectedTown)
+      if (!neighbourhoodId) {
+        console.error('Failed to get neighbourhood_id for town:', selectedTown)
+        setLoading(false)
+        return
+      }
+      
       const [landscapeData, spiData, housingData] = await Promise.all([
         getSchoolLandscape(selectedTown),
         calculateSchoolPressureIndex(selectedTown),
-        getTownProfile(selectedTown, '4 ROOM')
+        getNeighbourhoodProfile(neighbourhoodId, '4 ROOM')
       ])
       
       setLandscape(landscapeData)
@@ -85,7 +92,7 @@ export default function PSLESchoolPage() {
     }
   }
 
-  function getHousingSummary(profile: TownProfile | null): string {
+  function getHousingSummary(profile: NeighbourhoodProfile | null): string {
     if (!profile) return 'No housing data available'
     
     const price = profile.medianResalePrice
@@ -472,7 +479,7 @@ export default function PSLESchoolPage() {
             </ChartCard>
 
             {/* Redirect CTA to Compare Towns */}
-            <CompareTownsCTA text="Compare education impact when moving between towns" />
+            <CompareTownsCTA text="Compare education impact when moving between neighbourhoods" />
           </>
         )}
       </main>

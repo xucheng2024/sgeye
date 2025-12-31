@@ -19,15 +19,15 @@ import {
   LEASE_THRESHOLDS,
   SCORING_CONSTANTS,
 } from '../constants'
-import { getAggregatedMonthly, getTownTimeAccess } from './fetch'
-import { getTownTransportProfile } from './transport-data'
-import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess, ThreeTownCompareSummary } from './types'
+import { getAggregatedMonthly, getNeighbourhoodTimeAccess } from './fetch'
+import { getNeighbourhoodTransportProfile } from './transport-data'
+import type { NeighbourhoodProfile, NeighbourhoodComparisonData, CompareSummary, PreferenceLens, NeighbourhoodTimeAccess, ThreeNeighbourhoodCompareSummary } from './types'
 import { getTimeBurdenLevel, calculateTBI, getTBILevel } from './types'
 
 // Generate standardized scores (0-100) for each dimension
 function generateStandardizedScores(
-  A: TownProfile,
-  B: TownProfile,
+  A: NeighbourhoodProfile,
+  B: NeighbourhoodProfile,
   spiA: { spi: number; level: 'low' | 'medium' | 'high' } | null,
   spiB: { spi: number; level: 'low' | 'medium' | 'high' } | null,
   landscapeA: { schoolCount: number; highDemandSchools: number } | null,
@@ -65,14 +65,14 @@ function generateStandardizedScores(
   const stabilityB = (1 - Math.min(1, B.volatility12m / maxVolatility)) * 50 + (B.volumeRecent / maxVolume) * 50
   
   return {
-    townA: {
+    neighbourhoodA: {
       entryCost: Math.round(entryCostA),
       leaseSafety: Math.round(leaseSafetyA),
       schoolPressure: Math.round(schoolPressureA),
       stability: Math.round(stabilityA),
       overall: 0 // Will be calculated based on lens
     },
-    townB: {
+    neighbourhoodB: {
       entryCost: Math.round(entryCostB),
       leaseSafety: Math.round(leaseSafetyB),
       schoolPressure: Math.round(schoolPressureB),
@@ -151,27 +151,27 @@ function calculateOverallScore(
   
   // Calculate overall scores
   const overallA = 
-    scores.townA.entryCost * weights.entryCost +
-    scores.townA.leaseSafety * weights.leaseSafety +
-    scores.townA.schoolPressure * weights.schoolPressure +
-    scores.townA.stability * weights.stability
+    scores.neighbourhoodA.entryCost * weights.entryCost +
+    scores.neighbourhoodA.leaseSafety * weights.leaseSafety +
+    scores.neighbourhoodA.schoolPressure * weights.schoolPressure +
+    scores.neighbourhoodA.stability * weights.stability
   
   const overallB = 
-    scores.townB.entryCost * weights.entryCost +
-    scores.townB.leaseSafety * weights.leaseSafety +
-    scores.townB.schoolPressure * weights.schoolPressure +
-    scores.townB.stability * weights.stability
+    scores.neighbourhoodB.entryCost * weights.entryCost +
+    scores.neighbourhoodB.leaseSafety * weights.leaseSafety +
+    scores.neighbourhoodB.schoolPressure * weights.schoolPressure +
+    scores.neighbourhoodB.stability * weights.stability
   
   return {
-    townA: { ...scores.townA, overall: Math.round(overallA) },
-    townB: { ...scores.townB, overall: Math.round(overallB) }
+    neighbourhoodA: { ...scores.neighbourhoodA, overall: Math.round(overallA) },
+    neighbourhoodB: { ...scores.neighbourhoodB, overall: Math.round(overallB) }
   }
 }
 
-// Generate Compare Summary from Town Profiles (Fixed 5-block structure)
+// Generate Compare Summary from Neighbourhood Profiles (Fixed 5-block structure)
 export async function generateCompareSummary(
-  A: TownProfile,
-  B: TownProfile,
+  A: NeighbourhoodProfile,
+  B: NeighbourhoodProfile,
   userBudget?: number,
   spiA?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
   spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
@@ -240,23 +240,23 @@ export async function generateCompareSummary(
   if (spiA && spiB && Math.abs(spiDiff) >= SPI_SIGNIFICANT) {
     // Education pressure difference is significant
     if (spiDiff < 0) {
-      headlineVerdict = `${A.town} offers significantly lower primary school pressure than ${B.town}.`
+      headlineVerdict = `${A.neighbourhoodName || A.neighbourhoodId} offers significantly lower primary school pressure than ${B.neighbourhoodName || B.neighbourhoodId}.`
     } else {
-      headlineVerdict = `${B.town} offers significantly lower primary school pressure than ${A.town}.`
+      headlineVerdict = `${B.neighbourhoodName || B.neighbourhoodId} offers significantly lower primary school pressure than ${A.neighbourhoodName || A.neighbourhoodId}.`
     }
   } else if (spiA && spiB) {
     // Education pressure is similar
     headlineVerdict = `Both towns face similar levels of primary school competition.`
   } else if (spiA || spiB) {
     // Only one town has SPI data
-    const availableTown = spiA ? A.town : B.town
-    headlineVerdict = `Primary school pressure data is available for ${availableTown}, but not for ${spiA ? B.town : A.town}.`
+    const availableTown = spiA ? A.neighbourhoodName || A.neighbourhoodId : B.neighbourhoodName || B.neighbourhoodId
+    headlineVerdict = `Primary school pressure data is available for ${availableTown}, but not for ${spiA ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId}.`
   } else {
     // No SPI data - fallback to price/lease
     if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
       headlineVerdict = priceDiff > 0 
-        ? `${A.town} commands higher entry prices than ${B.town}.`
-        : `${B.town} commands higher entry prices than ${A.town}.`
+        ? `${A.neighbourhoodName || A.neighbourhoodId} commands higher entry prices than ${B.neighbourhoodName || B.neighbourhoodId}.`
+        : `${B.neighbourhoodName || B.neighbourhoodId} commands higher entry prices than ${A.neighbourhoodName || A.neighbourhoodId}.`
     } else {
       headlineVerdict = `Both towns offer similar housing profiles.`
     }
@@ -273,8 +273,8 @@ export async function generateCompareSummary(
   // Allowed: "This move improves lease safety, but increases daily time burden."
   // NOT allowed: "Therefore choose A instead of B" (based on transport)
   const [timeAccessA, timeAccessB] = await Promise.all([
-    getTownTimeAccess(A.town),
-    getTownTimeAccess(B.town),
+    getNeighbourhoodTimeAccess(A.neighbourhoodId),
+    getNeighbourhoodTimeAccess(B.neighbourhoodId),
   ])
   
   const timeBurdenA = getTimeBurdenLevel(timeAccessA)
@@ -312,8 +312,10 @@ export async function generateCompareSummary(
     }
     
     // Time burden change (Phase 2 v1: only add to tradeoffs, not scoring) - using TBI
-    const transportProfileA = getTownTransportProfile(A.town)
-    const transportProfileB = getTownTransportProfile(B.town)
+    const [transportProfileA, transportProfileB] = await Promise.all([
+      getNeighbourhoodTransportProfile(A.neighbourhoodId),
+      getNeighbourhoodTransportProfile(B.neighbourhoodId),
+    ])
     if (transportProfileA && transportProfileB) {
       const tbiA = calculateTBI(transportProfileA)
       const tbiB = calculateTBI(transportProfileB)
@@ -368,13 +370,13 @@ export async function generateCompareSummary(
   // ============================================
   let educationPressure: CompareSummary['educationPressure'] = null
   if (spiA && spiB) {
-    const comparison = `Primary school pressure:\n• ${A.town}: SPI ${spiA.spi} (${getSPILabel(spiA.level)})\n• ${B.town}: SPI ${spiB.spi} (${getSPILabel(spiB.level)})`
+    const comparison = `Primary school pressure:\n• ${A.neighbourhoodName || A.neighbourhoodId}: SPI ${spiA.spi} (${getSPILabel(spiA.level)})\n• ${B.neighbourhoodName || B.neighbourhoodId}: SPI ${spiB.spi} (${getSPILabel(spiB.level)})`
     
     let explanation = ''
     if (spiDiff >= SPI_SIGNIFICANT) {
-      explanation = `Families in ${A.town} face more concentrated competition and fewer lower-risk options.`
+      explanation = `Families in ${A.neighbourhoodName || A.neighbourhoodId} face more concentrated competition and fewer lower-risk options.`
     } else if (spiDiff <= -SPI_SIGNIFICANT) {
-      explanation = `${A.town} offers a wider range of lower-pressure school options.`
+      explanation = `${A.neighbourhoodName || A.neighbourhoodId} offers a wider range of lower-pressure school options.`
     } else {
       explanation = `Both towns offer similar school competition levels.`
     }
@@ -394,9 +396,9 @@ export async function generateCompareSummary(
     educationPressure = { comparison, explanation, pressureRangeNote }
   } else if (spiA || spiB) {
     // Show partial data if only one town has SPI data
-    const availableTown = spiA ? A.town : B.town
+    const availableTown = spiA ? A.neighbourhoodName || A.neighbourhoodId : B.neighbourhoodName || B.neighbourhoodId
     const availableSPI = spiA || spiB!
-    const comparison = `Primary school pressure:\n• ${availableTown}: SPI ${availableSPI.spi} (${getSPILabel(availableSPI.level)})\n• ${spiA ? B.town : A.town}: Data not available`
+    const comparison = `Primary school pressure:\n• ${availableTown}: SPI ${availableSPI.spi} (${getSPILabel(availableSPI.level)})\n• ${spiA ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId}: Data not available`
     const explanation = `School pressure data is only available for ${availableTown}.`
     educationPressure = { comparison, explanation }
   }
@@ -411,57 +413,57 @@ export async function generateCompareSummary(
   
   if (Math.abs(priceDiff) >= PRICE_SIGNIFICANT) {
     housingTradeoff.price = priceDiff > 0
-      ? `Entry cost is higher in ${A.town}.`
-      : `Entry cost is lower in ${A.town}.`
+      ? `Entry cost is higher in ${A.neighbourhoodName || A.neighbourhoodId}.`
+      : `Entry cost is lower in ${A.neighbourhoodName || A.neighbourhoodId}.`
   }
   
   if (Math.abs(leaseDiff) >= LEASE_SIGNIFICANT) {
     housingTradeoff.lease = leaseDiff > 0
-      ? `Remaining lease is healthier in ${A.town}.`
-      : `Remaining lease is healthier in ${B.town}.`
+      ? `Remaining lease is healthier in ${A.neighbourhoodName || A.neighbourhoodId}.`
+      : `Remaining lease is healthier in ${B.neighbourhoodName || B.neighbourhoodId}.`
   }
   
   // ============================================
   // Block 4: Who Each Town Is Better For
   // ============================================
   const bestSuitedFor: CompareSummary['bestSuitedFor'] = {
-    townA: [],
-    townB: []
+    neighbourhoodA: [],
+    neighbourhoodB: []
   }
   
   // Education pressure tags
   if (spiA && spiB) {
     if (spiDiff < -SPI_SIGNIFICANT) {
-      bestSuitedFor.townA.push('Families prioritizing lower primary school pressure')
+      bestSuitedFor.neighbourhoodA.push('Families prioritizing lower primary school pressure')
     }
     if (spiDiff > SPI_SIGNIFICANT) {
-      bestSuitedFor.townB.push('Families prioritizing lower primary school pressure')
+      bestSuitedFor.neighbourhoodB.push('Families prioritizing lower primary school pressure')
     }
   }
   
   // Price tags
   if (priceDiff < -PRICE_SIGNIFICANT) {
-    bestSuitedFor.townA.push('Buyers prioritizing lower upfront cost')
+    bestSuitedFor.neighbourhoodA.push('Buyers prioritizing lower upfront cost')
   }
   if (priceDiff > PRICE_SIGNIFICANT) {
-    bestSuitedFor.townB.push('Buyers prioritizing lower upfront cost')
+    bestSuitedFor.neighbourhoodB.push('Buyers prioritizing lower upfront cost')
   }
   
   // Lease tags
   if (leaseDiff > LEASE_SIGNIFICANT) {
-    bestSuitedFor.townA.push('Long-term owners valuing lease security')
+    bestSuitedFor.neighbourhoodA.push('Long-term owners valuing lease security')
   }
   if (leaseDiff < -LEASE_SIGNIFICANT) {
-    bestSuitedFor.townB.push('Long-term owners valuing lease security')
+    bestSuitedFor.neighbourhoodB.push('Long-term owners valuing lease security')
   }
   
   // Additional tags for buyers less sensitive to school competition
   if (spiA && spiB) {
     if (spiDiff > SPI_SIGNIFICANT) {
-      bestSuitedFor.townB.push('Buyers less sensitive to school competition')
+      bestSuitedFor.neighbourhoodB.push('Buyers less sensitive to school competition')
     }
     if (spiDiff < -SPI_SIGNIFICANT) {
-      bestSuitedFor.townA.push('Buyers less sensitive to school competition')
+      bestSuitedFor.neighbourhoodA.push('Buyers less sensitive to school competition')
     }
   }
   
@@ -489,8 +491,8 @@ export async function generateCompareSummary(
   let movingPhrase: string | null = null
   if (spiA && spiB) {
     const parts: string[] = []
-    const fromTown = A.town
-    const toTown = B.town
+    const fromTown = A.neighbourhoodName || A.neighbourhoodId
+    const toTown = B.neighbourhoodName || B.neighbourhoodId
     
     // School pressure change
     if (Math.abs(spiDiff) >= SPI_SIGNIFICANT) {
@@ -520,8 +522,10 @@ export async function generateCompareSummary(
     }
     
     // Time burden change (Phase 2 v1) - using TBI for more precise assessment
-    const transportProfileA = getTownTransportProfile(A.town)
-    const transportProfileB = getTownTransportProfile(B.town)
+    const [transportProfileA, transportProfileB] = await Promise.all([
+      getNeighbourhoodTransportProfile(A.neighbourhoodId),
+      getNeighbourhoodTransportProfile(B.neighbourhoodId),
+    ])
     if (transportProfileA && transportProfileB) {
       const tbiA = calculateTBI(transportProfileA)
       const tbiB = calculateTBI(transportProfileB)
@@ -556,8 +560,10 @@ export async function generateCompareSummary(
     
     if (parts.length > 0) {
       // Generate moving phrase with better structure for Transport burden
-      const transportProfileA = getTownTransportProfile(A.town)
-      const transportProfileB = getTownTransportProfile(B.town)
+      const [transportProfileA, transportProfileB] = await Promise.all([
+        getNeighbourhoodTransportProfile(A.neighbourhoodId),
+        getNeighbourhoodTransportProfile(B.neighbourhoodId),
+      ])
       let transportPart = ''
       
       if (transportProfileA && transportProfileB) {
@@ -642,8 +648,10 @@ export async function generateCompareSummary(
   // Generate Time & Access Moving Impact (using TBI)
   // ============================================
   let timeAccessMovingImpact: string | null = null
-  const transportProfileA = getTownTransportProfile(A.town)
-  const transportProfileB = getTownTransportProfile(B.town)
+  const [transportProfileA, transportProfileB] = await Promise.all([
+    getNeighbourhoodTransportProfile(A.neighbourhoodId),
+    getNeighbourhoodTransportProfile(B.neighbourhoodId),
+  ])
   
   if (transportProfileA && transportProfileB) {
     const tbiA = calculateTBI(transportProfileA)
@@ -653,13 +661,13 @@ export async function generateCompareSummary(
     if (Math.abs(tbiDiff) >= 5) {
       if (tbiDiff > 0) {
         if (planningHorizon === 'long') {
-          timeAccessMovingImpact = `Moving to ${B.town} increases daily time burden, which compounds over long holding periods.`
+          timeAccessMovingImpact = `Moving to ${B.neighbourhoodName || B.neighbourhoodId} increases daily time burden, which compounds over long holding periods.`
         } else {
           timeAccessMovingImpact = `Likely increases daily commuting time`
         }
       } else {
         if (planningHorizon === 'long') {
-          timeAccessMovingImpact = `Moving to ${B.town} reduces daily time burden, improving long-term commute sustainability.`
+          timeAccessMovingImpact = `Moving to ${B.neighbourhoodName || B.neighbourhoodId} reduces daily time burden, improving long-term commute sustainability.`
         } else {
           timeAccessMovingImpact = `Likely reduces daily commuting time`
         }
@@ -700,7 +708,7 @@ export async function generateCompareSummary(
   let recommendation: CompareSummary['recommendation'] = null
   if (scoresWithOverall) {
     const overallDiff = scoresWithOverall.townB.overall - scoresWithOverall.townA.overall
-    const winner = overallDiff > 0 ? B.town : A.town
+    const winner = overallDiff > 0 ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId
     const winnerIsB = overallDiff > 0
     
     // Generate headline using fixed templates based on planning horizon and family profile
@@ -733,7 +741,7 @@ export async function generateCompareSummary(
     
     // Always show: Entry cost, Lease profile, School pressure, Transport burden
     // 1. Entry cost (with emoji)
-    const cheaper = metrics.deltaPrice > 0 ? B.town : A.town
+    const cheaper = metrics.deltaPrice > 0 ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId
     const priceDiff = Math.abs(metrics.deltaPrice)
     if (priceDiff >= 1000) {
       const priceDiffK = Math.round(priceDiff / 1000)
@@ -745,8 +753,8 @@ export async function generateCompareSummary(
     }
     
     // 2. Lease profile (lifecycle-aware phrasing, with emoji)
-    const healthier = metrics.deltaLeaseYears > 0 ? B.town : A.town
-    const shorter = metrics.deltaLeaseYears < 0 ? B.town : A.town
+    const healthier = metrics.deltaLeaseYears > 0 ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId
+    const shorter = metrics.deltaLeaseYears < 0 ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId
     const leaseDiff = Math.abs(metrics.deltaLeaseYears)
     if (leaseDiff >= 1) {
       if (planningHorizon === 'short') {
@@ -794,8 +802,10 @@ export async function generateCompareSummary(
     }
     
     // 4. Transport burden (human-readable format, no TBI numbers)
-    const transportProfileA = getTownTransportProfile(A.town)
-    const transportProfileB = getTownTransportProfile(B.town)
+    const [transportProfileA, transportProfileB] = await Promise.all([
+      getNeighbourhoodTransportProfile(A.neighbourhoodId),
+      getNeighbourhoodTransportProfile(B.neighbourhoodId),
+    ])
     if (transportProfileA && transportProfileB) {
       const tbiA = calculateTBI(transportProfileA)
       const tbiB = calculateTBI(transportProfileB)
@@ -919,16 +929,16 @@ export async function generateCompareSummary(
     if (spiChangeAbs > COMPARISON_THRESHOLDS.SPI_MODERATE) {
       // Education becomes primary factor in headline
       if (movingEducationImpact.spiChange < 0) {
-        recommendation.headline = `Choose ${A.town} if you prioritise significantly lower primary school pressure.`
+        recommendation.headline = `Choose ${A.neighbourhoodName || A.neighbourhoodId} if you prioritise significantly lower primary school pressure.`
       } else {
-        recommendation.headline = `Choose ${B.town} if you prioritise significantly lower primary school pressure.`
+        recommendation.headline = `Choose ${B.neighbourhoodName || B.neighbourhoodId} if you prioritise significantly lower primary school pressure.`
       }
     } else if (spiChangeAbs >= COMPARISON_THRESHOLDS.SPI_MINOR && spiChangeAbs <= COMPARISON_THRESHOLDS.SPI_MODERATE) {
       // Write as trade-off
       if (movingEducationImpact.spiChange < 0) {
-        recommendation.headline = `Choose ${A.town} for lower school pressure, but consider trade-offs with price and lease.`
+        recommendation.headline = `Choose ${A.neighbourhoodName || A.neighbourhoodId} for lower school pressure, but consider trade-offs with price and lease.`
       } else {
-        recommendation.headline = `Choose ${B.town} for lower school pressure, but consider trade-offs with price and lease.`
+        recommendation.headline = `Choose ${B.neighbourhoodName || B.neighbourhoodId} for lower school pressure, but consider trade-offs with price and lease.`
       }
     }
     // If SPI difference is minor: Keep existing headline (education mentioned in trade-offs)
@@ -952,11 +962,11 @@ export async function generateCompareSummary(
       const hasEducation = recommendation.tradeoffs.some(t => t.includes('School') || t.includes('🎓'))
       if (!hasEducation && recommendation.tradeoffs.length < SCORING_CONSTANTS.MAX_TRADEOFF_BULLETS) {
         const spiChange = movingEducationImpact.spiChange
-        const lowerSPI = spiChange < 0 ? A.town : B.town
+        const lowerSPI = spiChange < 0 ? A.neighbourhoodName || A.neighbourhoodId : B.neighbourhoodName || B.neighbourhoodId
         const diff = spiChangeAbs
         const level = (spiChange < 0 ? spiA : spiB)?.level
         const levelText = level === 'low' ? 'still Low' : level === 'medium' ? 'Moderate' : 'High'
-        recommendation.tradeoffs.push(`🎓 School: Moving to ${lowerSPI === A.town ? B.town : A.town} ${spiChange < 0 ? 'decreases' : 'increases'} SPI by +${diff.toFixed(1)} (${levelText})`)
+        recommendation.tradeoffs.push(`🎓 School: Moving to ${lowerSPI === A.neighbourhoodName || A.neighbourhoodId ? B.neighbourhoodName || B.neighbourhoodId : A.neighbourhoodName || A.neighbourhoodId} ${spiChange < 0 ? 'decreases' : 'increases'} SPI by +${diff.toFixed(1)} (${levelText})`)
       }
       
       // Update headline to mention education if significant
@@ -978,13 +988,13 @@ export async function generateCompareSummary(
   if (housingTradeoff.lease) keyDifferences.push(housingTradeoff.lease)
   
   const bestFor = {
-    townA: bestSuitedFor.townA,
-    townB: bestSuitedFor.townB
+    neighbourhoodA: bestSuitedFor.neighbourhoodA,
+    neighbourhoodB: bestSuitedFor.neighbourhoodB
   }
   
   const beCautious = {
-    townA: [] as string[],
-    townB: [] as string[]
+    neighbourhoodA: [] as string[],
+    neighbourhoodB: [] as string[]
   }
   
   // Badges
@@ -1037,22 +1047,26 @@ export async function generateCompareSummary(
   }
 }
 
-export async function getTownComparisonData(
-  town: string,
+// Get Town Comparison Data
+// Note: town parameter is kept for backward compatibility but data is aggregated by neighbourhood_id
+// Town is only used for filtering, not for aggregation
+export async function getNeighbourhoodComparisonData(
+  neighbourhoodId: string,
   flatType: string,
   months: number = 12
-): Promise<TownComparisonData | null> {
+): Promise<NeighbourhoodComparisonData | null> {
   try {
     const endDate = new Date()
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - months)
 
-    // Get aggregated monthly data
+    // Get aggregated monthly data by neighbourhood_id
     const data = await getAggregatedMonthly(
       flatType,
-      town,
+      undefined, // town - not used
       startDate.toISOString().split('T')[0],
-      endDate.toISOString().split('T')[0]
+      endDate.toISOString().split('T')[0],
+      neighbourhoodId // Use neighbourhood_id directly
     )
 
     if (data.length === 0) return null
@@ -1073,8 +1087,20 @@ export async function getTownComparisonData(
     const below55 = leases.filter(l => l < LEASE_THRESHOLDS.CRITICAL).length
     const pctBelow55Years = leases.length > 0 ? (below55 / leases.length) * 100 : 0
 
+    // Get neighbourhood name for display
+    if (!supabase) {
+      console.error('Supabase not initialized')
+      return null
+    }
+    const { data: neighbourhood } = await supabase
+      .from('neighbourhoods')
+      .select('id, name')
+      .eq('id', neighbourhoodId)
+      .single()
+
     return {
-      town,
+      neighbourhoodId,
+      neighbourhoodName: neighbourhood?.name,
       flatType,
       medianPrice: prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)],
       p25Price: prices.sort((a, b) => a - b)[Math.floor(prices.length * 0.25)],
@@ -1096,11 +1122,12 @@ export async function getTownComparisonData(
   return null
 }
 
-// Generate 3 Town Compare Summary (no ranking, just suitability)
-export async function generateThreeTownCompareSummary(
-  A: TownProfile,
-  B: TownProfile,
-  C: TownProfile,
+// Generate 3 Neighbourhood Compare Summary (no ranking, just suitability)
+// Note: Function name kept for backward compatibility, but data is aggregated by neighbourhood_id
+export async function generateThreeNeighbourhoodCompareSummary(
+  A: NeighbourhoodProfile,
+  B: NeighbourhoodProfile,
+  C: NeighbourhoodProfile,
   spiA?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
   spiB?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
   spiC?: { spi: number; level: 'low' | 'medium' | 'high' } | null,
@@ -1108,12 +1135,12 @@ export async function generateThreeTownCompareSummary(
   landscapeB?: { schoolCount: number; highDemandSchools: number } | null,
   landscapeC?: { schoolCount: number; highDemandSchools: number } | null,
   planningHorizon: 'short' | 'medium' | 'long' = 'medium'
-): Promise<ThreeTownCompareSummary> {
+): Promise<ThreeNeighbourhoodCompareSummary> {
   // Fetch Time & Access data for all 3 towns
   const [timeAccessA, timeAccessB, timeAccessC] = await Promise.all([
-    getTownTimeAccess(A.town),
-    getTownTimeAccess(B.town),
-    getTownTimeAccess(C.town),
+    getNeighbourhoodTimeAccess(A.neighbourhoodId),
+    getNeighbourhoodTimeAccess(B.neighbourhoodId),
+    getNeighbourhoodTimeAccess(C.neighbourhoodId),
   ])
   
   const timeBurdenA = getTimeBurdenLevel(timeAccessA)
@@ -1122,20 +1149,20 @@ export async function generateThreeTownCompareSummary(
   
   // Determine overall tendencies (no ranking, just "who is better for what")
   const tendencies = {
-    townA: '',
-    townB: '',
-    townC: '',
+    neighbourhoodA: '',
+    neighbourhoodB: '',
+    neighbourhoodC: '',
   }
   
   // Affordability comparison
   const prices = [A.medianResalePrice, B.medianResalePrice, C.medianResalePrice]
   const cheapestIndex = prices.indexOf(Math.min(...prices))
-  const cheapestTown = cheapestIndex === 0 ? A.town : cheapestIndex === 1 ? B.town : C.town
+  const cheapestTown = cheapestIndex === 0 ? A.neighbourhoodName || A.neighbourhoodId : cheapestIndex === 1 ? B.neighbourhoodName || B.neighbourhoodId : C.neighbourhoodName || C.neighbourhoodId
   
   // Lease comparison
   const leases = [A.medianRemainingLease, B.medianRemainingLease, C.medianRemainingLease]
   const healthiestLeaseIndex = leases.indexOf(Math.max(...leases))
-  const healthiestLeaseTown = healthiestLeaseIndex === 0 ? A.town : healthiestLeaseIndex === 1 ? B.town : C.town
+  const healthiestLeaseTown = healthiestLeaseIndex === 0 ? A.neighbourhoodName || A.neighbourhoodId : healthiestLeaseIndex === 1 ? B.neighbourhoodName || B.neighbourhoodId : C.neighbourhoodName || C.neighbourhoodId
   
   // School pressure comparison
   const spis = [
@@ -1144,48 +1171,48 @@ export async function generateThreeTownCompareSummary(
     spiC?.spi ?? 50,
   ]
   const lowestSPIIndex = spis.indexOf(Math.min(...spis))
-  const lowestSPITown = lowestSPIIndex === 0 ? A.town : lowestSPIIndex === 1 ? B.town : C.town
+  const lowestSPITown = lowestSPIIndex === 0 ? A.neighbourhoodName || A.neighbourhoodId : lowestSPIIndex === 1 ? B.neighbourhoodName || B.neighbourhoodId : C.neighbourhoodName || C.neighbourhoodId
   
   // Time burden comparison
   const timeBurdens = [timeBurdenA, timeBurdenB, timeBurdenC]
   const burdenLevels = { low: 1, medium: 2, high: 3 }
   const burdenScores = timeBurdens.map(tb => burdenLevels[tb])
   const lowestBurdenIndex = burdenScores.indexOf(Math.min(...burdenScores))
-  const lowestBurdenTown = lowestBurdenIndex === 0 ? A.town : lowestBurdenIndex === 1 ? B.town : C.town
+  const lowestBurdenTown = lowestBurdenIndex === 0 ? A.neighbourhoodName || A.neighbourhoodId : lowestBurdenIndex === 1 ? B.neighbourhoodName || B.neighbourhoodId : C.neighbourhoodName || C.neighbourhoodId
   
   // Assign tendencies based on strengths (no ranking, just suitability)
-  if (A.town === cheapestTown) {
-    tendencies.townA = 'Best affordability & flexibility'
-  } else if (A.town === healthiestLeaseTown) {
-    tendencies.townA = 'Strongest lease safety'
-  } else if (A.town === lowestSPITown) {
-    tendencies.townA = 'Lowest school pressure'
+  if (A.neighbourhoodName || A.neighbourhoodId === cheapestTown) {
+    tendencies.neighbourhoodA = 'Best affordability & flexibility'
+  } else if ((A.neighbourhoodName || A.neighbourhoodId) === healthiestLeaseTown) {
+    tendencies.neighbourhoodA = 'Strongest lease safety'
+  } else if ((A.neighbourhoodName || A.neighbourhoodId) === lowestSPITown) {
+    tendencies.neighbourhoodA = 'Lowest school pressure'
   } else {
-    tendencies.townA = 'Balanced option'
+    tendencies.neighbourhoodA = 'Balanced option'
   }
   
-  if (B.town === cheapestTown) {
-    tendencies.townB = 'Best affordability & flexibility'
-  } else if (B.town === healthiestLeaseTown) {
-    tendencies.townB = 'Strongest lease safety'
-  } else if (B.town === lowestSPITown) {
-    tendencies.townB = 'Lowest school pressure'
+  if ((B.neighbourhoodName || B.neighbourhoodId) === cheapestTown) {
+    tendencies.neighbourhoodB = 'Best affordability & flexibility'
+  } else if ((B.neighbourhoodName || B.neighbourhoodId) === healthiestLeaseTown) {
+    tendencies.neighbourhoodB = 'Strongest lease safety'
+  } else if ((B.neighbourhoodName || B.neighbourhoodId) === lowestSPITown) {
+    tendencies.neighbourhoodB = 'Lowest school pressure'
   } else {
-    tendencies.townB = 'Most balanced long-term option'
+    tendencies.neighbourhoodB = 'Most balanced long-term option'
   }
   
-  if (C.town === cheapestTown) {
-    tendencies.townC = 'Best affordability & flexibility'
-  } else if (C.town === healthiestLeaseTown) {
-    tendencies.townC = 'Strongest lease safety'
-  } else if (C.town === lowestSPITown) {
-    tendencies.townC = 'Lowest school pressure'
+  if ((C.neighbourhoodName || C.neighbourhoodId) === cheapestTown) {
+    tendencies.neighbourhoodC = 'Best affordability & flexibility'
+  } else if ((C.neighbourhoodName || C.neighbourhoodId) === healthiestLeaseTown) {
+    tendencies.neighbourhoodC = 'Strongest lease safety'
+  } else if ((C.neighbourhoodName || C.neighbourhoodId) === lowestSPITown) {
+    tendencies.neighbourhoodC = 'Lowest school pressure'
   } else {
-    tendencies.townC = 'Balanced option'
+    tendencies.neighbourhoodC = 'Balanced option'
   }
   
   // Key differences (aggregated, not pairwise)
-  const keyDifferences: ThreeTownCompareSummary['keyDifferences'] = {
+  const keyDifferences: ThreeNeighbourhoodCompareSummary['keyDifferences'] = {
     affordability: `${cheapestTown} has the lowest entry cost`,
     lease: `${healthiestLeaseTown} shows the healthiest lease profile`,
     schoolPressure: `${lowestSPITown} has consistently lower SPI`,
@@ -1193,11 +1220,11 @@ export async function generateThreeTownCompareSummary(
   
   // Add time burden if significant difference
   if (timeBurdens[0] !== timeBurdens[1] || timeBurdens[1] !== timeBurdens[2]) {
-    keyDifferences.timeBurden = `${lowestBurdenTown} has the lowest daily time burden`
+    keyDifferences.timeBurden = `${lowestBurdenTown || 'This neighbourhood'} has the lowest daily time burden`
   }
   
   // Recommendation (no winner, just scenarios)
-  const recommendation: ThreeTownCompareSummary['recommendation'] = {
+  const recommendation: ThreeNeighbourhoodCompareSummary['recommendation'] = {
     ifLongTerm: planningHorizon === 'long' 
       ? `For long-term planning: ${healthiestLeaseTown} is structurally safer, while ${lowestSPITown} trades stability for lower school pressure.`
       : `If long-term stability matters most, ${healthiestLeaseTown} stands out.`,

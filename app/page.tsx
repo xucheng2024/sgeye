@@ -12,7 +12,7 @@ export default function Home() {
               Where should my family live in Singapore?
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
-              Compare towns and understand real trade-offs — cost, lease risk, rent pressure, and school competition.
+              Compare neighbourhoods and understand real trade-offs — cost, lease risk, and school competition.
             </p>
             <div className="flex flex-col items-center justify-center">
               <Link
