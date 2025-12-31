@@ -25,15 +25,8 @@ export function generateSignals(
     affordability = 'Out of reach'
   }
 
-  // Signal 2: Cash Flow Advantage
-  let cashflow: 'Strong buy advantage' | 'Buy advantage' | 'Rent competitive'
-  if (data.medianRent && data.medianRent > estimatedMortgage * 1.2) {
-    cashflow = 'Strong buy advantage'
-  } else if (data.medianRent && data.medianRent > estimatedMortgage) {
-    cashflow = 'Buy advantage'
-  } else {
-    cashflow = 'Rent competitive'
-  }
+  // Signal 2: Cash Flow Advantage (removed - rental data no longer available)
+  let cashflow: 'Strong buy advantage' | 'Buy advantage' | 'Rent competitive' = 'Rent competitive'
 
   // Signal 3: Lease Risk
   let leaseRisk: 'High' | 'Moderate' | 'Low'
@@ -182,11 +175,6 @@ export function generateSuitabilityFromProfile(
   const suits: string[] = []
   const avoids: string[] = []
   
-  // Based on cashflow
-  if (profile.rentBuyGapMonthly > 0) {
-    suits.push('Buyers prioritizing cash flow advantage')
-  }
-  
   // Based on lease risk
   if (profile.signals.leaseRisk === 'high' || profile.signals.leaseRisk === 'critical') {
     suits.push('Households planning shorter holding periods')
@@ -232,11 +220,6 @@ export function generateDecisionHintFromProfiles(
     hints.push('If you plan to upgrade or move again, market liquidity matters more.')
   }
   
-  // Rule: If rent > mortgage → emphasize ownership advantage
-  if (profileA.rentBuyGapMonthly > 0 || profileB.rentBuyGapMonthly > 0) {
-    hints.push('With rents exceeding mortgage payments, buying builds equity while renting does not.')
-  }
-  
   // Default hint if no specific rules match
   if (hints.length === 0) {
     hints.push('Consider your timeline: longer stays favor lease security, shorter stays favor liquidity.')
@@ -252,12 +235,6 @@ export function generateDecisionVerdictFromProfiles(
   profileA: TownProfile,
   profileB: TownProfile
 ): string | null {
-  // More balanced long-term option
-  if ((profileA.rentBuyGapMonthly > 0 && profileA.signals.leaseRisk !== 'high' && profileA.signals.leaseRisk !== 'critical') ||
-      (profileB.rentBuyGapMonthly > 0 && profileB.signals.leaseRisk !== 'high' && profileB.signals.leaseRisk !== 'critical')) {
-    return 'More balanced long-term option'
-  }
-  
   // Affordability-driven, higher long-term risk
   if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical' ||
       profileB.signals.leaseRisk === 'high' || profileB.signals.leaseRisk === 'critical') {
@@ -343,9 +320,6 @@ export function generateDecisionGuidanceFromProfiles(
   }
   if (profileA.signals.leaseRisk === 'high' || profileA.signals.leaseRisk === 'critical') {
     chooseAParts.push('comfortable with lease trade-offs')
-  }
-  if (profileA.rentBuyGapMonthly > profileB.rentBuyGapMonthly) {
-    chooseAParts.push('stronger cash flow advantage')
   }
   
   // Town B advantages

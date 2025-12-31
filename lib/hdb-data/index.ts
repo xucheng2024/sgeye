@@ -33,7 +33,6 @@ export {
   getTownAggregated,
   getLeasePriceData,
   getBinnedLeasePriceData,
-  getMedianRent,
   findAffordableProperties,
   getTownTimeAccess,
 } from './fetch'

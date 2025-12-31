@@ -283,7 +283,7 @@ function CompareTownsPageContent() {
             </p>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Where should my family live — given our priorities?</h1>
-          <p className="text-lg text-gray-600 mb-2">Compare towns by cost, lease safety, rent pressure, and primary school competition — and see what changes when you move.</p>
+          <p className="text-lg text-gray-600 mb-2">Compare towns by cost, lease safety, and primary school competition — and see what changes when you move.</p>
         </div>
       </header>
 
@@ -889,16 +889,6 @@ function CompareTownsPageContent() {
                           {profileB.medianRemainingLease > profileA.medianRemainingLease ? '+' : ''}{Math.round(Math.abs(profileB.medianRemainingLease - profileA.medianRemainingLease))} years
                         </span>
                       </div>
-                      {profileA.medianRent && profileB.medianRent && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">Rent vs Buy Gap:</span>
-                          <span className={`text-sm font-semibold ${
-                            profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? 'text-red-600' : 'text-green-600'
-                          }`}>
-                            {profileB.rentBuyGapMonthly < profileA.rentBuyGapMonthly ? '' : '+'}{formatCurrency(profileB.rentBuyGapMonthly - profileA.rentBuyGapMonthly)} / month
-                          </span>
-                        </div>
-                      )}
                       {transportProfileA && transportProfileB && (
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-700">Transport Burden:</span>
@@ -984,7 +974,7 @@ function CompareTownsPageContent() {
               {priceOpen && (
                 <ChartCard
                   title="Price & Cash Flow"
-                  description="Monthly costs and rental comparison"
+                  description="Monthly costs comparison"
                   icon={<Scale className="w-6 h-6" />}
                 >
               <div className="overflow-x-auto">
@@ -1010,67 +1000,9 @@ function CompareTownsPageContent() {
                       <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileB.estimatedMonthlyMortgage)}</td>
                       {townC && profileC && <td className="py-4 px-4 text-right text-gray-800">{formatCurrency(profileC.estimatedMonthlyMortgage)}</td>}
                     </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="py-4 px-4 text-gray-700 font-medium">Median rent (same flat)</td>
-                      <td className="py-4 px-4 text-right text-gray-800">
-                        {profileA.medianRent ? formatCurrency(profileA.medianRent) : <span className="text-gray-400">N/A</span>}
-                      </td>
-                      <td className="py-4 px-4 text-right text-gray-800">
-                        {profileB.medianRent ? formatCurrency(profileB.medianRent) : <span className="text-gray-400">N/A</span>}
-                      </td>
-                      {townC && profileC && (
-                        <td className="py-4 px-4 text-right text-gray-800">
-                          {profileC.medianRent ? formatCurrency(profileC.medianRent) : <span className="text-gray-400">N/A</span>}
-                        </td>
-                      )}
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="py-4 px-4 text-gray-700 font-medium">Rent vs Buy gap</td>
-                      <td className="py-4 px-4 text-right">
-                        {profileA.medianRent ? (
-                          <span className={`font-semibold ${profileA.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {profileA.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileA.rentBuyGapMonthly)}
-                          </span>
-                        ) : <span className="text-gray-400">N/A</span>}
-                      </td>
-                      <td className="py-4 px-4 text-right">
-                        {profileB.medianRent ? (
-                          <span className={`font-semibold ${profileB.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {profileB.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileB.rentBuyGapMonthly)}
-                          </span>
-                        ) : <span className="text-gray-400">N/A</span>}
-                      </td>
-                      {townC && profileC && (
-                        <td className="py-4 px-4 text-right">
-                          {profileC.medianRent ? (
-                            <span className={`font-semibold ${profileC.rentBuyGapMonthly > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {profileC.rentBuyGapMonthly > 0 ? '+' : ''}{formatCurrency(profileC.rentBuyGapMonthly)}
-                            </span>
-                          ) : <span className="text-gray-400">N/A</span>}
-                        </td>
-                      )}
-                    </tr>
                   </tbody>
                 </table>
               </div>
-              <div className="mt-3 text-xs text-gray-500 italic">
-                Positive values indicate renting costs more per month than buying.
-              </div>
-              <div className="mt-3 p-2 bg-gray-50 rounded border-l-2 border-blue-400">
-                <p className="text-xs font-semibold text-gray-700 mb-1">Why it matters:</p>
-                <p className="text-xs text-gray-600">
-                  When rents exceed mortgage payments, buying builds equity while renting does not. The larger the gap, the stronger the ownership advantage.
-                </p>
-              </div>
-              {!townC && profileA.medianRent && profileB.medianRent && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
-                  {profileA.rentBuyGapMonthly > profileB.rentBuyGapMonthly ? (
-                    <>Renting in {townA} costs significantly more than buying, widening the ownership advantage.</>
-                  ) : (
-                    <>Renting in {townB} costs significantly more than buying, widening the ownership advantage.</>
-                  )}
-                </div>
-              )}
                 </ChartCard>
               )}
             </div>

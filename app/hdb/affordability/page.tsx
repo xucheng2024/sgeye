@@ -1,16 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { calculateAffordability, findAffordableProperties, getMedianRent, calculateMonthlyMortgage } from '@/lib/hdb-data'
+import { calculateAffordability, findAffordableProperties, calculateMonthlyMortgage } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, Scale, AlertTriangle, ArrowRight } from 'lucide-react'
+import { Calculator, Home, AlertTriangle, ArrowRight } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
 
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
-const FLAT_TYPES_RENT = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -21,12 +20,6 @@ export default function HDBAffordabilityPage() {
   const [results, setResults] = useState<any>(null)
   const [affordableProperties, setAffordableProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  
-  // Rent vs Buy state
-  const [rentTown, setRentTown] = useState('ANG MO KIO')
-  const [rentFlatType, setRentFlatType] = useState('4 ROOM')
-  const [medianRent, setMedianRent] = useState<number | null>(null)
-  const [rentLoading, setRentLoading] = useState(false)
 
   const handleCalculate = async () => {
     setLoading(true)
@@ -41,17 +34,6 @@ export default function HDBAffordabilityPage() {
   useEffect(() => {
     handleCalculate()
   }, [])
-
-  // Fetch median rent when town or flat type changes
-  useEffect(() => {
-    const fetchRent = async () => {
-      setRentLoading(true)
-      const rent = await getMedianRent(rentTown, rentFlatType, 6)
-      setMedianRent(rent)
-      setRentLoading(false)
-    }
-    fetchRent()
-  }, [rentTown, rentFlatType])
 
   // Find closest matches (top 2-3)
   const budget = results?.maxPropertyPrice || 0
@@ -232,7 +214,7 @@ export default function HDBAffordabilityPage() {
                   With your current income and savings, your realistic HDB resale budget is around <span className="font-bold text-blue-600">{formatCurrency(results.maxPropertyPrice)}</span>.
                 </p>
                 <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                  At current market rents, renting a similar flat costs significantly more per month than buying, but affordable resale options may carry lease-related risks.
+                  Affordable resale options may carry lease-related risks that should be carefully considered.
                 </p>
                 <p className="text-xs text-gray-500 italic">
                   In short: You can afford to buy, but only within a limited price range, and lease matters.
@@ -436,142 +418,6 @@ export default function HDBAffordabilityPage() {
                 <div className="mt-3 pt-3 border-t border-gray-200 text-gray-600">
                   <p className="font-medium mb-1">How to use this:</p>
                   <p>These options are based on recent median prices, not individual listings. Actual availability and unit condition may vary.</p>
-                </div>
-              </div>
-            </div>
-          </ChartCard>
-          </div>
-        )}
-
-        {/* Rent vs Buy Comparison */}
-        {results && (
-          <div className="mt-8">
-            <ChartCard
-            title="Rent vs Buy Comparison"
-            description="Compare monthly mortgage payment with median rental costs"
-            icon={<Scale className="w-6 h-6" />}
-          >
-            <div className="space-y-6">
-              {/* Selection for comparison */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Town</label>
-                  <select
-                    value={rentTown}
-                    onChange={(e) => setRentTown(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-                  >
-                    {TOWNS.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Flat Type</label>
-                  <select
-                    value={rentFlatType}
-                    onChange={(e) => setRentFlatType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-                  >
-                    {FLAT_TYPES_RENT.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Comparison Results */}
-              {rentLoading ? (
-                <div className="text-center text-gray-500 py-8">Loading rental data...</div>
-              ) : medianRent ? (
-                <div className="space-y-4">
-                  {/* Buy Option */}
-                  <div className="bg-blue-50/90 backdrop-blur-sm p-6 rounded-xl border border-blue-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-3xl">🏠</span>
-                      <span className="text-xl font-bold text-gray-900">Buy</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium text-gray-600">Monthly mortgage:</div>
-                      <div className="text-3xl font-bold text-blue-600">
-                        {formatCurrency(calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate))}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-blue-200">
-                        (Assumes {loanYears}y loan @ {interestRate}%)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Rent Option */}
-                  <div className="bg-green-50/90 backdrop-blur-sm p-6 rounded-xl border border-green-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-3xl">🏡</span>
-                      <span className="text-xl font-bold text-gray-900">Rent</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium text-gray-600">Median rent (same town & flat type):</div>
-                      <div className="text-3xl font-bold text-green-600">
-                        {formatCurrency(medianRent)}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-green-200">
-                        (Based on last 6 months)
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Difference */}
-                  <div className="bg-gray-50/90 backdrop-blur-sm p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className="text-2xl">🔍</span>
-                      <span className="text-xl font-bold text-gray-900">Difference</span>
-                    </div>
-                    {(() => {
-                      const mortgage = calculateMonthlyMortgage(results.maxLoanAmount, loanYears, interestRate)
-                      const diff = medianRent - mortgage
-                      const isRentHigher = diff > 0
-                      return (
-                        <div className="space-y-2">
-                          <div className={`text-lg font-semibold ${isRentHigher ? 'text-green-600' : 'text-blue-600'}`}>
-                            {isRentHigher ? (
-                              <>Renting costs ~{formatCurrency(Math.abs(diff))} more per month</>
-                            ) : (
-                              <>Buying costs ~{formatCurrency(Math.abs(diff))} more per month</>
-                            )}
-                          </div>
-                          <div className="mt-2">
-                            {isRentHigher ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                🟢 Ownership advantage
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-                                🟠 Cash flow pressure from renting
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-700 leading-relaxed pt-2 border-t border-gray-200 space-y-2">
-                            <p>Over time, buying builds equity, while renting does not. However, ownership also carries lease and resale risks.</p>
-                            <p className="font-medium text-gray-800">The longer you plan to stay, the more relevant buying becomes — provided lease risks are acceptable.</p>
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  No rental data available for {rentTown} {rentFlatType}
-                </div>
-              )}
-
-              {/* Disclaimer */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 text-sm">ℹ️</span>
-                  <div className="text-xs text-amber-800">
-                    <div className="font-medium mb-1">Important Note:</div>
-                    <div>Rental figures are based on historical median rents for whole-flat rentals in the selected town and flat type. Actual rents vary by floor level, condition, and furnishings. This comparison is for reference only and does not constitute financial advice.</div>
-                  </div>
                 </div>
               </div>
             </div>

@@ -39,7 +39,6 @@ export {
   getTownAggregated,
   getLeasePriceData,
   getBinnedLeasePriceData,
-  getMedianRent,
   findAffordableProperties,
   getTownTimeAccess,
 } from './hdb-data/fetch'

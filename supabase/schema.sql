@@ -171,18 +171,6 @@ CREATE TABLE IF NOT EXISTS agg_monthly (
   UNIQUE(month, town, flat_type)
 );
 
--- HDB Rental Statistics (from data.gov.sg)
-CREATE TABLE IF NOT EXISTS hdb_rental_stats (
-  id SERIAL PRIMARY KEY,
-  month DATE NOT NULL,
-  town VARCHAR(100),
-  flat_type VARCHAR(50),
-  median_rent NUMERIC,
-  number_of_rental_contracts INTEGER,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(month, town, flat_type)
-);
-
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_raw_resale_month ON raw_resale_2017(month);
 CREATE INDEX IF NOT EXISTS idx_raw_resale_town ON raw_resale_2017(town);
@@ -190,19 +178,14 @@ CREATE INDEX IF NOT EXISTS idx_raw_resale_flat_type ON raw_resale_2017(flat_type
 CREATE INDEX IF NOT EXISTS idx_agg_monthly_month ON agg_monthly(month);
 CREATE INDEX IF NOT EXISTS idx_agg_monthly_town ON agg_monthly(town);
 CREATE INDEX IF NOT EXISTS idx_agg_monthly_flat_type ON agg_monthly(flat_type);
-CREATE INDEX IF NOT EXISTS idx_rental_month ON hdb_rental_stats(month);
-CREATE INDEX IF NOT EXISTS idx_rental_town ON hdb_rental_stats(town);
-CREATE INDEX IF NOT EXISTS idx_rental_flat_type ON hdb_rental_stats(flat_type);
 
 -- Enable RLS
 ALTER TABLE raw_resale_2017 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agg_monthly ENABLE ROW LEVEL SECURITY;
-ALTER TABLE hdb_rental_stats ENABLE ROW LEVEL SECURITY;
 
 -- Create policies
 CREATE POLICY "Allow public read access" ON raw_resale_2017 FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON agg_monthly FOR SELECT USING (true);
-CREATE POLICY "Allow public read access" ON hdb_rental_stats FOR SELECT USING (true);
 
 -- Function to parse remaining_lease to years (numeric)
 -- DROP FUNCTION IF EXISTS parse_lease_years(TEXT);

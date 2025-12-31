@@ -329,114 +329,11 @@ export async function getBinnedLeasePriceData(
   return binnedData.filter(bin => bin.count > 0)
 }
 
-// Get median rent for a specific town and flat type (rolling median)
-export async function getMedianRent(
-  town: string,
-  flatType: string,
-  months: number = DATA_FETCHING.DEFAULT_RENTAL_MONTHS
-): Promise<number | null> {
-  try {
-    if (supabase) {
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setMonth(startDate.getMonth() - months)
-
-      // Normalize inputs to match database format
-      const normalizedTown = town.toUpperCase().trim()
-      const normalizedFlatType = flatType.toUpperCase().trim()
-
-      console.log('Fetching rental data:', { town: normalizedTown, flatType: normalizedFlatType, months })
-
-      const { data, error } = await supabase
-        .from('hdb_rental_stats')
-        .select('median_rent, month')
-        .eq('town', normalizedTown)
-        .eq('flat_type', normalizedFlatType)
-        .gte('month', startDate.toISOString().split('T')[0])
-        .lte('month', endDate.toISOString().split('T')[0])
-        .not('median_rent', 'is', null)
-        .order('month', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching rental data:', error)
-        throw error
-      }
-
-      console.log('Rental query result:', { count: data?.length || 0, town: normalizedTown, flatType: normalizedFlatType })
-
-      // If no recent data, try to get any available data (fallback to extended period)
-      if (!data || data.length === 0) {
-        console.log(`No data in last ${months} months, trying last ${DATA_FETCHING.FALLBACK_RENTAL_MONTHS} months...`)
-        const fallbackStartDate = new Date()
-        fallbackStartDate.setMonth(fallbackStartDate.getMonth() - DATA_FETCHING.FALLBACK_RENTAL_MONTHS)
-
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('hdb_rental_stats')
-          .select('median_rent, month')
-          .eq('town', normalizedTown)
-          .eq('flat_type', normalizedFlatType)
-          .gte('month', fallbackStartDate.toISOString().split('T')[0])
-          .lte('month', endDate.toISOString().split('T')[0])
-          .not('median_rent', 'is', null)
-          .order('month', { ascending: false })
-          .limit(DATA_FETCHING.DEFAULT_RENTAL_MONTHS) // Get last N available months
-
-        if (fallbackError) {
-          console.error('Error fetching fallback rental data:', fallbackError)
-          return null
-        }
-
-        if (fallbackData && fallbackData.length > 0) {
-          console.log('Found fallback data:', fallbackData.length, 'records')
-          const rents = fallbackData.map(item => Number(item.median_rent)).filter(r => r > 0)
-          if (rents.length === 0) return null
-
-          const sorted = rents.sort((a, b) => a - b)
-          const mid = Math.floor(sorted.length / 2)
-          return sorted.length % 2 === 0
-            ? (sorted[mid - 1] + sorted[mid]) / 2
-            : sorted[mid]
-        }
-
-        // If still no data, check what's available in database
-        const { data: anyData } = await supabase
-          .from('hdb_rental_stats')
-          .select('town, flat_type, month')
-          .eq('town', normalizedTown)
-          .eq('flat_type', normalizedFlatType)
-          .limit(1)
-
-        if (anyData && anyData.length > 0) {
-          console.log('Data exists but outside time range. Latest month:', anyData[0].month)
-        } else {
-          console.log('No data found for:', { town: normalizedTown, flatType: normalizedFlatType })
-        }
-
-        return null
-      }
-
-      const rents = data.map(item => Number(item.median_rent)).filter(r => r > 0)
-      if (rents.length === 0) return null
-
-      // Calculate median of medians (rolling median)
-      const sorted = rents.sort((a, b) => a - b)
-      const mid = Math.floor(sorted.length / 2)
-      return sorted.length % 2 === 0
-        ? (sorted[mid - 1] + sorted[mid]) / 2
-        : sorted[mid]
-    }
-  } catch (error) {
-    console.error('Error fetching median rent:', error)
-  }
-
-  return null
-}
-
 // Find affordable properties
 export async function findAffordableProperties(
   maxPrice: number,
   flatTypes: string[] = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE'],
-  months: number = DATA_FETCHING.DEFAULT_RENTAL_MONTHS
+  months: number = DATA_FETCHING.DEFAULT_MONTHS
 ): Promise<Array<{
   town: string
   flatType: string

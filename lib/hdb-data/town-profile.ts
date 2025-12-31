@@ -5,7 +5,6 @@
 import { supabase } from '../supabase'
 import { DATA_FETCHING, FINANCIAL_CONSTANTS, LEASE_THRESHOLDS, MARKET_THRESHOLDS } from '../constants'
 import { getAggregatedMonthly } from './fetch'
-import { getMedianRent } from './fetch'
 import { calculateMonthlyMortgage, computeLeaseRisk } from './calculations'
 import type { TownProfile } from './types'
 
@@ -60,9 +59,6 @@ export async function getTownProfile(
       const pctTxBelow60 = leases.length > 0 ? below60 / leases.length : 0
       const pctTxBelow55 = leases.length > 0 ? below55 / leases.length : 0
 
-      // Get median rent
-      const medianRent = await getMedianRent(town, flatType, 6)
-
       // Calculate mortgage
       const medianPrice = prices.sort((a, b) => a - b)[Math.floor(prices.length / 2)]
       const estimatedMortgage = calculateMonthlyMortgage(
@@ -104,8 +100,6 @@ export async function getTownProfile(
         flatType,
         medianResalePrice: medianPrice,
         estimatedMonthlyMortgage: estimatedMortgage,
-        medianRent,
-        rentBuyGapMonthly: medianRent ? medianRent - estimatedMortgage : 0,
         medianRemainingLease: medianLease,
         pctTxBelow60,
         pctTxBelow55,

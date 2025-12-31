@@ -239,7 +239,13 @@ async function updateData() {
     
     if (hasNewData) {
       console.log('')
-      console.log('⚠️  New data detected! Run aggregation SQL to update agg_monthly table.')
+      console.log('⚠️  New data detected!')
+      console.log('')
+      console.log('Next steps:')
+      console.log('1. Geocode new records (if needed): node scripts/geocode-raw-resale.js')
+      console.log('2. Populate neighbourhood_ids: Run populate_neighbourhood_ids() function')
+      console.log('3. Run aggregation: node scripts/run-aggregation.js')
+      console.log('   (This will update agg_neighbourhood_monthly table)')
       process.exit(0)
     } else {
       console.log('')

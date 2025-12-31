@@ -23,18 +23,68 @@ jobs:
         run: |
           npm install @supabase/supabase-js
 
+      - name: Check for New Data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Check if there's new data available
+          node scripts/check-new-hdb-data.js || echo "No new data or check failed, continuing..."
+
       - name: Update HDB Data
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: node scripts/update-hdb-data.js
+
+      - name: Geocode New Records
+        if: success() # Only run if data update succeeded
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Geocode newly imported records (limit to 500 per run to avoid timeout)
+          node scripts/geocode-new-records.js --limit=500 || echo "Geocoding completed or skipped"
+
+      - name: Populate Neighbourhood IDs
+        if: success() # Only run if data update succeeded
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Populate neighbourhood_ids for records with coordinates
+          node -e "
+            require('dotenv').config();
+            const {createClient} = require('@supabase/supabase-js');
+            const supabase = createClient(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+            (async()=>{
+              console.log('Populating neighbourhood_ids...');
+              const {error} = await supabase.rpc('populate_neighbourhood_ids');
+              if(error) {
+                console.warn('Warning:', error.message);
+                console.log('This is OK if records already have neighbourhood_id or need geocoding first.');
+              } else {
+                console.log('✓ Neighbourhood IDs populated');
+              }
+            })();
+          "
 
       - name: Run Aggregation
         if: success() # Only run if data update succeeded
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          # Run aggregation via database function
+          # Run aggregation via database function (aggregates by neighbourhood)
           node scripts/run-aggregation.js
 

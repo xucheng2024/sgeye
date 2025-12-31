@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Singapore Data Eye | Living in Singapore",
-  description: "Data-driven insights into HDB prices, rental costs, and real housing affordability in Singapore",
+  description: "Data-driven insights into HDB prices and real housing affordability in Singapore",
 };
 
 export default function RootLayout({

@@ -1,14 +1,17 @@
 /**
  * Run Aggregation via Supabase Database Function
  * 
- * Calls the aggregate_monthly_data() function to update agg_monthly table
- * This function is defined in supabase/schema.sql
+ * Calls the aggregate_neighbourhood_monthly_data() function to update agg_neighbourhood_monthly table
+ * This function is defined in supabase/migrations/create_agg_neighbourhood_monthly.sql
+ * 
+ * Note: This replaces the old aggregate_monthly_data() which aggregated by town.
+ * Now we aggregate by neighbourhood_id for more accurate spatial analysis.
  */
 
 const { createClient } = require('@supabase/supabase-js')
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set')
@@ -18,23 +21,35 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 async function runAggregation() {
-  console.log('Running aggregation via database function...')
+  console.log('Running neighbourhood-based aggregation via database function...')
   console.log('')
   
   try {
-    // Call the database function
-    const { data, error } = await supabase.rpc('aggregate_monthly_data')
+    // First, populate neighbourhood_ids for records that have coordinates but no neighbourhood_id
+    console.log('Step 1: Populating neighbourhood_ids for records with coordinates...')
+    const { error: populateError } = await supabase.rpc('populate_neighbourhood_ids')
+    
+    if (populateError) {
+      console.warn('Warning: Could not populate neighbourhood_ids:', populateError.message)
+      console.warn('This is OK if all records already have neighbourhood_id assigned.')
+    } else {
+      console.log('✓ Neighbourhood IDs populated')
+    }
+    console.log('')
+    
+    // Call the database function to aggregate by neighbourhood
+    console.log('Step 2: Aggregating data by neighbourhood...')
+    const { data, error } = await supabase.rpc('aggregate_neighbourhood_monthly_data')
     
     if (error) {
       console.error('Error calling aggregation function:', error.message)
       console.error('')
-      console.error('Make sure you have run the updated schema.sql that includes')
-      console.error('the aggregate_monthly_data() function.')
+      console.error('Make sure you have run the migration:')
+      console.error('  supabase/migrations/create_agg_neighbourhood_monthly.sql')
       console.error('')
       console.error('To fix:')
       console.error('1. Go to Supabase Dashboard → SQL Editor')
-      console.error('2. Run the updated supabase/schema.sql (the function definition)')
-      console.error('3. Or manually run aggregate-hdb-data.sql')
+      console.error('2. Run create_agg_neighbourhood_monthly.sql')
       process.exit(1)
     }
     
@@ -45,11 +60,13 @@ async function runAggregation() {
       console.log('='.repeat(50))
       console.log('')
       console.log('Summary:')
-      console.log(`  Total aggregated records: ${result.total_records}`)
-      console.log(`  Earliest month: ${result.earliest_month}`)
-      console.log(`  Latest month: ${result.latest_month}`)
-      console.log(`  Total transactions: ${result.total_transactions}`)
+      console.log(`  Total aggregated records: ${result.total_records || 'N/A'}`)
+      console.log(`  Earliest month: ${result.earliest_month || 'N/A'}`)
+      console.log(`  Latest month: ${result.latest_month || 'N/A'}`)
+      console.log(`  Total transactions: ${result.total_transactions || 'N/A'}`)
       console.log('')
+      console.log('Note: Data is now aggregated by neighbourhood_id instead of town.')
+      console.log('This provides more accurate spatial analysis.')
     } else {
       console.log('Aggregation completed, but no summary data returned.')
     }
@@ -57,7 +74,7 @@ async function runAggregation() {
   } catch (error) {
     console.error('Fatal error during aggregation:', error.message)
     console.error('')
-    console.error('Fallback: Please run aggregate-hdb-data.sql manually in Supabase SQL Editor')
+    console.error('Fallback: Please run the aggregation SQL manually in Supabase SQL Editor')
     process.exit(1)
   }
 }

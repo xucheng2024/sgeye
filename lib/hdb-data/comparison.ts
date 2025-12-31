@@ -19,7 +19,7 @@ import {
   LEASE_THRESHOLDS,
   SCORING_CONSTANTS,
 } from '../constants'
-import { getAggregatedMonthly, getMedianRent, getTownTimeAccess } from './fetch'
+import { getAggregatedMonthly, getTownTimeAccess } from './fetch'
 import { getTownTransportProfile } from './transport-data'
 import type { TownProfile, TownComparisonData, CompareSummary, PreferenceLens, TownTimeAccess, ThreeTownCompareSummary } from './types'
 import { getTimeBurdenLevel, calculateTBI, getTBILevel } from './types'
@@ -41,11 +41,6 @@ function generateStandardizedScores(
   // Entry cost: lower is better, so invert (lower price = higher score)
   const entryCostA = priceRange > 0 ? 100 - ((A.medianResalePrice - minPrice) / priceRange * 100) : 50
   const entryCostB = priceRange > 0 ? 100 - ((B.medianResalePrice - minPrice) / priceRange * 100) : 50
-  
-  // Cash flow: higher rent-buy gap is better
-  const maxGap = Math.max(Math.abs(A.rentBuyGapMonthly), Math.abs(B.rentBuyGapMonthly), 1)
-  const cashFlowA = A.rentBuyGapMonthly > 0 ? Math.min(100, (A.rentBuyGapMonthly / maxGap) * 100) : 0
-  const cashFlowB = B.rentBuyGapMonthly > 0 ? Math.min(100, (B.rentBuyGapMonthly / maxGap) * 100) : 0
   
   // Lease safety: higher remaining lease is better
   const minLease = Math.min(A.medianRemainingLease, B.medianRemainingLease)
@@ -72,7 +67,6 @@ function generateStandardizedScores(
   return {
     townA: {
       entryCost: Math.round(entryCostA),
-      cashFlow: Math.round(cashFlowA),
       leaseSafety: Math.round(leaseSafetyA),
       schoolPressure: Math.round(schoolPressureA),
       stability: Math.round(stabilityA),
@@ -80,7 +74,6 @@ function generateStandardizedScores(
     },
     townB: {
       entryCost: Math.round(entryCostB),
-      cashFlow: Math.round(cashFlowB),
       leaseSafety: Math.round(leaseSafetyB),
       schoolPressure: Math.round(schoolPressureB),
       stability: Math.round(stabilityB),
@@ -99,63 +92,58 @@ function calculateOverallScore(
   if (!scores) return null
   
   // Define base weights for each lens
-  let baseWeights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
+  let baseWeights: { entryCost: number; leaseSafety: number; schoolPressure: number; stability: number }
   
   if (lens === 'lower_cost') {
-    baseWeights = { entryCost: 0.45, cashFlow: 0.20, leaseSafety: 0.20, schoolPressure: 0.10, stability: 0.05 }
+    baseWeights = { entryCost: 0.55, leaseSafety: 0.25, schoolPressure: 0.15, stability: 0.05 }
   } else if (lens === 'lease_safety') {
-    baseWeights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.45, schoolPressure: 0.10, stability: 0.20 }
+    baseWeights = { entryCost: 0.20, leaseSafety: 0.50, schoolPressure: 0.15, stability: 0.15 }
   } else if (lens === 'school_pressure') {
-    baseWeights = { entryCost: 0.15, cashFlow: 0.10, leaseSafety: 0.10, schoolPressure: 0.45, stability: 0.20 }
+    baseWeights = { entryCost: 0.20, leaseSafety: 0.15, schoolPressure: 0.50, stability: 0.15 }
   } else { // balanced
-    baseWeights = { entryCost: 0.25, cashFlow: 0.20, leaseSafety: 0.25, schoolPressure: 0.20, stability: 0.10 }
+    baseWeights = { entryCost: 0.30, leaseSafety: 0.30, schoolPressure: 0.25, stability: 0.15 }
   }
   
   // Adjust for long-term holding (legacy, keep for backward compatibility)
   if (longTerm && planningHorizon === 'medium') {
     baseWeights.leaseSafety += 0.10
-    baseWeights.entryCost -= 0.05
-    baseWeights.cashFlow -= 0.05
+    baseWeights.entryCost -= 0.10
   }
   
   // Reorder weights based on Planning Horizon priority
   // Priority order determines weight redistribution (keeping total = 1.0)
-  let weights: { entryCost: number; cashFlow: number; leaseSafety: number; schoolPressure: number; stability: number }
+  let weights: { entryCost: number; leaseSafety: number; schoolPressure: number; stability: number }
   
   if (planningHorizon === 'short') {
-    // Short-term: Entry cost, Cash flow, School pressure, Lease, Time burden (stability)
+    // Short-term: Entry cost, School pressure, Lease, Time burden (stability)
     weights = {
-      entryCost: baseWeights.entryCost * 1.2 + 0.10,  // Boost entry cost
-      cashFlow: baseWeights.cashFlow * 1.2 + 0.05,    // Boost cash flow
+      entryCost: baseWeights.entryCost * 1.2 + 0.15,  // Boost entry cost
       schoolPressure: baseWeights.schoolPressure * 1.1,
       leaseSafety: baseWeights.leaseSafety * 0.7,     // Reduce lease importance
       stability: baseWeights.stability * 0.8
     }
   } else if (planningHorizon === 'long') {
-    // Long-term: Lease, Time burden (stability), School pressure, Entry cost, Cash flow
+    // Long-term: Lease, Time burden (stability), School pressure, Entry cost
     weights = {
-      leaseSafety: baseWeights.leaseSafety * 1.3 + 0.15,  // Boost lease
-      stability: baseWeights.stability * 1.5 + 0.10,       // Boost time burden (via stability)
+      leaseSafety: baseWeights.leaseSafety * 1.3 + 0.20,  // Boost lease
+      stability: baseWeights.stability * 1.5 + 0.15,       // Boost time burden (via stability)
       schoolPressure: baseWeights.schoolPressure * 1.0,
-      entryCost: baseWeights.entryCost * 0.7,             // Reduce entry cost importance
-      cashFlow: baseWeights.cashFlow * 0.7                 // Reduce cash flow importance
+      entryCost: baseWeights.entryCost * 0.7             // Reduce entry cost importance
     }
   } else {
-    // Medium-term: Entry cost, Lease, School pressure, Time burden, Cash flow
+    // Medium-term: Entry cost, Lease, School pressure, Time burden
     weights = {
       entryCost: baseWeights.entryCost * 1.1,
       leaseSafety: baseWeights.leaseSafety * 1.1,
       schoolPressure: baseWeights.schoolPressure * 1.0,
-      stability: baseWeights.stability * 1.2,
-      cashFlow: baseWeights.cashFlow * 0.9
+      stability: baseWeights.stability * 1.2
     }
   }
   
   // Normalize weights to sum to 1.0
-  const total = weights.entryCost + weights.cashFlow + weights.leaseSafety + weights.schoolPressure + weights.stability
+  const total = weights.entryCost + weights.leaseSafety + weights.schoolPressure + weights.stability
   if (total > 0) {
     weights.entryCost /= total
-    weights.cashFlow /= total
     weights.leaseSafety /= total
     weights.schoolPressure /= total
     weights.stability /= total
@@ -164,14 +152,12 @@ function calculateOverallScore(
   // Calculate overall scores
   const overallA = 
     scores.townA.entryCost * weights.entryCost +
-    scores.townA.cashFlow * weights.cashFlow +
     scores.townA.leaseSafety * weights.leaseSafety +
     scores.townA.schoolPressure * weights.schoolPressure +
     scores.townA.stability * weights.stability
   
   const overallB = 
     scores.townB.entryCost * weights.entryCost +
-    scores.townB.cashFlow * weights.cashFlow +
     scores.townB.leaseSafety * weights.leaseSafety +
     scores.townB.schoolPressure * weights.schoolPressure +
     scores.townB.stability * weights.stability
@@ -215,7 +201,6 @@ export async function generateCompareSummary(
     deltaPrice: -priceDiff,  // B - A (positive = B cheaper = better)
     deltaLeaseYears: -leaseDiff,  // B - A (positive = B healthier = better)
     deltaSPI: -spiDiff,  // B - A (positive = B lower pressure = better)
-    deltaRentGap: B.rentBuyGapMonthly - A.rentBuyGapMonthly,  // B - A (positive = B better cash flow = better)
     deltaStability: 0,  // Placeholder for now
     leaseA: A.medianRemainingLease,
     leaseB: B.medianRemainingLease,
@@ -358,14 +343,6 @@ export async function generateCompareSummary(
         changes.push('💰 Lower upfront price')
       } else {
         changes.push('💰 Higher upfront price')
-      }
-    }
-    
-    // Monthly affordability (rent vs buy gap)
-    if (A.medianRent && B.medianRent) {
-      const rentGapDiff = B.rentBuyGapMonthly - A.rentBuyGapMonthly
-      if (Math.abs(rentGapDiff) < 200) {
-        changes.push('💰 Similar monthly affordability')
       }
     }
     
@@ -1051,8 +1028,6 @@ export async function generateCompareSummary(
     bestFor,
     beCautious,
     advanced: {
-      rentBuyGapA: A.rentBuyGapMonthly,
-      rentBuyGapB: B.rentBuyGapMonthly,
       stabilityA: A.signals.stability,
       stabilityB: B.signals.stability,
       leaseRiskReasonsA: A.signals.leaseSignalReasons,
@@ -1098,9 +1073,6 @@ export async function getTownComparisonData(
     const below55 = leases.filter(l => l < LEASE_THRESHOLDS.CRITICAL).length
     const pctBelow55Years = leases.length > 0 ? (below55 / leases.length) * 100 : 0
 
-    // Get median rent
-    const medianRent = await getMedianRent(town, flatType, 6)
-
     return {
       town,
       flatType,
@@ -1113,7 +1085,6 @@ export async function getTownComparisonData(
       pctBelow55Years,
       txCount: data.reduce((sum, d) => sum + d.tx_count, 0),
       priceVolatility,
-      medianRent,
       medianPricePerSqm: pricesPerSqm.length > 0
         ? pricesPerSqm.sort((a, b) => a - b)[Math.floor(pricesPerSqm.length / 2)]
         : 0,

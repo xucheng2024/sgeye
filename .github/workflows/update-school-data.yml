@@ -28,6 +28,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           # Option 1: If you have a CSV/JSON file in the repo
           # node scripts/import-school-data.js --file data/schools.csv
@@ -39,6 +41,36 @@ jobs:
           echo "School data import requires manual CSV/JSON file or data.gov.sg resource_id"
           echo "To import manually, run:"
           echo "  node scripts/import-school-data.js --file path/to/schools.csv"
+
+      - name: Populate School Neighbourhood IDs
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          # Populate neighbourhood_ids for schools with coordinates
+          node -e "
+            require('dotenv').config();
+            const {createClient} = require('@supabase/supabase-js');
+            const supabase = createClient(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+            (async()=>{
+              console.log('Populating neighbourhood_ids for schools...');
+              const {data, error} = await supabase.rpc('populate_neighbourhood_ids');
+              if(error) {
+                console.warn('Warning:', error.message);
+                console.log('This is OK if schools already have neighbourhood_id or need coordinates first.');
+              } else {
+                const schoolResult = data?.find(r => r.table_name === 'primary_schools');
+                if(schoolResult) {
+                  console.log('✓ School neighbourhood IDs populated:', schoolResult.updated_count, 'records');
+                } else {
+                  console.log('✓ populate_neighbourhood_ids() completed (updates all tables)');
+                }
+              }
+            })();
+          "
 
       - name: Check for errors
         if: failure()

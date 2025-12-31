@@ -199,7 +199,11 @@ async function importData() {
     console.log(`Total skipped: ${totalSkipped}`)
     console.log(`Batches processed: ${batchCount}`)
     console.log('')
-    console.log('Next step: Run aggregation SQL or call aggregate_monthly_data() function')
+    console.log('Next steps:')
+    console.log('1. Geocode records (if needed): node scripts/geocode-raw-resale.js')
+    console.log('2. Populate neighbourhood_ids: Run populate_neighbourhood_ids() function')
+    console.log('3. Run aggregation: node scripts/run-aggregation.js')
+    console.log('   (This will update agg_neighbourhood_monthly table)')
     console.log('')
     
   } catch (error) {

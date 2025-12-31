@@ -61,8 +61,6 @@ export interface TownProfile {
   // Price & cashflow
   medianResalePrice: number
   estimatedMonthlyMortgage: number
-  medianRent: number | null
-  rentBuyGapMonthly: number // rent - mortgage
 
   // Lease stats
   medianRemainingLease: number // years
@@ -92,7 +90,6 @@ export interface TownComparisonData {
   pctBelow55Years: number
   txCount: number
   priceVolatility: number // Coefficient of variation
-  medianRent: number | null
   medianPricePerSqm: number
 }
 
@@ -205,7 +202,6 @@ export interface CompareSummary {
   scores: {
     townA: {
       entryCost: number
-      cashFlow: number
       leaseSafety: number
       schoolPressure: number
       stability: number
@@ -213,7 +209,6 @@ export interface CompareSummary {
     }
     townB: {
       entryCost: number
-      cashFlow: number
       leaseSafety: number
       schoolPressure: number
       stability: number
@@ -262,8 +257,6 @@ export interface CompareSummary {
     townB: string[]
   }
   advanced: {
-    rentBuyGapA: number
-    rentBuyGapB: number
     stabilityA: string
     stabilityB: string
     leaseRiskReasonsA: string[]

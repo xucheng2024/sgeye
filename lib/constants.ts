@@ -136,10 +136,6 @@ export const DATA_FETCHING = {
   DEFAULT_LEASE_LIMIT: 10000,
   /** Default months for aggregation */
   DEFAULT_MONTHS: 24,
-  /** Default months for rental data */
-  DEFAULT_RENTAL_MONTHS: 6,
-  /** Fallback months for rental data */
-  FALLBACK_RENTAL_MONTHS: 12,
 } as const
 
 // ============================================
@@ -159,32 +155,28 @@ export const LEASE_BINS = [
 // ============================================
 export const PREFERENCE_WEIGHTS = {
   BALANCED: {
-    price: 0.25,
-    lease: 0.30,
-    school: 0.25,
-    rent: 0.15,
+    price: 0.30,
+    lease: 0.35,
+    school: 0.30,
     stability: 0.05,
   },
   LOW_ENTRY: {
-    price: 0.45,
-    lease: 0.15,
-    school: 0.10,
-    rent: 0.25,
+    price: 0.60,
+    lease: 0.20,
+    school: 0.15,
     stability: 0.05,
   },
   LONG_TERM: {
-    price: 0.10,
-    lease: 0.45,
-    school: 0.15,
-    rent: 0.10,
-    stability: 0.20,
+    price: 0.15,
+    lease: 0.55,
+    school: 0.20,
+    stability: 0.10,
   },
   LOW_SCHOOL_PRESSURE: {
-    price: 0.15,
-    lease: 0.15,
-    school: 0.45,
-    rent: 0.15,
-    stability: 0.10,
+    price: 0.20,
+    lease: 0.20,
+    school: 0.55,
+    stability: 0.05,
   },
 } as const
 
