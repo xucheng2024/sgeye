@@ -14,19 +14,25 @@ export default function Home() {
             <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto">
               Compare neighbourhoods and understand real trade-offs — cost, lease risk, and school competition.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4">
               <Link
-                href="/neighbourhoods"
-                className="inline-flex items-center gap-2 bg-white text-blue-600 px-10 py-5 rounded-lg font-semibold text-xl hover:bg-blue-50 transition-colors shadow-lg"
+                href="/hdb/affordability"
+                className="inline-flex flex-col items-center gap-2 bg-white text-blue-600 px-10 py-5 rounded-lg font-semibold text-xl hover:bg-blue-50 transition-colors shadow-lg"
               >
-                Explore Neighbourhoods
-                <ArrowRight className="w-6 h-6" />
+                <span className="inline-flex items-center gap-2">
+                  Can I afford it?
+                  <ArrowRight className="w-6 h-6" />
+                </span>
+                <span className="text-sm font-normal text-blue-500">
+                  Start with your budget and flat type
+                </span>
               </Link>
               <Link
-                href="/planning-areas"
-                className="inline-flex items-center gap-2 bg-blue-700 text-white px-8 py-5 rounded-lg font-semibold text-lg hover:bg-blue-600 transition-colors"
+                href="/neighbourhoods"
+                className="inline-flex items-center gap-2 text-white border-2 border-white px-8 py-3 rounded-lg font-medium text-lg hover:bg-white/10 transition-colors"
               >
-                Browse by Planning Area
+                Explore neighbourhoods
+                <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
             <p className="mt-6 text-sm text-blue-200">

@@ -182,12 +182,13 @@ function NeighbourhoodsPageContent() {
       // Set price range based on tier
       if (priceTier !== 'all') {
         const priceRanges = {
-          low: [0, 500000],
-          medium: [0, 1000000],
-          high: [0, 2000000]
+          low: [0, 499999],
+          medium: [500000, 999999],
+          high: [1000000, 2000000]
         }
         const range = priceRanges[priceTier as keyof typeof priceRanges]
         if (range) {
+          params.set('price_min', range[0].toString())
           params.set('price_max', range[1].toString())
         }
       }
@@ -286,9 +287,9 @@ function NeighbourhoodsPageContent() {
       // (API filters at neighbourhood level, but we need to filter expanded items)
       if (selectedFlatType === 'All' && (priceTier !== 'all' || leaseTier !== 'all')) {
         const priceRanges = {
-          low: [0, 500000],
-          medium: [0, 1000000],
-          high: [0, 2000000]
+          low: [0, 499999],
+          medium: [500000, 999999],
+          high: [1000000, 2000000]
         }
         const leaseRanges = {
           short: [30, 60],
@@ -302,7 +303,7 @@ function NeighbourhoodsPageContent() {
             const range = priceRanges[priceTier as keyof typeof priceRanges]
             if (range) {
               const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-              if (price === null || price > range[1]) {
+              if (price === null || price < range[0] || price > range[1]) {
                 return false
               }
             }
@@ -604,81 +605,6 @@ function NeighbourhoodsPageContent() {
     }
     
     return 'Data availability limited, check details'
-  }
-
-  function getMainSignal(n: Neighbourhood): { bestFor: string | null; watchOut: string | null } {
-    const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-    const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-    const mrtAccess = n.access?.mrt_access_type
-    const mrtDistance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
-    const mrtStationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : 0
-    const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
-    
-    const bestFor: string[] = []
-    const watchOut: string[] = []
-    
-    // Priority order for "Best for" (most important first)
-    // Convert from objective features to user benefits
-    if (price && price < priceThresholds.p25) {
-      bestFor.push('Buyers prioritising entry price')
-    } else if (lease && lease >= leaseThresholds.p75) {
-      bestFor.push('Long-term families')
-    } else if (mrtAccess === 'high' || (mrtStationCount > 0)) {
-      bestFor.push('Daily MRT commuters')
-    } else if (mrtAccess === 'none' && mrtDistance && mrtDistance > 0 && mrtDistance <= 800) {
-      bestFor.push('Daily MRT commuters')
-    } else if (txCount > 150) {
-      bestFor.push('Buyers wanting more choices')
-    } else if (price && price < priceThresholds.p50) {
-      bestFor.push('Buyers prioritising entry price')
-    }
-    
-    // Priority order for watch outs - focus on consequences, not facts
-    if (lease && lease < leaseThresholds.p25) {
-      watchOut.push('Shorter lease may limit long-term resale')
-    } else if ((mrtAccess === 'none' || !mrtAccess) && (!mrtDistance || mrtDistance > 800)) {
-      watchOut.push('Daily commute may rely on buses or driving')
-    } else if (price && price >= priceThresholds.p75) {
-      watchOut.push('Higher price pressure, check value carefully')
-    } else if (txCount > 0 && txCount < 20) {
-      watchOut.push('Fewer resale choices, prices may be volatile')
-    } else if (mrtAccess === 'low' && lease && lease < 70) {
-      watchOut.push('Limited MRT access, consider transport needs')
-    }
-    
-    return {
-      bestFor: bestFor[0] || null,
-      watchOut: watchOut[0] || null
-    }
-  }
-
-  function getRecommendationLevel(n: Neighbourhood): 'good-fit' | 'caution' | null {
-    const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-    const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-    const mrtAccess = n.access?.mrt_access_type
-    const mrtDistance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
-    const mrtStationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : 0
-    const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
-    
-    let score = 0
-    
-    // Positive factors
-    if (price && price < priceThresholds.p25) score += 2
-    if (lease && lease >= leaseThresholds.p75) score += 2
-    if (mrtAccess === 'high' || mrtStationCount > 0) score += 2
-    else if (mrtDistance && mrtDistance > 0 && mrtDistance <= 800) score += 1
-    if (txCount > 100) score += 1
-    
-    // Negative factors
-    if (lease && lease < leaseThresholds.p25) score -= 2
-    if ((mrtAccess === 'none' || !mrtAccess) && (!mrtDistance || mrtDistance > 800)) score -= 2
-    if (price && price >= priceThresholds.p75) score -= 1
-    if (txCount > 0 && txCount < 20) score -= 1
-    
-    // Determine level - only show good-fit or caution, nothing in between
-    if (score >= 3) return 'good-fit'
-    if (score <= -2) return 'caution'
-    return null
   }
 
   function formatCurrency(amount: number | null): string {
@@ -1030,7 +956,6 @@ function NeighbourhoodsPageContent() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {neighbourhoods.map(neighbourhood => {
-                const signal = getMainSignal(neighbourhood)
                 const isSelected = selectedForCompare.has(neighbourhood.id)
                 
                 return (
@@ -1074,20 +999,6 @@ function NeighbourhoodsPageContent() {
                       >
                         <Plus className={`w-4 h-4 ${isSelected ? 'rotate-45' : ''} transition-transform`} />
                       </button>
-                    </div>
-
-                    {/* Main signal tags */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {signal.bestFor && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium">
-                          Best for: {signal.bestFor}
-                        </span>
-                      )}
-                      {signal.watchOut && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium">
-                          {signal.watchOut}
-                        </span>
-                      )}
                     </div>
 
                     {/* Key metrics (condensed) - Fixed order: Price → Lease → MRT */}
