@@ -51,6 +51,9 @@ function NeighbourhoodsPageContent() {
   const priceTierParam = searchParams.get('price_tier') || 'all'
   const leaseTierParam = searchParams.get('lease_tier') || 'all'
   const mrtTierParam = searchParams.get('mrt_tier') || 'all'
+  const priceMaxParam = searchParams.get('price_max')
+  const leaseMinParam = searchParams.get('lease_min')
+  const sourceParam = searchParams.get('source')
   
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
@@ -142,8 +145,11 @@ function NeighbourhoodsPageContent() {
       if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
       if (selectedFlatType) params.set('flat_type', selectedFlatType)
       
-      // Set price range based on tier
-      if (priceTier !== 'all') {
+      // Set price range based on tier or direct URL params
+      if (priceMaxParam) {
+        // Direct price_max from URL (e.g., from affordability page)
+        params.set('price_max', priceMaxParam)
+      } else if (priceTier !== 'all') {
         const priceRanges = {
           low: [200000, 500000],
           medium: [500000, 1000000],
@@ -154,8 +160,11 @@ function NeighbourhoodsPageContent() {
         params.set('price_max', range[1].toString())
       }
       
-      // Set lease range based on tier
-      if (leaseTier !== 'all') {
+      // Set lease range based on tier or direct URL params
+      if (leaseMinParam) {
+        // Direct lease_min from URL (e.g., from affordability page)
+        params.set('lease_min', leaseMinParam)
+      } else if (leaseTier !== 'all') {
         const leaseRanges = {
           short: [30, 60],
           medium: [60, 80],
@@ -585,6 +594,13 @@ function NeighbourhoodsPageContent() {
           <p className="text-lg text-gray-700">
             Start by narrowing down neighbourhoods that fit your budget, lease comfort, and daily commute — then compare the trade-offs.
           </p>
+          {sourceParam === 'affordability' && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                <strong>Filters applied from affordability calculator:</strong> Your search is pre-filtered based on your budget and selected flat type.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Filters Section */}
@@ -784,24 +800,39 @@ function NeighbourhoodsPageContent() {
           </div>
         </div>
 
-        {/* Compare Status Bar - Only show when ≥2 selected */}
-        {selectedForCompare.size >= 2 && (
+        {/* Compare Status Bar - Show when ≥1 selected */}
+        {selectedForCompare.size >= 1 && (
           <div className="mb-6 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-4">
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                Comparing {selectedForCompare.size} neighbourhoods
-              </div>
-              <div className="text-xs text-gray-600 mt-0.5">
-                See key differences side by side
-              </div>
-            </div>
-            <button
-              onClick={handleCompareSelected}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              View comparison
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {selectedForCompare.size >= 2 ? (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Comparing {selectedForCompare.size} neighbourhoods
+                  </div>
+                  <div className="text-xs text-gray-600 mt-0.5">
+                    See key differences side by side
+                  </div>
+                </div>
+                <button
+                  onClick={handleCompareSelected}
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  View comparison
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    1 neighbourhood selected
+                  </div>
+                  <div className="text-xs text-gray-600 mt-0.5">
+                    Select one more to compare side by side
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

@@ -5,7 +5,6 @@ import { calculateAffordability, findAffordableProperties, calculateMonthlyMortg
 import ChartCard from '@/components/ChartCard'
 import { Calculator, Home, AlertTriangle, ArrowRight } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -35,18 +34,16 @@ export default function HDBAffordabilityPage() {
     handleCalculate()
   }, [])
 
-  // Find closest matches (top 2-3)
-  const budget = results?.maxPropertyPrice || 0
-  const sortedByCloseness = [...affordableProperties].sort((a, b) => {
-    const diffA = Math.abs(a.medianPrice - budget)
-    const diffB = Math.abs(b.medianPrice - budget)
-    return diffA - diffB
-  })
-  const closestMatches = sortedByCloseness.slice(0, 3).map(p => `${p.town}-${p.flatType}`)
-
   // Select best comparison pair (Town A: price-oriented, Town B: long-term oriented)
   const selectComparisonPair = () => {
     if (affordableProperties.length < 2) return null
+
+    const budget = results?.maxPropertyPrice || 0
+    const sortedByCloseness = [...affordableProperties].sort((a, b) => {
+      const diffA = Math.abs(a.medianPrice - budget)
+      const diffB = Math.abs(b.medianPrice - budget)
+      return diffA - diffB
+    })
 
     // Step 1: Filter candidates within budget, sorted by closeness
     const candidates = sortedByCloseness.filter(t => t.medianPrice <= budget)
@@ -73,19 +70,6 @@ export default function HDBAffordabilityPage() {
   }
 
   const comparisonPair = selectComparisonPair()
-
-  const chartData = affordableProperties.slice(0, 15).map(p => ({
-    town: p.town.length > 12 ? p.town.substring(0, 12) + '...' : p.town,
-    fullTown: p.town,
-    medianPrice: p.medianPrice,
-    p25Price: p.p25Price,
-    txCount: p.txCount,
-    flatType: p.flatType,
-    medianLeaseYears: Math.round(p.medianLeaseYears || 0),
-    label: `${p.town} • ${p.flatType} • ${Math.round(p.medianLeaseYears || 0)}y lease`,
-    isClosestMatch: closestMatches.includes(`${p.town}-${p.flatType}`),
-    budgetDiff: Math.abs(p.medianPrice - budget),
-  }))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -336,94 +320,29 @@ export default function HDBAffordabilityPage() {
           )}
         </div>
 
-        {/* Section 4: Affordable Properties */}
-        {affordableProperties.length > 0 && (
+        {/* Section 4: CTA to Explore Neighbourhoods */}
+        {results && (
           <div className="mt-8">
-            <ChartCard
-              title="Where your budget works today"
-              description="Affordable properties based on your budget"
-              icon={<Home className="w-6 h-6" />}
-            >
-            <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-              These towns and flat types are closest to your budget based on recent median prices.
-            </div>
-            <ResponsiveContainer width="100%" height={500}>
-              <BarChart data={chartData} margin={{ bottom: 80 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="town" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={120}
-                  tick={{ fontSize: 11 }}
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatCurrency(value)}
-                />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload
-                      return (
-                        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-                          <p className="font-semibold mb-1">{data.fullTown}</p>
-                          <p className="text-sm text-gray-600 mb-2">{data.flatType}</p>
-                          <div className="text-xs text-gray-500 mb-2">Median Remaining Lease: ~{data.medianLeaseYears} years</div>
-                          <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
-                            <p className="text-sm">P25: {formatCurrency(data.p25Price)}</p>
-                            <p className="text-sm">Median: {formatCurrency(data.medianPrice)}</p>
-                            <p className="text-xs text-gray-500">Transactions: {data.txCount}</p>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="p25Price" 
-                  fill="#10b981" 
-                  name="P25 Price (Conservative)"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar 
-                  dataKey="medianPrice" 
-                  fill="#3b82f6"
-                  name="Median Price"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="mt-4 space-y-2">
-              {closestMatches.length > 0 && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs">
-                  <div className="font-semibold text-purple-900 mb-1">✨ Closest match to your budget:</div>
-                  <div className="text-purple-700 mb-2">
-                    {sortedByCloseness.slice(0, 3).map((p, idx) => (
-                      <span key={idx}>
-                        {p.town} {p.flatType}
-                        {idx < 2 && ', '}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="text-purple-600 text-xs italic">
-                    These areas are closest to your budget with relatively healthier lease profiles.
-                  </div>
-                </div>
-              )}
-              <div className="text-xs text-gray-500 space-y-2">
-                <p className="mb-1">Each bar shows: <span className="font-medium">Town • Flat Type • Median Remaining Lease</span></p>
-                <p>Sorted by closest match to your budget (P50 median price)</p>
-                <div className="mt-3 pt-3 border-t border-gray-200 text-gray-600">
-                  <p className="font-medium mb-1">How to use this:</p>
-                  <p>These options are based on recent median prices, not individual listings. Actual availability and unit condition may vary.</p>
-                </div>
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl border border-blue-500 p-8 shadow-lg">
+              <div className="max-w-2xl">
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Find neighbourhoods that fit your budget
+                </h3>
+                <p className="text-blue-50 text-lg mb-6 leading-relaxed">
+                  Based on your income, explore neighbourhoods where recent resale prices are within your realistic budget.
+                </p>
+                <Link
+                  href={`/neighbourhoods?price_max=${Math.round(results.maxPropertyPrice)}&lease_min=60&source=affordability`}
+                  className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
+                >
+                  Explore neighbourhoods
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
               </div>
             </div>
-          </ChartCard>
           </div>
         )}
+
 
         {/* Redirect CTA to Compare Towns */}
         <CompareTownsCTA text="Compare neighbourhoods and see what changes" />
