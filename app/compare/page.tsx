@@ -10,8 +10,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, TrendingUp, Home, Train, Calendar, AlertTriangle } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { ArrowLeft } from 'lucide-react'
 
 interface NeighbourhoodComparison {
   id: string
@@ -110,15 +109,310 @@ function ComparePageContent() {
     return labels[type || 'none'] || 'Unknown'
   }
 
-  // Prepare comparison chart data
-  const chartData = comparisons.map(c => ({
-    name: c.name,
-    price: c.summary?.median_price_12m || 0,
-    psm: c.summary?.median_psm_12m || 0,
-    lease: c.summary?.median_lease_years_12m || 0,
-    transactions: c.summary?.tx_12m || 0,
-    mrt_stations: c.access?.mrt_station_count || 0
-  }))
+  // Get MRT convenience description
+  function getMRTConvenienceDescription(c: NeighbourhoodComparison): string {
+    const stationCount = c.access?.mrt_station_count || 0
+    const distance = c.access?.avg_distance_to_mrt
+    const accessType = c.access?.mrt_access_type
+    
+    if (stationCount > 0) {
+      return 'Within walking distance'
+    }
+    
+    if (distance && distance > 0) {
+      if (distance <= 500) {
+        return '~5–10 min walk'
+      } else if (distance <= 1000) {
+        return '~10–15 min walk'
+      } else if (distance <= 1500) {
+        return '~15–20 min walk / bus required'
+      } else {
+        return '~20+ min walk / bus required'
+      }
+    }
+    
+    if (accessType === 'low') {
+      return '~15–20 min walk / bus required'
+    }
+    
+    return 'Bus or driving required'
+  }
+
+  function getPublicTransportConvenience(c: NeighbourhoodComparison): string {
+    const stationCount = c.access?.mrt_station_count || 0
+    const distance = c.access?.avg_distance_to_mrt
+    const accessType = c.access?.mrt_access_type
+    
+    if (stationCount >= 2 || accessType === 'high') {
+      return 'High'
+    } else if (stationCount === 1 || accessType === 'medium' || (distance && distance <= 800)) {
+      return 'Medium'
+    } else if (accessType === 'low' || (distance && distance <= 1500)) {
+      return 'Low–medium'
+    } else {
+      return 'Low'
+    }
+  }
+
+  // Generate "Who is this for" analysis
+  function generateWhoIsThisFor() {
+    if (comparisons.length < 2) return []
+    
+    return comparisons.map((c, idx) => {
+      const price = c.summary?.median_price_12m
+      const psm = c.summary?.median_psm_12m
+      const lease = c.summary?.median_lease_years_12m
+      const txCount = c.summary?.tx_12m || 0
+      const mrtStations = c.access?.mrt_station_count || 0
+      const mrtDistance = c.access?.avg_distance_to_mrt
+      
+      const pros: string[] = []
+      const cons: string[] = []
+      
+      // Compare with others
+      const otherPrices = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_price_12m).filter(p => p !== null && p !== undefined) as number[]
+      const otherPsms = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_psm_12m).filter(p => p !== null && p !== undefined) as number[]
+      const otherLeases = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_lease_years_12m).filter(l => l !== null && l !== undefined) as number[]
+      const otherStations = comparisons.filter((_, i) => i !== idx).map(c => c.access?.mrt_station_count || 0)
+      const otherDistances = comparisons.filter((_, i) => i !== idx).map(c => c.access?.avg_distance_to_mrt).filter(d => d !== null && d !== undefined) as number[]
+      
+      // Price analysis
+      if (price && otherPrices.length > 0) {
+        const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
+        if (price < avgOtherPrice * 0.85) {
+          pros.push('First-time buyer / Value for money')
+        } else if (price > avgOtherPrice * 1.15) {
+          pros.push('Accepts higher unit price')
+          cons.push('Budget-sensitive buyer')
+        }
+      }
+      
+      // Location analysis
+      if (mrtStations > 0 || (mrtDistance && mrtDistance <= 500)) {
+        pros.push('Wants to live near city center')
+      } else if (mrtDistance && mrtDistance > 1500) {
+        cons.push('Far from city center')
+      }
+      
+      // Lease analysis
+      if (lease && otherLeases.length > 0) {
+        const avgOtherLease = otherLeases.reduce((a, b) => a + b, 0) / otherLeases.length
+        if (lease > avgOtherLease + 5) {
+          pros.push('Long-term holding')
+        }
+      }
+      
+      // Market activity
+      if (txCount > 100) {
+        pros.push('Newer HDB area')
+      }
+      
+      return {
+        id: c.id,
+        name: c.name,
+        pros,
+        cons
+      }
+    })
+  }
+
+  // Generate verdict for each metric row
+  function getMetricVerdict(metric: string, rawValues: (number | null | string)[]): string {
+    if (rawValues.length < 2) return ''
+    
+    // Extract numeric values from raw values
+    let numericValues: number[] = []
+    
+    switch (metric) {
+      case 'Transactions (12m)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseInt(v.replace(/,/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      case 'Median Price':
+      case 'Price per sqm':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v.replace(/[^0-9.]/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      case 'Median Lease (years)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v)
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      case 'MRT Stations':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseInt(v)
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      case 'Distance to MRT':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            if (v === 'N/A' || v === '') return null
+            const num = parseFloat(v.replace(/[^0-9.]/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      default:
+        return ''
+    }
+    
+    if (numericValues.length < 2) return ''
+    
+    switch (metric) {
+      case 'Transactions (12m)':
+        const maxTx = Math.max(...numericValues)
+        const minTx = Math.min(...numericValues)
+        if (maxTx === minTx) return 'Similar'
+        const maxTxIdx = numericValues.indexOf(maxTx)
+        return `${comparisons[maxTxIdx]?.name || 'The former'} is more active`
+      
+      case 'Median Price':
+      case 'Price per sqm':
+        const maxPrice = Math.max(...numericValues)
+        const minPrice = Math.min(...numericValues)
+        const diffPercent = ((maxPrice - minPrice) / minPrice) * 100
+        if (diffPercent < 5) return 'Similar'
+        const maxPriceIdx = numericValues.indexOf(maxPrice)
+        if (diffPercent > 20) {
+          return `${comparisons[maxPriceIdx]?.name || 'The former'} is significantly more expensive`
+        }
+        return `${comparisons[maxPriceIdx]?.name || 'The former'} is more expensive`
+      
+      case 'Median Lease (years)':
+        const maxLease = Math.max(...numericValues)
+        const minLease = Math.min(...numericValues)
+        const leaseDiff = maxLease - minLease
+        if (leaseDiff < 2) return 'Similar'
+        const maxLeaseIdx = numericValues.indexOf(maxLease)
+        return `${comparisons[maxLeaseIdx]?.name || 'The former'} has longer lease`
+      
+      case 'MRT Stations':
+        const maxStations = Math.max(...numericValues)
+        const minStations = Math.min(...numericValues)
+        if (maxStations === minStations) return 'Same'
+        const maxStationsIdx = numericValues.indexOf(maxStations)
+        return `${comparisons[maxStationsIdx]?.name || 'The former'} has more`
+      
+      case 'Distance to MRT':
+        const minDist = Math.min(...numericValues)
+        const maxDist = Math.max(...numericValues)
+        if (Math.abs(maxDist - minDist) < 100) return 'Similar'
+        const minDistIdx = numericValues.indexOf(minDist)
+        return `${comparisons[minDistIdx]?.name || 'The former'} is closer`
+      
+      default:
+        return ''
+    }
+  }
+
+  // Generate Quick Verdict
+  function generateQuickVerdict(): string[] {
+    if (comparisons.length < 2) return []
+    
+    const verdicts: string[] = []
+    
+    comparisons.forEach((c, idx) => {
+      const price = c.summary?.median_price_12m
+      const psm = c.summary?.median_psm_12m
+      const lease = c.summary?.median_lease_years_12m
+      const txCount = c.summary?.tx_12m || 0
+      const mrtStations = c.access?.mrt_station_count || 0
+      const mrtDistance = c.access?.avg_distance_to_mrt
+      
+      const features: string[] = []
+      
+      // Price analysis
+      const otherPrices = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_price_12m).filter(p => p !== null && p !== undefined) as number[]
+      if (price && otherPrices.length > 0) {
+        const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
+        if (price > avgOtherPrice * 1.15) {
+          features.push('Significantly higher price')
+        } else if (price < avgOtherPrice * 0.85) {
+          features.push('Total and unit price significantly lower')
+        }
+      }
+      
+      // Lease analysis
+      const otherLeases = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_lease_years_12m).filter(l => l !== null && l !== undefined) as number[]
+      if (lease && otherLeases.length > 0) {
+        const avgOtherLease = otherLeases.reduce((a, b) => a + b, 0) / otherLeases.length
+        if (lease > avgOtherLease + 5) {
+          features.push('Longer lease')
+        } else if (lease < avgOtherLease - 5) {
+          features.push('Shorter lease')
+        }
+      }
+      
+      // MRT analysis
+      const otherStations = comparisons.filter((_, i) => i !== idx).map(c => c.access?.mrt_station_count || 0)
+      if (mrtStations > 0 && otherStations.every(s => s === 0)) {
+        features.push('Has MRT coverage')
+      } else if (mrtStations === 0 && otherStations.some(s => s > 0)) {
+        features.push('No MRT coverage')
+      }
+      
+      // Market activity
+      const otherTxCounts = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.tx_12m || 0)
+      if (txCount > 0 && otherTxCounts.length > 0) {
+        const avgOtherTx = otherTxCounts.reduce((a, b) => a + b, 0) / otherTxCounts.length
+        if (txCount > avgOtherTx * 1.3) {
+          features.push('More active market')
+        } else if (txCount < avgOtherTx * 0.7) {
+          features.push('Quieter market')
+        }
+      }
+      
+      // Character description
+      let character = ''
+      if (price && otherPrices.length > 0) {
+        const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
+        if (price > avgOtherPrice * 1.15 && mrtStations > 0) {
+          character = 'Mature, central area'
+        } else if (price < avgOtherPrice * 0.85) {
+          character = 'More value-oriented'
+        }
+      }
+      
+      if (features.length > 0 || character) {
+        const desc = features.length > 0 ? features.join(', ') : ''
+        const fullDesc = character ? (desc ? `${desc}, ${character}` : character) : desc
+        verdicts.push(`${c.name}: ${fullDesc}`)
+      }
+    })
+    
+    return verdicts
+  }
+
+  const whoIsThisFor = generateWhoIsThisFor()
 
   if (ids.length === 0) {
     return (
@@ -197,6 +491,22 @@ function ComparePageContent() {
         {/* Comparison Table */}
         {!loading && !error && comparisons.length > 0 && (
           <>
+            {/* Quick Verdict */}
+            {comparisons.length >= 2 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                  Quick verdict ({flatType}, {months}m)
+                </h2>
+                <div className="space-y-2">
+                  {generateQuickVerdict().map((verdict, idx) => (
+                    <div key={idx} className="text-sm text-gray-700">
+                      {idx === 0 ? '💰' : idx === 1 ? '🏠' : '🏘️'} {verdict}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary Comparison</h2>
               <table className="min-w-full divide-y divide-gray-200">
@@ -211,6 +521,9 @@ function ComparePageContent() {
                         )}
                       </th>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conclusion</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -218,9 +531,14 @@ function ComparePageContent() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Transactions (12m)</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {c.summary?.tx_12m.toLocaleString() || 'N/A'}
+                        {c.summary?.tx_12m ? c.summary.tx_12m.toLocaleString() : 'N/A'}
                       </td>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">
+                        {getMetricVerdict('Transactions (12m)', comparisons.map(c => c.summary?.tx_12m ?? null))}
+                      </td>
+                    )}
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Median Price</td>
@@ -229,6 +547,11 @@ function ComparePageContent() {
                         {formatCurrency(c.summary?.median_price_12m ?? null)}
                       </td>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">
+                        {getMetricVerdict('Median Price', comparisons.map(c => c.summary?.median_price_12m ?? null))}
+                      </td>
+                    )}
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Price per sqm</td>
@@ -237,6 +560,11 @@ function ComparePageContent() {
                         {c.summary?.median_psm_12m ? `$${Math.round(c.summary.median_psm_12m).toLocaleString()}` : 'N/A'}
                       </td>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">
+                        {getMetricVerdict('Price per sqm', comparisons.map(c => c.summary?.median_psm_12m ?? null))}
+                      </td>
+                    )}
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Median Lease (years)</td>
@@ -245,67 +573,79 @@ function ComparePageContent() {
                         {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)}` : 'N/A'}
                       </td>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">
+                        {getMetricVerdict('Median Lease (years)', comparisons.map(c => c.summary?.median_lease_years_12m ?? null))}
+                      </td>
+                    )}
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-700">MRT Stations</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-700">Nearest MRT (typical)</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {c.access?.mrt_station_count || 0}
+                        {getMRTConvenienceDescription(c)}
                       </td>
                     ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">
+                        {getMetricVerdict('Distance to MRT', comparisons.map(c => c.access?.avg_distance_to_mrt ?? null))}
+                      </td>
+                    )}
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-700">MRT Access</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-700">Public transport convenience</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {getMRTAccessLabel(c.access?.mrt_access_type)}
+                        {getPublicTransportConvenience(c)}
                       </td>
                     ))}
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-700">Distance to MRT</td>
-                    {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {formatDistance(c.access?.avg_distance_to_mrt ?? null)}
-                      </td>
-                    ))}
+                    {comparisons.length >= 2 && (
+                      <td className="px-4 py-3 text-sm text-gray-600 italic">—</td>
+                    )}
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Comparison Chart */}
-            {chartData.length > 0 && (
+            {/* Who is this neighbourhood for */}
+            {whoIsThisFor.length > 0 && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Visual Comparison</h2>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="price" fill="#3b82f6" name="Median Price" />
-                    <Bar yAxisId="right" dataKey="mrt_stations" fill="#8b5cf6" name="MRT Stations" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Who is this neighbourhood for?</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {whoIsThisFor.map((item, idx) => (
+                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-3">{item.name}</h3>
+                      {item.pros.length > 0 && (
+                        <div className="mb-3">
+                          {item.pros.map((pro, i) => (
+                            <div key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
+                              <span className="text-green-600 mt-0.5">✔️</span>
+                              <span>{pro}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {item.cons.length > 0 && (
+                        <div className="mb-3">
+                          {item.cons.map((con, i) => (
+                            <div key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
+                              <span className="text-red-600 mt-0.5">❌</span>
+                              <span>{con}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Link
+                        href={`/neighbourhood/${item.id}`}
+                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 pt-3 border-t border-gray-200"
+                      >
+                        View details →
+                      </Link>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-
-            {/* Individual Neighbourhood Links */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {comparisons.map(c => (
-                <Link
-                  key={c.id}
-                  href={`/neighbourhood/${c.id}`}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-shadow"
-                >
-                  <h3 className="font-semibold text-gray-900 mb-2">{c.name}</h3>
-                  <p className="text-sm text-gray-600">View details →</p>
-                </Link>
-              ))}
-            </div>
           </>
         )}
       </div>
