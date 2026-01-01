@@ -27,6 +27,13 @@ interface Neighbourhood {
     median_psm_12m: number | null
     median_lease_years_12m: number | null
   } | null
+  flat_type_details?: Array<{
+    flat_type: string
+    tx_12m: number
+    median_price_12m: number | null
+    median_psm_12m: number | null
+    median_lease_years_12m: number | null
+  }>
   access: {
     mrt_station_count: number
     mrt_access_type: string
@@ -47,7 +54,7 @@ function NeighbourhoodsPageContent() {
   
   // Read filter states from URL params
   const planningAreaId = searchParams.get('planning_area_id') || ''
-  const flatTypeParam = searchParams.get('flat_type') || '4 ROOM'
+  const flatTypeParam = searchParams.get('flat_type') || 'All'
   const priceTierParam = searchParams.get('price_tier') || 'all'
   const leaseTierParam = searchParams.get('lease_tier') || 'all'
   const mrtTierParam = searchParams.get('mrt_tier') || 'all'
@@ -78,10 +85,36 @@ function NeighbourhoodsPageContent() {
   // Sync filters from URL params when they change (e.g., when returning from detail page)
   useEffect(() => {
     const urlPlanningArea = searchParams.get('planning_area_id') || ''
-    const urlFlatType = searchParams.get('flat_type') || '4 ROOM'
-    const urlPriceTier = searchParams.get('price_tier') || 'all'
-    const urlLeaseTier = searchParams.get('lease_tier') || 'all'
+    const urlFlatType = searchParams.get('flat_type') || 'All'
+    let urlPriceTier = searchParams.get('price_tier') || 'all'
+    let urlLeaseTier = searchParams.get('lease_tier') || 'all'
     const urlMrtTier = searchParams.get('mrt_tier') || 'all'
+    const urlPriceMax = searchParams.get('price_max')
+    const urlLeaseMin = searchParams.get('lease_min')
+    
+    // Convert price_max to price_tier if price_tier not provided
+    if (urlPriceTier === 'all' && urlPriceMax) {
+      const maxPrice = parseFloat(urlPriceMax)
+      if (maxPrice <= 500000) {
+        urlPriceTier = 'low'
+      } else if (maxPrice <= 1000000) {
+        urlPriceTier = 'medium'
+      } else {
+        urlPriceTier = 'high'
+      }
+    }
+    
+    // Convert lease_min to lease_tier if lease_tier not provided
+    if (urlLeaseTier === 'all' && urlLeaseMin) {
+      const minLease = parseFloat(urlLeaseMin)
+      if (minLease >= 80) {
+        urlLeaseTier = 'long'
+      } else if (minLease >= 60) {
+        urlLeaseTier = 'medium'
+      } else {
+        urlLeaseTier = 'short'
+      }
+    }
     
     if (urlPlanningArea !== selectedPlanningArea) {
       setSelectedPlanningArea(urlPlanningArea)
@@ -98,13 +131,14 @@ function NeighbourhoodsPageContent() {
     if (urlMrtTier !== mrtTier) {
       setMrtTier(urlMrtTier)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
   // Update URL when filters change (but skip if values match URL to avoid loops)
   useEffect(() => {
     const params = new URLSearchParams()
     if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-    if (selectedFlatType && selectedFlatType !== '4 ROOM') params.set('flat_type', selectedFlatType)
+    if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
     if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
     if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
     if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
@@ -143,37 +177,44 @@ function NeighbourhoodsPageContent() {
     try {
       const params = new URLSearchParams()
       if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-      if (selectedFlatType) params.set('flat_type', selectedFlatType)
+      if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
       
-      // Set price range based on tier or direct URL params
-      if (priceMaxParam) {
-        // Direct price_max from URL (e.g., from affordability page)
-        params.set('price_max', priceMaxParam)
-      } else if (priceTier !== 'all') {
+      // Set price range based on tier
+      if (priceTier !== 'all') {
         const priceRanges = {
-          low: [200000, 500000],
-          medium: [500000, 1000000],
-          high: [1000000, 2000000]
+          low: [0, 500000],
+          medium: [0, 1000000],
+          high: [0, 2000000]
         }
         const range = priceRanges[priceTier as keyof typeof priceRanges]
-        params.set('price_min', range[0].toString())
-        params.set('price_max', range[1].toString())
+        if (range) {
+          params.set('price_max', range[1].toString())
+        }
       }
       
-      // Set lease range based on tier or direct URL params
-      if (leaseMinParam) {
-        // Direct lease_min from URL (e.g., from affordability page)
-        params.set('lease_min', leaseMinParam)
-      } else if (leaseTier !== 'all') {
+      // Set lease range based on tier
+      if (leaseTier !== 'all') {
         const leaseRanges = {
           short: [30, 60],
           medium: [60, 80],
           long: [80, 99]
         }
         const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
-        params.set('lease_min', range[0].toString())
-        params.set('lease_max', range[1].toString())
+        if (range) {
+          params.set('lease_min', range[0].toString())
+          params.set('lease_max', range[1].toString())
+        }
       }
+      
+      console.log('Loading neighbourhoods with filters:', {
+        priceTier,
+        leaseTier,
+        selectedFlatType,
+        selectedPlanningArea,
+        mrtTier,
+        params: params.toString(),
+        url: `/api/neighbourhoods?${params.toString()}`
+      })
       
       // Set MRT distance based on tier
       if (mrtTier !== 'all') {
@@ -195,26 +236,79 @@ function NeighbourhoodsPageContent() {
         throw new Error(data.error || 'Failed to load neighbourhoods')
       }
       
-      let loaded = data.neighbourhoods || []
+      const loaded = data.neighbourhoods || []
+      
+      console.log('Loaded neighbourhoods:', {
+        count: loaded.length,
+        flatType: selectedFlatType,
+        sample: loaded.slice(0, 5).map((n: Neighbourhood) => ({
+          name: n.name,
+          hasSummary: !!n.summary,
+          price: n.summary?.median_price_12m,
+          lease: n.summary?.median_lease_years_12m,
+          tx: n.summary?.tx_12m,
+          flatTypeDetailsCount: n.flat_type_details?.length || 0
+        })),
+        allNames: loaded.map((n: Neighbourhood) => n.name).sort()
+      })
+      
+      // When "All" is selected, expand each neighbourhood into multiple cards (one per flat type)
+      let displayItems: Array<Neighbourhood & { display_flat_type?: string }> = []
+      
+      if (selectedFlatType === 'All') {
+        // Expand: create one card per flat type
+        loaded.forEach((neighbourhood: Neighbourhood) => {
+          if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
+            // Create a card for each flat type
+            neighbourhood.flat_type_details.forEach(ftDetail => {
+              displayItems.push({
+                ...neighbourhood,
+                display_flat_type: ftDetail.flat_type,
+                summary: {
+                  tx_12m: ftDetail.tx_12m,
+                  median_price_12m: ftDetail.median_price_12m,
+                  median_psm_12m: ftDetail.median_psm_12m,
+                  median_lease_years_12m: ftDetail.median_lease_years_12m
+                }
+              })
+            })
+          } else {
+            // No flat type details, show as is
+            displayItems.push(neighbourhood)
+          }
+        })
+      } else {
+        // Specific flat type selected, show as is
+        displayItems = loaded
+      }
+      
+      console.log('Display items after expansion:', {
+        count: displayItems.length,
+        sample: displayItems.slice(0, 5).map(n => ({
+          name: n.name,
+          flatType: n.display_flat_type || selectedFlatType,
+          price: n.summary?.median_price_12m
+        }))
+      })
       
       // Calculate dynamic thresholds based on actual data
-      const thresholds = calculateThresholds(loaded)
+      const thresholds = calculateThresholds(displayItems)
       setPriceThresholds(thresholds.price)
       setLeaseThresholds(thresholds.lease)
       
       // Apply sorting based on preset
-      loaded = applySortPreset(loaded, sortPreset)
+      displayItems = applySortPreset(displayItems, sortPreset)
       
-      setNeighbourhoods(loaded)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load neighbourhoods')
+      setNeighbourhoods(displayItems)
+    } catch (err) {
+      const error = err as Error
+      setError(error.message || 'Failed to load neighbourhoods')
       console.error('Error loading neighbourhoods:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Calculate percentiles (P25, P50, P75) from actual data
   function calculateThresholds(data: Neighbourhood[]): {
     price: { p25: number; p50: number; p75: number }
     lease: { p25: number; p50: number; p75: number }
@@ -609,7 +703,7 @@ function NeighbourhoodsPageContent() {
             {/* Flat Type Filter */}
             <div>
               <label htmlFor="flat-type" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Flat Type <span className="text-gray-500 font-normal">(required)</span>
+                Flat Type
               </label>
               <select
                 id="flat-type"
@@ -617,6 +711,7 @@ function NeighbourhoodsPageContent() {
                 onChange={(e) => setSelectedFlatType(e.target.value)}
                 className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
               >
+                <option value="All">All Types</option>
                 <option value="3 ROOM">3 ROOM</option>
                 <option value="4 ROOM">4 ROOM</option>
                 <option value="5 ROOM">5 ROOM</option>
@@ -854,12 +949,46 @@ function NeighbourhoodsPageContent() {
         {/* Neighbourhood List */}
         {!loading && !error && (
           <>
-            <div className="mb-4 text-sm text-gray-600">
-              Recommended neighbourhoods based on your criteria
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {neighbourhoods.map(neighbourhood => {
-                const description = generateCardDescription(neighbourhood)
+            {neighbourhoods.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+                <p className="text-amber-900 font-medium mb-2">No neighbourhoods found matching your criteria</p>
+                <p className="text-sm text-amber-700 mb-4">
+                  Try adjusting your filters - remove price, lease, or MRT restrictions to see more options.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {priceTier !== 'all' && (
+                    <button
+                      onClick={() => setPriceTier('all')}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
+                    >
+                      Clear Price Filter
+                    </button>
+                  )}
+                  {leaseTier !== 'all' && (
+                    <button
+                      onClick={() => setLeaseTier('all')}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
+                    >
+                      Clear Lease Filter
+                    </button>
+                  )}
+                  {mrtTier !== 'all' && (
+                    <button
+                      onClick={() => setMrtTier('all')}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
+                    >
+                      Clear MRT Filter
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 text-sm text-gray-600">
+                  {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {neighbourhoods.map(neighbourhood => {
                 const signal = getMainSignal(neighbourhood)
                 const isSelected = selectedForCompare.has(neighbourhood.id)
                 
@@ -873,11 +1002,25 @@ function NeighbourhoodsPageContent() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{neighbourhood.name}</h3>
-                        {neighbourhood.planning_area && (
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
-                            {neighbourhood.planning_area.name}
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {neighbourhood.planning_area && (
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
+                              {neighbourhood.planning_area.name}
+                            </span>
+                          )}
+                          {/* Show the specific flat type when "All" is selected and expanded */}
+                          {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type && (
+                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
+                              {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type}
+                            </span>
+                          )}
+                          {/* Show flat type when specific type is selected */}
+                          {selectedFlatType !== 'All' && (
+                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
+                              {selectedFlatType}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         onClick={(e) => toggleCompare(neighbourhood.id, e)}
@@ -908,7 +1051,7 @@ function NeighbourhoodsPageContent() {
 
                     {/* Key metrics (condensed) - Fixed order: Price → Lease → MRT */}
                     <div className="space-y-1.5 text-sm mb-4">
-                      {/* Price (always first) */}
+                      {/* Price */}
                       {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Price:</span>
@@ -916,7 +1059,7 @@ function NeighbourhoodsPageContent() {
                         </div>
                       )}
                       
-                      {/* Lease (always second) */}
+                      {/* Lease */}
                       {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Lease:</span>
@@ -924,7 +1067,7 @@ function NeighbourhoodsPageContent() {
                         </div>
                       )}
                       
-                      {/* MRT (always third) */}
+                      {/* MRT */}
                       {neighbourhood.access && (() => {
                         const mrtInfo = getMRTAccessLabel(
                           neighbourhood.access.mrt_access_type,
@@ -951,7 +1094,7 @@ function NeighbourhoodsPageContent() {
                         )
                       })()}
                       
-                      {/* Show message only if all three are missing */}
+                      {/* Show message only if all data is missing */}
                       {(!neighbourhood.summary || 
                         ((!neighbourhood.summary.median_price_12m || Number(neighbourhood.summary.median_price_12m) <= 0) && 
                          (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0))) &&
@@ -968,7 +1111,7 @@ function NeighbourhoodsPageContent() {
                         href={(() => {
                           const params = new URLSearchParams()
                           if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-                          if (selectedFlatType && selectedFlatType !== '4 ROOM') params.set('flat_type', selectedFlatType)
+                          if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
                           if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
                           if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
                           if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
@@ -982,8 +1125,10 @@ function NeighbourhoodsPageContent() {
                     </div>
                   </div>
                 )
-              })}
-            </div>
+                  })}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

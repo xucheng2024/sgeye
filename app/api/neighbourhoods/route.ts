@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Build query: fetch neighbourhoods first, then join summary and access separately
     // This avoids Supabase join syntax issues
-    let query = supabase
+    let neighbourhoodsQuery = supabase
       .from('neighbourhoods')
       .select(`
         id,
@@ -56,10 +56,16 @@ export async function GET(request: NextRequest) {
 
     // Filter by planning area if provided
     if (planningAreaId) {
-      query = query.eq('planning_area_id', planningAreaId)
+      neighbourhoodsQuery = neighbourhoodsQuery.eq('planning_area_id', planningAreaId)
     }
 
-    const { data: neighbourhoodsData, error } = await query
+    const { data: neighbourhoodsData, error } = await neighbourhoodsQuery
+
+    console.log('API: Fetched neighbourhoods from DB:', {
+      flatType: flatType || 'All',
+      count: neighbourhoodsData?.length || 0,
+      planningAreaId
+    })
 
     if (error) {
       console.error('Error fetching neighbourhoods:', error)
@@ -81,67 +87,139 @@ export async function GET(request: NextRequest) {
     // Get neighbourhood IDs
     const neighbourhoodIds = neighbourhoodsData.map(n => n.id)
 
-    // Fetch summary data - if flat_type is specified, get from agg_neighbourhood_monthly instead
-    let summaryData: any[] | null = null
+    // Fetch summary data from agg_neighbourhood_monthly (last 12 months)
+    // If flat_type is specified, filter by that type. Otherwise, get all types and merge.
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setMonth(startDate.getMonth() - 12)
+    
+    let monthlyQuery = supabase
+      .from('agg_neighbourhood_monthly')
+      .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, month')
+      .in('neighbourhood_id', neighbourhoodIds)
+      .gte('month', startDate.toISOString().split('T')[0])
+      .lte('month', endDate.toISOString().split('T')[0])
+    
+    // Filter by flat_type if specified
     if (flatType) {
-      // Get data for specific flat type from agg_neighbourhood_monthly (last 12 months)
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setMonth(startDate.getMonth() - 12)
+      monthlyQuery = monthlyQuery.eq('flat_type', flatType)
+    }
+    
+    const { data: monthlyData } = await monthlyQuery
+    
+    console.log('API: Monthly data from agg_neighbourhood_monthly:', {
+      flatType: flatType || 'All',
+      monthlyDataCount: monthlyData?.length || 0,
+      uniqueNeighbourhoods: monthlyData ? [...new Set(monthlyData.map(m => m.neighbourhood_id))].length : 0,
+      flatTypesInData: monthlyData ? [...new Set(monthlyData.map(m => m.flat_type))].sort() : []
+    })
+    
+    // Aggregate by neighbourhood_id and flat_type first
+    // Then combine all flat types for "All"
+    const tempSummaryMap = new Map<string, {
+      neighbourhood_id: string
+      flat_type: string
+      prices: number[]
+      psms: number[]
+      leases: number[]
+      total_tx: number
+    }>()
+    
+    if (monthlyData) {
+      monthlyData.forEach(item => {
+        const nbhdId = item.neighbourhood_id
+        const flatTypeKey = item.flat_type
+        const key = `${nbhdId}__${flatTypeKey}` // Group by neighbourhood + flat_type
+        
+        if (!tempSummaryMap.has(key)) {
+          tempSummaryMap.set(key, {
+            neighbourhood_id: nbhdId,
+            flat_type: flatTypeKey,
+            prices: [],
+            psms: [],
+            leases: [],
+            total_tx: 0
+          })
+        }
+        const entry = tempSummaryMap.get(key)!
+        
+        // Collect values for this neighbourhood + flat_type combination
+        if (item.median_price) entry.prices.push(Number(item.median_price))
+        if (item.median_psm) entry.psms.push(Number(item.median_psm))
+        if (item.median_lease_years) entry.leases.push(Number(item.median_lease_years))
+        if (item.tx_count) entry.total_tx += Number(item.tx_count)
+      })
+    }
+    
+    // Calculate medians for each neighbourhood + flat_type combination
+    const flatTypeSummaries = Array.from(tempSummaryMap.values()).map(entry => {
+      const sortedPrices = entry.prices.sort((a, b) => a - b)
+      const sortedPsms = entry.psms.sort((a, b) => a - b)
+      const sortedLeases = entry.leases.sort((a, b) => a - b)
       
-      const { data: monthlyData } = await supabase
-        .from('agg_neighbourhood_monthly')
-        .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, month')
-        .in('neighbourhood_id', neighbourhoodIds)
-        .eq('flat_type', flatType)
-        .gte('month', startDate.toISOString().split('T')[0])
-        .lte('month', endDate.toISOString().split('T')[0])
-      
-      // Aggregate by neighbourhood_id
-      const tempSummaryMap = new Map()
-      if (monthlyData) {
-        monthlyData.forEach(item => {
-          const nbhdId = item.neighbourhood_id
-          if (!tempSummaryMap.has(nbhdId)) {
-            tempSummaryMap.set(nbhdId, {
-              neighbourhood_id: nbhdId,
-              prices: [],
-              psms: [],
-              leases: [],
-              txCounts: []
-            })
-          }
-          const entry = tempSummaryMap.get(nbhdId)
-          if (item.median_price) entry.prices.push(Number(item.median_price))
-          if (item.median_psm) entry.psms.push(Number(item.median_psm))
-          if (item.median_lease_years) entry.leases.push(Number(item.median_lease_years))
-          if (item.tx_count) entry.txCounts.push(Number(item.tx_count))
+      return {
+        neighbourhood_id: entry.neighbourhood_id,
+        flat_type: entry.flat_type,
+        tx_12m: entry.total_tx,
+        median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
+        median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
+        median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
+      }
+    })
+    
+    // Now combine all flat types for each neighbourhood (for "All" view)
+    const neighbourhoodSummaries = new Map<string, {
+      prices: number[]
+      psms: number[]
+      leases: number[]
+      total_tx: number
+    }>()
+    
+    flatTypeSummaries.forEach(summary => {
+      if (!neighbourhoodSummaries.has(summary.neighbourhood_id)) {
+        neighbourhoodSummaries.set(summary.neighbourhood_id, {
+          prices: [],
+          psms: [],
+          leases: [],
+          total_tx: 0
         })
       }
+      const nbhdSummary = neighbourhoodSummaries.get(summary.neighbourhood_id)!
       
-      // Calculate medians
-      summaryData = Array.from(tempSummaryMap.values()).map(entry => {
-        const sortedPrices = entry.prices.sort((a: number, b: number) => a - b)
-        const sortedPsms = entry.psms.sort((a: number, b: number) => a - b)
-        const sortedLeases = entry.leases.sort((a: number, b: number) => a - b)
-        
-        return {
-          neighbourhood_id: entry.neighbourhood_id,
-          tx_12m: entry.txCounts.reduce((a: number, b: number) => a + b, 0),
-          median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
-          median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
-          median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
-          updated_at: new Date().toISOString()
-        }
-      })
-    } else {
-      // Use neighbourhood_summary (aggregated across all flat types)
-      const { data } = await supabase
-        .from('neighbourhood_summary')
-        .select('*')
-        .in('neighbourhood_id', neighbourhoodIds)
-      summaryData = data
-    }
+      // Add the flat_type's median to the neighbourhood's collection
+      if (summary.median_price_12m) nbhdSummary.prices.push(summary.median_price_12m)
+      if (summary.median_psm_12m) nbhdSummary.psms.push(summary.median_psm_12m)
+      if (summary.median_lease_years_12m) nbhdSummary.leases.push(summary.median_lease_years_12m)
+      nbhdSummary.total_tx += summary.tx_12m
+    })
+    
+    // Final aggregation: median of flat_type medians
+    const summaryData = Array.from(neighbourhoodSummaries.entries()).map(([nbhdId, data]) => {
+      const sortedPrices = data.prices.sort((a, b) => a - b)
+      const sortedPsms = data.psms.sort((a, b) => a - b)
+      const sortedLeases = data.leases.sort((a, b) => a - b)
+      
+      return {
+        neighbourhood_id: nbhdId,
+        tx_12m: data.total_tx,
+        median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
+        median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
+        median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
+        updated_at: new Date().toISOString()
+      }
+    })
+    
+    console.log('API: After aggregation:', {
+      flatType: flatType || 'All Types',
+      neighbourhoodIdsQueried: neighbourhoodIds.length,
+      flatTypeSummariesCount: flatTypeSummaries.length,
+      neighbourhoodSummariesCount: neighbourhoodSummaries.size,
+      finalSummaryDataCount: summaryData.length,
+      neighbourhoodsWithSummary: summaryData.map(s => {
+        const nbhd = neighbourhoodsData.find(n => n.id === s.neighbourhood_id)
+        return nbhd?.name
+      }).sort()
+    })
 
     // Fetch access data separately
     const { data: accessData } = await supabase
@@ -171,6 +249,9 @@ export async function GET(request: NextRequest) {
         : null
       const summary = summaryMap.get(n.id) || null
       const access = accessMap.get(n.id) || null
+      
+      // Get flat type summaries for this neighbourhood (for "All" mode)
+      const flatTypeData = flatTypeSummaries.filter(s => s.neighbourhood_id === n.id)
 
       return {
         id: n.id,
@@ -188,6 +269,13 @@ export async function GET(request: NextRequest) {
           median_lease_years_12m: summary.median_lease_years_12m,
           updated_at: summary.updated_at
         } : null,
+        flat_type_details: flatTypeData.map(ft => ({
+          flat_type: ft.flat_type,
+          tx_12m: ft.tx_12m,
+          median_price_12m: ft.median_price_12m,
+          median_psm_12m: ft.median_psm_12m,
+          median_lease_years_12m: ft.median_lease_years_12m
+        })),
         access: access ? {
           mrt_station_count: access.mrt_station_count,
           mrt_access_type: access.mrt_access_type,
@@ -199,40 +287,143 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
+    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatType })
+    
     // Apply filters
     if (priceMin !== null || priceMax !== null || leaseMin !== null || leaseMax !== null || mrtDistanceMax !== null) {
+      let beforeFilter = neighbourhoods.length
+      let filteredByPrice = 0
+      let filteredByLease = 0
+      let filteredByMRT = 0
+      
       neighbourhoods = neighbourhoods.filter(n => {
-        // Price filter
-        if (priceMin !== null || priceMax !== null) {
-          const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-          if (price === null) return false
-          if (priceMin !== null && price < priceMin) return false
-          if (priceMax !== null && price > priceMax) return false
-        }
+        // When flat_type is NOT specified ("All"), check if ANY flat type meets criteria
+        // When flat_type IS specified, check that specific flat type's data
         
-        // Lease filter
-        if (leaseMin !== null || leaseMax !== null) {
-          const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-          if (lease === null) return false
-          if (leaseMin !== null && lease < leaseMin) return false
-          if (leaseMax !== null && lease > leaseMax) return false
-        }
-        
-        // MRT distance filter
-        if (mrtDistanceMax !== null) {
-          const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
-          // If has stations in boundary, distance is 0, so it passes
-          // If no stations, check distance
-          if (distance === null || (distance > 0 && distance > mrtDistanceMax)) {
-            // Also check if has stations (distance would be 0 or null)
-            if (!n.access?.mrt_station_count || n.access.mrt_station_count === 0) {
+        if (!flatType) {
+          // "All" mode: Check each flat type separately
+          // A neighbourhood passes if ANY of its flat types meet the criteria
+          const flatTypesForNeighbourhood = flatTypeSummaries.filter(
+            s => s.neighbourhood_id === n.id
+          )
+          
+          if (flatTypesForNeighbourhood.length === 0) {
+            // No data for any flat type
+            filteredByPrice++
+            return false
+          }
+          
+          // Check if at least one flat type meets all filter criteria
+          const hasMatchingFlatType = flatTypesForNeighbourhood.some(flatTypeSummary => {
+            // Price filter
+            if (priceMin !== null || priceMax !== null) {
+              const price = flatTypeSummary.median_price_12m
+              if (price === null) return false
+              if (priceMin !== null && price < priceMin) return false
+              if (priceMax !== null && price > priceMax) return false
+            }
+            
+            // Lease filter
+            if (leaseMin !== null || leaseMax !== null) {
+              const lease = flatTypeSummary.median_lease_years_12m
+              if (lease === null) return false
+              if (leaseMin !== null && lease < leaseMin) return false
+              if (leaseMax !== null && lease > leaseMax) return false
+            }
+            
+            return true
+          })
+          
+          if (!hasMatchingFlatType) {
+            filteredByPrice++ // Could be price or lease, but we count it
+            return false
+          }
+          
+          // MRT filter (applies to neighbourhood, not flat type)
+          if (mrtDistanceMax !== null) {
+            const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+            if (distance === null || (distance > 0 && distance > mrtDistanceMax)) {
+              if (!n.access?.mrt_station_count || n.access.mrt_station_count === 0) {
+                filteredByMRT++
+                return false
+              }
+            }
+          }
+          
+          return true
+          
+        } else {
+          // Specific flat type mode: Use the aggregated summary data
+          
+          // Price filter
+          if (priceMin !== null || priceMax !== null) {
+            const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
+            if (price === null) {
+              filteredByPrice++
+              return false
+            }
+            if (priceMin !== null && price < priceMin) {
+              filteredByPrice++
+              return false
+            }
+            if (priceMax !== null && price > priceMax) {
+              filteredByPrice++
               return false
             }
           }
+          
+          // Lease filter
+          if (leaseMin !== null || leaseMax !== null) {
+            const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
+            if (lease === null) {
+              filteredByLease++
+              return false
+            }
+            if (leaseMin !== null && lease < leaseMin) {
+              filteredByLease++
+              return false
+            }
+            if (leaseMax !== null && lease > leaseMax) {
+              filteredByLease++
+              return false
+            }
+          }
+          
+          // MRT distance filter
+          if (mrtDistanceMax !== null) {
+            const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+            if (distance === null || (distance > 0 && distance > mrtDistanceMax)) {
+              if (!n.access?.mrt_station_count || n.access.mrt_station_count === 0) {
+                filteredByMRT++
+                return false
+              }
+            }
+          }
+          
+          return true
         }
-        
-        return true
       })
+      
+      console.log('API: After filtering:', {
+        before: beforeFilter,
+        after: neighbourhoods.length,
+        filteredByPrice,
+        filteredByLease,
+        filteredByMRT
+      })
+      
+      // Debug: if no results after filtering, log more details
+      if (neighbourhoods.length === 0 && beforeFilter > 0) {
+        console.log('API: No results after filtering. Filter criteria:', {
+          priceMin,
+          priceMax,
+          leaseMin,
+          leaseMax,
+          mrtDistanceMax,
+          message: `Filtered out ${filteredByPrice} by price, ${filteredByLease} by lease, ${filteredByMRT} by MRT`
+        })
+      }
     }
 
     return NextResponse.json({
