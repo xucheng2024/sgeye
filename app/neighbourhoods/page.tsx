@@ -282,6 +282,47 @@ function NeighbourhoodsPageContent() {
         displayItems = loaded
       }
       
+      // Apply client-side price and lease filters when "All" is selected
+      // (API filters at neighbourhood level, but we need to filter expanded items)
+      if (selectedFlatType === 'All' && (priceTier !== 'all' || leaseTier !== 'all')) {
+        const priceRanges = {
+          low: [0, 500000],
+          medium: [0, 1000000],
+          high: [0, 2000000]
+        }
+        const leaseRanges = {
+          short: [30, 60],
+          medium: [60, 80],
+          long: [80, 99]
+        }
+        
+        displayItems = displayItems.filter(item => {
+          // Price filter
+          if (priceTier !== 'all') {
+            const range = priceRanges[priceTier as keyof typeof priceRanges]
+            if (range) {
+              const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
+              if (price === null || price > range[1]) {
+                return false
+              }
+            }
+          }
+          
+          // Lease filter
+          if (leaseTier !== 'all') {
+            const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
+            if (range) {
+              const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
+              if (lease === null || lease < range[0] || lease > range[1]) {
+                return false
+              }
+            }
+          }
+          
+          return true
+        })
+      }
+      
       console.log('Display items after expansion:', {
         count: displayItems.length,
         sample: displayItems.slice(0, 5).map(n => ({
