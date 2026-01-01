@@ -380,7 +380,6 @@ function NeighbourhoodsPageContent() {
     if (isAffordable) {
       if (hasShortLease) return 'Lower entry price, shorter remaining lease'
       if (hasLimitedMRT) return 'Lower entry price, limited MRT access'
-      if (isQuiet) return 'Lower entry price, quieter resale market'
       if (hasLongLease) return 'Lower entry price, long remaining lease'
       return 'Lower entry price, moderate characteristics'
     }
@@ -394,14 +393,12 @@ function NeighbourhoodsPageContent() {
     
     // Lease-based descriptions (if we have lease but no strong price signal)
     if (hasLongLease) {
-      if (isQuiet) return 'Long remaining lease, quieter resale market'
       if (hasLimitedMRT) return 'Long remaining lease, limited MRT access'
       if (isExpensive) return 'Long remaining lease, higher price point'
       return 'Long remaining lease, moderate price and access'
     }
     
     if (hasShortLease) {
-      if (hasPrice) return 'Shorter remaining lease, check price carefully'
       return 'Shorter remaining lease, consider long-term plans'
     }
     
@@ -409,7 +406,6 @@ function NeighbourhoodsPageContent() {
     if (hasHighMRT) {
       if (isExpensive) return 'Well-connected, higher price pressure'
       if (hasShortLease) return 'Well-connected, shorter remaining lease'
-      if (isQuiet) return 'Well-connected, quieter resale market'
       return 'Well-connected, moderate price and lease'
     }
     
@@ -424,9 +420,6 @@ function NeighbourhoodsPageContent() {
       return 'Active market, good choice availability'
     }
     
-    if (isQuiet && hasPrice) {
-      return 'Quieter resale market, fewer recent transactions'
-    }
     
     // Moderate/balanced cases
     if (isModerate && hasMediumLease) {
@@ -791,19 +784,22 @@ function NeighbourhoodsPageContent() {
           </div>
         </div>
 
-        {/* Compare Selected Button */}
-        {selectedForCompare.size > 0 && (
+        {/* Compare Status Bar - Only show when ≥2 selected */}
+        {selectedForCompare.size >= 2 && (
           <div className="mb-6 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">
-                {selectedForCompare.size} neighbourhood{selectedForCompare.size !== 1 ? 's' : ''} selected
-              </span>
+            <div>
+              <div className="text-sm font-medium text-gray-900">
+                Comparing {selectedForCompare.size} neighbourhoods
+              </div>
+              <div className="text-xs text-gray-600 mt-0.5">
+                See key differences side by side
+              </div>
             </div>
             <button
               onClick={handleCompareSelected}
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
-              Compare selected
+              View comparison
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -828,7 +824,7 @@ function NeighbourhoodsPageContent() {
         {!loading && !error && (
           <>
             <div className="mb-4 text-sm text-gray-600">
-              Showing top neighbourhoods by recent activity
+              Recommended neighbourhoods based on your criteria
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {neighbourhoods.map(neighbourhood => {
@@ -864,9 +860,6 @@ function NeighbourhoodsPageContent() {
                         <Plus className={`w-4 h-4 ${isSelected ? 'rotate-45' : ''} transition-transform`} />
                       </button>
                     </div>
-                    
-                    {/* Human-readable description */}
-                    <p className="text-sm text-gray-700 mb-4 font-medium">{description}</p>
 
                     {/* Main signal tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -877,39 +870,30 @@ function NeighbourhoodsPageContent() {
                       )}
                       {signal.watchOut && (
                         <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium">
-                          ⚠ Watch out: {signal.watchOut}
+                          {signal.watchOut}
                         </span>
                       )}
                     </div>
 
-                    {/* Key metrics (condensed) */}
+                    {/* Key metrics (condensed) - Fixed order: Price → Lease → MRT */}
                     <div className="space-y-1.5 text-sm mb-4">
-                      {neighbourhood.summary ? (
-                        <>
-                          {neighbourhood.summary.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Price:</span>
-                              <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
-                            </div>
-                          )}
-                          {neighbourhood.summary.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600">Lease:</span>
-                              <span className="font-semibold text-gray-900">{Number(neighbourhood.summary.median_lease_years_12m).toFixed(1)} years</span>
-                            </div>
-                          )}
-                          {(!neighbourhood.summary.median_price_12m || Number(neighbourhood.summary.median_price_12m) <= 0) && 
-                           (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0) && (
-                            <div className="text-xs text-gray-500 italic">
-                              No recent price or lease data (last 12 months)
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-xs text-gray-500 italic">
-                          No recent transaction data (last 12 months)
+                      {/* Price (always first) */}
+                      {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Price:</span>
+                          <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
                         </div>
                       )}
+                      
+                      {/* Lease (always second) */}
+                      {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Lease:</span>
+                          <span className="font-semibold text-gray-900">{Number(neighbourhood.summary.median_lease_years_12m).toFixed(1)} years</span>
+                        </div>
+                      )}
+                      
+                      {/* MRT (always third) */}
                       {neighbourhood.access && (() => {
                         const mrtInfo = getMRTAccessLabel(
                           neighbourhood.access.mrt_access_type,
@@ -935,6 +919,16 @@ function NeighbourhoodsPageContent() {
                           </div>
                         )
                       })()}
+                      
+                      {/* Show message only if all three are missing */}
+                      {(!neighbourhood.summary || 
+                        ((!neighbourhood.summary.median_price_12m || Number(neighbourhood.summary.median_price_12m) <= 0) && 
+                         (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0))) &&
+                       (!neighbourhood.access || (!neighbourhood.access.avg_distance_to_mrt && !neighbourhood.access.mrt_station_count)) && (
+                        <div className="text-xs text-gray-500 italic">
+                          No recent data (last 12 months)
+                        </div>
+                      )}
                     </div>
 
                     {/* Action buttons */}
@@ -954,17 +948,6 @@ function NeighbourhoodsPageContent() {
                       >
                         View details
                       </Link>
-                      {isSelected && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            handleCompareSelected()
-                          }}
-                          className="flex-1 text-center text-sm font-medium bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
-                        >
-                          Compare
-                        </button>
-                      )}
                     </div>
                   </div>
                 )
