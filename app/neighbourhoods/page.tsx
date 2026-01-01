@@ -9,9 +9,9 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, TrendingUp, Home, Train } from 'lucide-react'
+import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap } from 'lucide-react'
 
 interface Neighbourhood {
   id: string
@@ -39,23 +39,90 @@ interface PlanningArea {
   name: string
 }
 
+type SortPreset = 'affordable' | 'lease' | 'mrt' | 'activity' | 'default'
+
 function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
-  const planningAreaId = searchParams.get('planning_area_id')
+  const router = useRouter()
+  
+  // Read filter states from URL params
+  const planningAreaId = searchParams.get('planning_area_id') || ''
+  const flatTypeParam = searchParams.get('flat_type') || '4 ROOM'
+  const priceTierParam = searchParams.get('price_tier') || 'all'
+  const leaseTierParam = searchParams.get('lease_tier') || 'all'
+  const mrtTierParam = searchParams.get('mrt_tier') || 'all'
   
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
-  const [selectedPlanningArea, setSelectedPlanningArea] = useState<string>(planningAreaId || '')
+  const [selectedPlanningArea, setSelectedPlanningArea] = useState<string>(planningAreaId)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
+  const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
+  const [sortPreset, setSortPreset] = useState<SortPreset>('default')
+  const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
+  const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
+  
+  // Filter states - initialize from URL params
+  const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
+  const [priceTier, setPriceTier] = useState<string>(priceTierParam)
+  const [leaseTier, setLeaseTier] = useState<string>(leaseTierParam)
+  const [mrtTier, setMrtTier] = useState<string>(mrtTierParam)
+  
   useEffect(() => {
     loadPlanningAreas()
   }, [])
 
+  // Sync filters from URL params when they change (e.g., when returning from detail page)
+  useEffect(() => {
+    const urlPlanningArea = searchParams.get('planning_area_id') || ''
+    const urlFlatType = searchParams.get('flat_type') || '4 ROOM'
+    const urlPriceTier = searchParams.get('price_tier') || 'all'
+    const urlLeaseTier = searchParams.get('lease_tier') || 'all'
+    const urlMrtTier = searchParams.get('mrt_tier') || 'all'
+    
+    if (urlPlanningArea !== selectedPlanningArea) {
+      setSelectedPlanningArea(urlPlanningArea)
+    }
+    if (urlFlatType !== selectedFlatType) {
+      setSelectedFlatType(urlFlatType)
+    }
+    if (urlPriceTier !== priceTier) {
+      setPriceTier(urlPriceTier)
+    }
+    if (urlLeaseTier !== leaseTier) {
+      setLeaseTier(urlLeaseTier)
+    }
+    if (urlMrtTier !== mrtTier) {
+      setMrtTier(urlMrtTier)
+    }
+  }, [searchParams])
+
+  // Update URL when filters change (but skip if values match URL to avoid loops)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
+    if (selectedFlatType && selectedFlatType !== '4 ROOM') params.set('flat_type', selectedFlatType)
+    if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
+    if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
+    if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+    
+    const currentParams = new URLSearchParams(window.location.search)
+    const newParamsString = params.toString()
+    const currentParamsString = Array.from(currentParams.entries())
+      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier'].includes(key))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&')
+    
+    // Only update URL if it's different to avoid unnecessary updates
+    if (newParamsString !== currentParamsString) {
+      const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier])
+
   useEffect(() => {
     loadNeighbourhoods()
-  }, [selectedPlanningArea])
+  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier])
 
   async function loadPlanningAreas() {
     try {
@@ -71,9 +138,47 @@ function NeighbourhoodsPageContent() {
     setLoading(true)
     setError(null)
     try {
-      const url = selectedPlanningArea
-        ? `/api/neighbourhoods?planning_area_id=${selectedPlanningArea}`
-        : '/api/neighbourhoods'
+      const params = new URLSearchParams()
+      if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
+      if (selectedFlatType) params.set('flat_type', selectedFlatType)
+      
+      // Set price range based on tier
+      if (priceTier !== 'all') {
+        const priceRanges = {
+          low: [200000, 500000],
+          medium: [500000, 1000000],
+          high: [1000000, 2000000]
+        }
+        const range = priceRanges[priceTier as keyof typeof priceRanges]
+        params.set('price_min', range[0].toString())
+        params.set('price_max', range[1].toString())
+      }
+      
+      // Set lease range based on tier
+      if (leaseTier !== 'all') {
+        const leaseRanges = {
+          short: [30, 60],
+          medium: [60, 80],
+          long: [80, 99]
+        }
+        const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
+        params.set('lease_min', range[0].toString())
+        params.set('lease_max', range[1].toString())
+      }
+      
+      // Set MRT distance based on tier
+      if (mrtTier !== 'all') {
+        const mrtDistances = {
+          close: 500,
+          medium: 1000,
+          far: 2000
+        }
+        params.set('mrt_distance_max', mrtDistances[mrtTier as keyof typeof mrtDistances].toString())
+      }
+      
+      params.set('limit', '500')
+      
+      const url = `/api/neighbourhoods?${params.toString()}`
       const res = await fetch(url)
       const data = await res.json()
       
@@ -81,13 +186,362 @@ function NeighbourhoodsPageContent() {
         throw new Error(data.error || 'Failed to load neighbourhoods')
       }
       
-      setNeighbourhoods(data.neighbourhoods || [])
+      let loaded = data.neighbourhoods || []
+      
+      // Calculate dynamic thresholds based on actual data
+      const thresholds = calculateThresholds(loaded)
+      setPriceThresholds(thresholds.price)
+      setLeaseThresholds(thresholds.lease)
+      
+      // Apply sorting based on preset
+      loaded = applySortPreset(loaded, sortPreset)
+      
+      setNeighbourhoods(loaded)
     } catch (err: any) {
       setError(err.message || 'Failed to load neighbourhoods')
       console.error('Error loading neighbourhoods:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Calculate percentiles (P25, P50, P75) from actual data
+  function calculateThresholds(data: Neighbourhood[]): {
+    price: { p25: number; p50: number; p75: number }
+    lease: { p25: number; p50: number; p75: number }
+  } {
+    const prices = data
+      .map(n => n.summary?.median_price_12m)
+      .filter((p): p is number => p != null && p > 0)
+      .sort((a, b) => a - b)
+    
+    const leases = data
+      .map(n => n.summary?.median_lease_years_12m)
+      .filter((l): l is number => l != null && l > 0)
+      .sort((a, b) => a - b)
+    
+    const getPercentile = (arr: number[], percentile: number): number => {
+      if (arr.length === 0) return 0
+      const index = Math.floor((arr.length - 1) * percentile)
+      return arr[index] || 0
+    }
+    
+    return {
+      price: {
+        p25: prices.length > 0 ? getPercentile(prices, 0.25) : 550000,
+        p50: prices.length > 0 ? getPercentile(prices, 0.5) : 650000,
+        p75: prices.length > 0 ? getPercentile(prices, 0.75) : 745000,
+      },
+      lease: {
+        p25: leases.length > 0 ? getPercentile(leases, 0.25) : 54,
+        p50: leases.length > 0 ? getPercentile(leases, 0.5) : 61,
+        p75: leases.length > 0 ? getPercentile(leases, 0.75) : 75,
+      }
+    }
+  }
+
+  function applySortPreset(data: Neighbourhood[], preset: SortPreset): Neighbourhood[] {
+    const sorted = [...data]
+    
+    switch (preset) {
+      case 'affordable':
+        return sorted.sort((a, b) => {
+          const priceA = a.summary?.median_price_12m || Infinity
+          const priceB = b.summary?.median_price_12m || Infinity
+          return priceA - priceB
+        })
+      
+      case 'lease':
+        return sorted.sort((a, b) => {
+          const leaseA = a.summary?.median_lease_years_12m || 0
+          const leaseB = b.summary?.median_lease_years_12m || 0
+          return leaseB - leaseA // Higher lease first
+        })
+      
+      case 'mrt':
+        return sorted.sort((a, b) => {
+          const accessA = a.access?.mrt_access_type || 'none'
+          const accessB = b.access?.mrt_access_type || 'none'
+          const accessOrder: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0 }
+          return accessOrder[accessB] - accessOrder[accessA]
+        })
+      
+      case 'activity':
+        return sorted.sort((a, b) => {
+          const txA = a.summary?.tx_12m || 0
+          const txB = b.summary?.tx_12m || 0
+          return txB - txA // Higher transaction count first
+        })
+      
+      default:
+        return sorted
+    }
+  }
+
+  useEffect(() => {
+    if (neighbourhoods.length > 0) {
+      const sorted = applySortPreset(neighbourhoods, sortPreset)
+      setNeighbourhoods(sorted)
+    }
+  }, [sortPreset])
+
+  function handlePresetClick(preset: SortPreset) {
+    setSortPreset(preset)
+  }
+
+  function toggleCompare(neighbourhoodId: string, e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    const newSet = new Set(selectedForCompare)
+    if (newSet.has(neighbourhoodId)) {
+      newSet.delete(neighbourhoodId)
+    } else {
+      if (newSet.size >= 3) {
+        alert('You can compare up to 3 neighbourhoods at a time')
+        return
+      }
+      newSet.add(neighbourhoodId)
+    }
+    setSelectedForCompare(newSet)
+  }
+
+  function handleCompareSelected() {
+    if (selectedForCompare.size === 0) {
+      alert('Please select at least one neighbourhood to compare')
+      return
+    }
+    const ids = Array.from(selectedForCompare).join(',')
+    router.push(`/compare?ids=${ids}`)
+  }
+
+  function generateCardDescription(n: Neighbourhood): string {
+    // Convert to numbers (handle string values from API)
+    const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
+    const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
+    const mrtAccess = n.access?.mrt_access_type
+    const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
+    
+    // Check if we have any data at all
+    const hasPrice = price !== null && price !== undefined && !isNaN(price) && price > 0
+    const hasLease = lease !== null && lease !== undefined && !isNaN(lease) && lease > 0
+    const hasMRT = mrtAccess !== null && mrtAccess !== undefined && mrtAccess !== ''
+    const hasTx = txCount > 0
+    const hasSummary = n.summary !== null && n.summary !== undefined
+    const hasAccess = n.access !== null && n.access !== undefined
+    
+    // Clear messaging for missing data
+    if (!hasSummary && !hasAccess) {
+      return 'No recent data available (last 12 months)'
+    }
+    
+    if (!hasSummary && hasAccess) {
+      // Has access data but no summary (no transactions in last 12 months)
+      return 'No recent transactions (last 12 months), check access details'
+    }
+    
+    if (hasSummary && !hasPrice && !hasLease && !hasTx) {
+      // Summary exists but all values are null/zero
+      return 'Limited recent data, check details for availability'
+    }
+    
+    // Determine price tier using dynamic thresholds (based on actual data percentiles)
+    // Affordable: < P25 (bottom 25%)
+    // Moderate: P25-P75 (middle 50%)
+    // Expensive: >= P75 (top 25%)
+    const isAffordable = hasPrice && price < priceThresholds.p25
+    const isModerate = hasPrice && price >= priceThresholds.p25 && price < priceThresholds.p75
+    const isExpensive = hasPrice && price >= priceThresholds.p75
+    
+    // Determine lease status using dynamic thresholds (based on actual data percentiles)
+    // Short: < P25 (bottom 25%)
+    // Medium: P25-P75 (middle 50%)
+    // Long: >= P75 (top 25%)
+    const hasLongLease = hasLease && lease >= leaseThresholds.p75
+    const hasMediumLease = hasLease && lease >= leaseThresholds.p25 && lease < leaseThresholds.p75
+    const hasShortLease = hasLease && lease < leaseThresholds.p25
+    
+    // Determine MRT access (consider both station count and distance)
+    // If distance is within walkable range (800m), consider it as accessible even if not in boundary
+    const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+    const isWalkableMRT = distance !== null && distance > 0 && distance <= 800 // 800m is walkable distance (about 10 min walk)
+    
+    const hasHighMRT = mrtAccess === 'high' || (mrtAccess === 'none' && isWalkableMRT && distance && distance <= 500)
+    const hasMediumMRT = mrtAccess === 'medium' || (mrtAccess === 'none' && isWalkableMRT && distance && distance > 500)
+    const hasLimitedMRT = !hasHighMRT && !hasMediumMRT && (mrtAccess === 'low' || mrtAccess === 'none' || !hasMRT)
+    
+    // Determine market activity
+    const isActive = txCount > 100
+    const isQuiet = txCount > 0 && txCount < 50
+    
+    // Generate specific descriptions with one main signal + one reminder
+    // Priority: Price > Lease > MRT > Activity
+    
+    // Price-based descriptions (if we have price)
+    if (isAffordable) {
+      if (hasShortLease) return 'Lower entry price, shorter remaining lease'
+      if (hasLimitedMRT) return 'Lower entry price, limited MRT access'
+      if (isQuiet) return 'Lower entry price, quieter resale market'
+      if (hasLongLease) return 'Lower entry price, long remaining lease'
+      return 'Lower entry price, moderate characteristics'
+    }
+    
+    if (isExpensive) {
+      if (hasHighMRT) return 'Well-connected, higher price pressure'
+      if (hasLongLease) return 'Higher price point, long remaining lease'
+      if (isActive) return 'Active market, higher price pressure'
+      return 'Higher price point, check value carefully'
+    }
+    
+    // Lease-based descriptions (if we have lease but no strong price signal)
+    if (hasLongLease) {
+      if (isQuiet) return 'Long remaining lease, quieter resale market'
+      if (hasLimitedMRT) return 'Long remaining lease, limited MRT access'
+      if (isExpensive) return 'Long remaining lease, higher price point'
+      return 'Long remaining lease, moderate price and access'
+    }
+    
+    if (hasShortLease) {
+      if (hasPrice) return 'Shorter remaining lease, check price carefully'
+      return 'Shorter remaining lease, consider long-term plans'
+    }
+    
+    // MRT-based descriptions
+    if (hasHighMRT) {
+      if (isExpensive) return 'Well-connected, higher price pressure'
+      if (hasShortLease) return 'Well-connected, shorter remaining lease'
+      if (isQuiet) return 'Well-connected, quieter resale market'
+      return 'Well-connected, moderate price and lease'
+    }
+    
+    if (hasLimitedMRT && hasPrice) {
+      return 'Limited MRT access, consider transport needs'
+    }
+    
+    // Activity-based descriptions
+    if (isActive) {
+      if (isExpensive) return 'Active market, higher price pressure'
+      if (hasShortLease) return 'Active market, shorter remaining lease'
+      return 'Active market, good choice availability'
+    }
+    
+    if (isQuiet && hasPrice) {
+      return 'Quieter resale market, fewer recent transactions'
+    }
+    
+    // Moderate/balanced cases
+    if (isModerate && hasMediumLease) {
+      return 'Moderate price, balanced lease and access'
+    }
+    
+    // Fallbacks with partial data - be explicit about what's missing
+    if (hasPrice && !hasLease && !hasMRT) {
+      return `Median price ${formatCurrency(price)}, no lease or MRT data available`
+    }
+    if (hasPrice && !hasLease) {
+      return `Median price ${formatCurrency(price)}, no lease data available`
+    }
+    if (hasLease && !hasPrice && !hasMRT) {
+      return `Remaining lease ${lease.toFixed(0)} years, no price or MRT data available`
+    }
+    if (hasLease && !hasPrice) {
+      return `Remaining lease ${lease.toFixed(0)} years, no price data available`
+    }
+    if (hasMRT && !hasPrice && !hasLease) {
+      const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+      const stationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : null
+      const mrtInfo = getMRTAccessLabel(mrtAccess, distance, stationCount)
+      return `MRT access: ${mrtInfo.text}, no price or lease data (last 12 months)`
+    }
+    if (hasTx && !hasPrice && !hasLease) {
+      return `${txCount} recent transactions, but no price or lease data available`
+    }
+    
+    // If we have summary but no meaningful data
+    if (hasSummary && !hasPrice && !hasLease && !hasTx) {
+      return 'No recent transaction data (last 12 months)'
+    }
+    
+    // Last resort - should rarely reach here
+    if (hasAccess && !hasSummary) {
+      return 'No recent transactions (last 12 months)'
+    }
+    
+    return 'Data availability limited, check details'
+  }
+
+  function getMainSignal(n: Neighbourhood): { bestFor: string | null; watchOut: string | null } {
+    const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
+    const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
+    const mrtAccess = n.access?.mrt_access_type
+    const mrtDistance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+    const mrtStationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : 0
+    const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
+    
+    const bestFor: string[] = []
+    const watchOut: string[] = []
+    
+    // Priority order for "Best for" (most important first)
+    // Convert from objective features to user benefits
+    if (price && price < priceThresholds.p25) {
+      bestFor.push('Buyers prioritising entry price')
+    } else if (lease && lease >= leaseThresholds.p75) {
+      bestFor.push('Long-term families')
+    } else if (mrtAccess === 'high' || (mrtStationCount > 0)) {
+      bestFor.push('Daily MRT commuters')
+    } else if (mrtAccess === 'none' && mrtDistance && mrtDistance > 0 && mrtDistance <= 800) {
+      bestFor.push('Daily MRT commuters')
+    } else if (txCount > 150) {
+      bestFor.push('Buyers wanting more choices')
+    } else if (price && price < priceThresholds.p50) {
+      bestFor.push('Buyers prioritising entry price')
+    }
+    
+    // Priority order for watch outs - focus on consequences, not facts
+    if (lease && lease < leaseThresholds.p25) {
+      watchOut.push('Shorter lease may limit long-term resale')
+    } else if ((mrtAccess === 'none' || !mrtAccess) && (!mrtDistance || mrtDistance > 800)) {
+      watchOut.push('Daily commute may rely on buses or driving')
+    } else if (price && price >= priceThresholds.p75) {
+      watchOut.push('Higher price pressure, check value carefully')
+    } else if (txCount > 0 && txCount < 20) {
+      watchOut.push('Fewer resale choices, prices may be volatile')
+    } else if (mrtAccess === 'low' && lease && lease < 70) {
+      watchOut.push('Limited MRT access, consider transport needs')
+    }
+    
+    return {
+      bestFor: bestFor[0] || null,
+      watchOut: watchOut[0] || null
+    }
+  }
+
+  function getRecommendationLevel(n: Neighbourhood): 'good-fit' | 'caution' | null {
+    const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
+    const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
+    const mrtAccess = n.access?.mrt_access_type
+    const mrtDistance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
+    const mrtStationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : 0
+    const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
+    
+    let score = 0
+    
+    // Positive factors
+    if (price && price < priceThresholds.p25) score += 2
+    if (lease && lease >= leaseThresholds.p75) score += 2
+    if (mrtAccess === 'high' || mrtStationCount > 0) score += 2
+    else if (mrtDistance && mrtDistance > 0 && mrtDistance <= 800) score += 1
+    if (txCount > 100) score += 1
+    
+    // Negative factors
+    if (lease && lease < leaseThresholds.p25) score -= 2
+    if ((mrtAccess === 'none' || !mrtAccess) && (!mrtDistance || mrtDistance > 800)) score -= 2
+    if (price && price >= priceThresholds.p75) score -= 1
+    if (txCount > 0 && txCount < 20) score -= 1
+    
+    // Determine level - only show good-fit or caution, nothing in between
+    if (score >= 3) return 'good-fit'
+    if (score <= -2) return 'caution'
+    return null
   }
 
   function formatCurrency(amount: number | null): string {
@@ -106,14 +560,28 @@ function NeighbourhoodsPageContent() {
     return `${(meters / 1000).toFixed(1)}km`
   }
 
-  function getMRTAccessLabel(type: string | null): string {
-    const labels: Record<string, string> = {
-      high: 'High',
-      medium: 'Medium',
-      low: 'Low',
-      none: 'None'
+  function getMRTAccessLabel(type: string | null, distance: number | null = null, stationCount: number | null = null): { text: string; isInArea: boolean } {
+    // If there are stations within the neighbourhood (in area)
+    if (stationCount !== null && stationCount > 0) {
+      return {
+        text: `${stationCount} station${stationCount > 1 ? 's' : ''} in area`,
+        isInArea: true
+      }
     }
-    return labels[type || 'none'] || 'Unknown'
+    
+    // If no stations in area but distance data available (outside area)
+    if (distance !== null && distance > 0) {
+      return {
+        text: `${formatDistance(distance)} outside area`,
+        isInArea: false
+      }
+    }
+    
+    // No MRT access
+    return {
+      text: 'None',
+      isInArea: false
+    }
   }
 
   return (
@@ -121,35 +589,225 @@ function NeighbourhoodsPageContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Explore Neighbourhoods</h1>
-          <p className="text-gray-600">Compare neighbourhoods by price, transactions, lease, and MRT access</p>
+          <p className="text-lg text-gray-700">
+            Start by narrowing down neighbourhoods that fit your budget, lease comfort, and daily commute — then compare the trade-offs.
+          </p>
         </div>
 
-        {/* Planning Area Filter */}
-        <div className="mb-6">
-          <label htmlFor="planning-area" className="block text-sm font-medium text-gray-700 mb-2">
-            Filter by Planning Area (optional)
-          </label>
-          <select
-            id="planning-area"
-            value={selectedPlanningArea}
-            onChange={(e) => {
-              setSelectedPlanningArea(e.target.value)
-              const url = new URL(window.location.href)
-              if (e.target.value) {
-                url.searchParams.set('planning_area_id', e.target.value)
-              } else {
-                url.searchParams.delete('planning_area_id')
-              }
-              window.history.pushState({}, '', url.toString())
-            }}
-            className="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">All Planning Areas</option>
-            {planningAreas.map(pa => (
-              <option key={pa.id} value={pa.id}>{pa.name}</option>
-            ))}
-          </select>
+        {/* Filters Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* Flat Type Filter */}
+            <div>
+              <label htmlFor="flat-type" className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Flat Type <span className="text-gray-500 font-normal">(required)</span>
+              </label>
+              <select
+                id="flat-type"
+                value={selectedFlatType}
+                onChange={(e) => setSelectedFlatType(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+              >
+                <option value="3 ROOM">3 ROOM</option>
+                <option value="4 ROOM">4 ROOM</option>
+                <option value="5 ROOM">5 ROOM</option>
+                <option value="EXECUTIVE">EXECUTIVE</option>
+              </select>
+            </div>
+
+            {/* Planning Area Filter */}
+            <div>
+              <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Planning Area
+              </label>
+              <select
+                id="planning-area"
+                value={selectedPlanningArea}
+                onChange={(e) => {
+                  setSelectedPlanningArea(e.target.value)
+                  const url = new URL(window.location.href)
+                  if (e.target.value) {
+                    url.searchParams.set('planning_area_id', e.target.value)
+                  } else {
+                    url.searchParams.delete('planning_area_id')
+                  }
+                  window.history.pushState({}, '', url.toString())
+                }}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+              >
+                <option value="">All Planning Areas</option>
+                {planningAreas.map(pa => (
+                  <option key={pa.id} value={pa.id}>{pa.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price Range Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Price Range
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setPriceTier('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setPriceTier('low')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'low'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Low
+                </button>
+                <button
+                  onClick={() => setPriceTier('medium')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'medium'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Med
+                </button>
+                <button
+                  onClick={() => setPriceTier('high')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'high'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  High
+                </button>
+              </div>
+            </div>
+
+            {/* Lease Range Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Remaining Lease
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setLeaseTier('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setLeaseTier('short')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'short'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Short
+                </button>
+                <button
+                  onClick={() => setLeaseTier('medium')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'medium'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Med
+                </button>
+                <button
+                  onClick={() => setLeaseTier('long')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'long'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Long
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* MRT Distance Filter - Full Width */}
+          <div className="mt-4">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              MRT Distance
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setMrtTier('all')}
+                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  mrtTier === 'all'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setMrtTier('close')}
+                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  mrtTier === 'close'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                ≤500m
+              </button>
+              <button
+                onClick={() => setMrtTier('medium')}
+                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  mrtTier === 'medium'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                ≤1km
+              </button>
+              <button
+                onClick={() => setMrtTier('far')}
+                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  mrtTier === 'far'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                ≤2km
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Compare Selected Button */}
+        {selectedForCompare.size > 0 && (
+          <div className="mb-6 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">
+                {selectedForCompare.size} neighbourhood{selectedForCompare.size !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <button
+              onClick={handleCompareSelected}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Compare selected
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Error State */}
         {error && (
@@ -170,66 +828,147 @@ function NeighbourhoodsPageContent() {
         {!loading && !error && (
           <>
             <div className="mb-4 text-sm text-gray-600">
-              Found {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''}
+              Showing top neighbourhoods by recent activity
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {neighbourhoods.map(neighbourhood => (
-                <Link
-                  key={neighbourhood.id}
-                  href={`/neighbourhood/${neighbourhood.id}`}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{neighbourhood.name}</h3>
-                    {neighbourhood.planning_area && (
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {neighbourhood.planning_area.name}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {neighbourhood.one_liner && (
-                    <p className="text-sm text-gray-600 mb-4">{neighbourhood.one_liner}</p>
-                  )}
-
-                  <div className="space-y-2">
-                    {neighbourhood.summary && (
-                      <>
-                        <div className="flex items-center gap-2 text-sm">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
-                          <span className="text-gray-600">Transactions (12m):</span>
-                          <span className="font-medium">{neighbourhood.summary.tx_12m.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Home className="w-4 h-4 text-green-600" />
-                          <span className="text-gray-600">Median Price:</span>
-                          <span className="font-medium">{formatCurrency(neighbourhood.summary.median_price_12m)}</span>
-                        </div>
-                        {neighbourhood.summary.median_lease_years_12m && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-600">Lease (median):</span>
-                            <span className="font-medium">{neighbourhood.summary.median_lease_years_12m.toFixed(1)} years</span>
-                          </div>
+              {neighbourhoods.map(neighbourhood => {
+                const description = generateCardDescription(neighbourhood)
+                const signal = getMainSignal(neighbourhood)
+                const isSelected = selectedForCompare.has(neighbourhood.id)
+                
+                return (
+                  <div
+                    key={neighbourhood.id}
+                    className={`bg-white rounded-lg border-2 p-6 hover:shadow-lg transition-all relative ${
+                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{neighbourhood.name}</h3>
+                        {neighbourhood.planning_area && (
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
+                            {neighbourhood.planning_area.name}
+                          </span>
                         )}
-                      </>
-                    )}
-                    {neighbourhood.access && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Train className="w-4 h-4 text-purple-600" />
-                        <span className="text-gray-600">MRT:</span>
-                        <span className="font-medium">
-                          {neighbourhood.access.mrt_station_count} station{neighbourhood.access.mrt_station_count !== 1 ? 's' : ''}
-                          {neighbourhood.access.avg_distance_to_mrt !== null && neighbourhood.access.avg_distance_to_mrt > 0 && (
-                            <span className="text-gray-500 ml-1">
-                              ({formatDistance(neighbourhood.access.avg_distance_to_mrt)})
-                            </span>
-                          )}
-                        </span>
                       </div>
-                    )}
+                      <button
+                        onClick={(e) => toggleCompare(neighbourhood.id, e)}
+                        className={`ml-2 p-2 rounded-lg transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        title={isSelected ? 'Remove from compare' : 'Add to compare'}
+                      >
+                        <Plus className={`w-4 h-4 ${isSelected ? 'rotate-45' : ''} transition-transform`} />
+                      </button>
+                    </div>
+                    
+                    {/* Human-readable description */}
+                    <p className="text-sm text-gray-700 mb-4 font-medium">{description}</p>
+
+                    {/* Main signal tags */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {signal.bestFor && (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium">
+                          Best for: {signal.bestFor}
+                        </span>
+                      )}
+                      {signal.watchOut && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium">
+                          ⚠ Watch out: {signal.watchOut}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Key metrics (condensed) */}
+                    <div className="space-y-1.5 text-sm mb-4">
+                      {neighbourhood.summary ? (
+                        <>
+                          {neighbourhood.summary.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Price:</span>
+                              <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
+                            </div>
+                          )}
+                          {neighbourhood.summary.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Lease:</span>
+                              <span className="font-semibold text-gray-900">{Number(neighbourhood.summary.median_lease_years_12m).toFixed(1)} years</span>
+                            </div>
+                          )}
+                          {(!neighbourhood.summary.median_price_12m || Number(neighbourhood.summary.median_price_12m) <= 0) && 
+                           (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0) && (
+                            <div className="text-xs text-gray-500 italic">
+                              No recent price or lease data (last 12 months)
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-xs text-gray-500 italic">
+                          No recent transaction data (last 12 months)
+                        </div>
+                      )}
+                      {neighbourhood.access && (() => {
+                        const mrtInfo = getMRTAccessLabel(
+                          neighbourhood.access.mrt_access_type,
+                          neighbourhood.access.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null,
+                          neighbourhood.access.mrt_station_count ? Number(neighbourhood.access.mrt_station_count) : null
+                        )
+                        return (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">MRT:</span>
+                            {mrtInfo.isInArea ? (
+                              <span className="font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                                ✓ {mrtInfo.text}
+                              </span>
+                            ) : mrtInfo.text !== 'None' ? (
+                              <span className="font-semibold text-gray-700">
+                                {mrtInfo.text}
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-gray-500">
+                                {mrtInfo.text}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2 pt-4 border-t border-gray-200">
+                      <Link
+                        href={(() => {
+                          const params = new URLSearchParams()
+                          if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
+                          if (selectedFlatType && selectedFlatType !== '4 ROOM') params.set('flat_type', selectedFlatType)
+                          if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
+                          if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
+                          if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+                          const returnParams = params.toString()
+                          return `/neighbourhood/${neighbourhood.id}${returnParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + returnParams)}` : ''}`
+                        })()}
+                        className="flex-1 text-center text-sm font-medium text-blue-600 hover:text-blue-700 py-2 rounded hover:bg-blue-50 transition-colors"
+                      >
+                        View details
+                      </Link>
+                      {isSelected && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleCompareSelected()
+                          }}
+                          className="flex-1 text-center text-sm font-medium bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Compare
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </Link>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
