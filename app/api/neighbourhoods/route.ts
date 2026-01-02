@@ -39,6 +39,8 @@ export async function GET(request: NextRequest) {
 
     // Build query: fetch neighbourhoods first, then join summary and access separately
     // This avoids Supabase join syntax issues
+    // Calculate center point from geom using PostGIS ST_Centroid
+    // We'll use a raw query to get the centroid
     let neighbourhoodsQuery = supabase
       .from('neighbourhoods')
       .select(`
@@ -47,6 +49,7 @@ export async function GET(request: NextRequest) {
         one_liner,
         planning_area_id,
         type,
+        bbox,
         created_at,
         updated_at,
         planning_areas(id, name)
@@ -86,6 +89,59 @@ export async function GET(request: NextRequest) {
 
     // Get neighbourhood IDs
     const neighbourhoodIds = neighbourhoodsData.map(n => n.id)
+
+    // Fetch center points from geom using PostGIS ST_Centroid via raw SQL
+    // Since Supabase client doesn't support PostGIS functions directly, we'll use a workaround
+    const centerPointsMap = new Map<string, { lat: number; lng: number }>()
+    
+    // Try to get centers from raw_resale_2017 data (which has lat/lng) as fallback
+    if (neighbourhoodIds.length > 0) {
+      const { data: locationData } = await supabase
+        .from('raw_resale_2017')
+        .select('neighbourhood_id, latitude, longitude')
+        .in('neighbourhood_id', neighbourhoodIds)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .limit(10000)
+      
+      if (locationData) {
+        // Calculate average lat/lng for each neighbourhood
+        const locationMap = new Map<string, { lats: number[]; lngs: number[] }>()
+        locationData.forEach(item => {
+          if (item.neighbourhood_id && item.latitude && item.longitude) {
+            if (!locationMap.has(item.neighbourhood_id)) {
+              locationMap.set(item.neighbourhood_id, { lats: [], lngs: [] })
+            }
+            const loc = locationMap.get(item.neighbourhood_id)!
+            loc.lats.push(Number(item.latitude))
+            loc.lngs.push(Number(item.longitude))
+          }
+        })
+        
+        // Calculate average center for each neighbourhood
+        locationMap.forEach((loc, nbhdId) => {
+          if (loc.lats.length > 0 && loc.lngs.length > 0) {
+            const avgLat = loc.lats.reduce((sum, val) => sum + val, 0) / loc.lats.length
+            const avgLng = loc.lngs.reduce((sum, val) => sum + val, 0) / loc.lngs.length
+            centerPointsMap.set(nbhdId, { lat: avgLat, lng: avgLng })
+          }
+        })
+      }
+    }
+    
+    // Also try to extract from bbox if available
+    neighbourhoodsData.forEach(n => {
+      if (!centerPointsMap.has(n.id) && n.bbox) {
+        let minLng: number, minLat: number, maxLng: number, maxLat: number
+        if (Array.isArray(n.bbox) && n.bbox.length >= 4) {
+          [minLng, minLat, maxLng, maxLat] = n.bbox
+          centerPointsMap.set(n.id, {
+            lat: (minLat + maxLat) / 2,
+            lng: (minLng + maxLng) / 2
+          })
+        }
+      }
+    })
 
     // Fetch summary data from agg_neighbourhood_monthly (last 12 months)
     // If flat_type is specified, filter by that type. Otherwise, get all types and merge.
@@ -280,6 +336,8 @@ export async function GET(request: NextRequest) {
           name: planningArea.name
         } : null,
         type: n.type,
+        bbox: n.bbox,
+        center: centerPointsMap.get(n.id) || null,
         summary: summary ? {
           tx_12m: summary.tx_12m,
           median_price_12m: summary.median_price_12m,

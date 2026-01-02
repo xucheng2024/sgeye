@@ -11,7 +11,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map, List } from 'lucide-react'
+
+// Dynamically import map component to avoid SSR issues
+const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-[600px] bg-gray-100 rounded-lg flex items-center justify-center">Loading map...</div>
+})
 
 interface Neighbourhood {
   id: string
@@ -41,6 +48,8 @@ interface Neighbourhood {
     mrt_access_type: string
     avg_distance_to_mrt: number | null
   } | null
+  bbox?: number[] | null
+  center?: { lat: number; lng: number } | null
 }
 
 interface PlanningArea {
@@ -73,6 +82,7 @@ function NeighbourhoodsPageContent() {
   const [sortPreset, setSortPreset] = useState<SortPreset>('default')
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   
   // Filter states - initialize from URL params
   const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
@@ -988,11 +998,38 @@ function NeighbourhoodsPageContent() {
             ) : (
               <>
                 <div className="mb-4 flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
+                    </div>
+                    <div className="flex items-center gap-1 border border-gray-300 rounded-md overflow-hidden">
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                          viewMode === 'list'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <List className="w-4 h-4 inline mr-1" />
+                        List
+                      </button>
+                      <button
+                        onClick={() => setViewMode('map')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                          viewMode === 'map'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Map className="w-4 h-4 inline mr-1" />
+                        Map
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 mr-2">Sort by:</span>
+                  {viewMode === 'list' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 mr-2">Sort by:</span>
                     <button
                       onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
                       className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
@@ -1023,9 +1060,20 @@ function NeighbourhoodsPageContent() {
                     >
                       Price/m²
                     </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {viewMode === 'map' ? (
+                  <div className="mb-6">
+                    {typeof window !== 'undefined' && (
+                      <NeighbourhoodMap 
+                        neighbourhoods={neighbourhoods} 
+                        selectedFlatType={selectedFlatType}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {neighbourhoods.map(neighbourhood => {
                 const isSelected = selectedForCompare.has(neighbourhood.id)
                 const displayFlatType = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type
@@ -1160,7 +1208,8 @@ function NeighbourhoodsPageContent() {
                   </div>
                 )
                   })}
-                </div>
+                  </div>
+                )}
               </>
             )}
           </>
