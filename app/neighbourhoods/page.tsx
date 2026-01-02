@@ -12,7 +12,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List } from 'lucide-react'
+import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 
 // Dynamically import map component to avoid SSR issues
@@ -774,6 +774,9 @@ function NeighbourhoodsPageContent() {
           <p className="text-lg text-gray-700">
             Start by narrowing down neighbourhoods that fit your budget, lease comfort, and daily commute — then compare the trade-offs.
           </p>
+          <p className="text-sm text-gray-500 mt-2">
+            School pressure is assessed at the planning area level in the next step.
+          </p>
           {sourceParam === 'affordability' && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-900">
@@ -808,9 +811,26 @@ function NeighbourhoodsPageContent() {
 
             {/* Planning Area Filter */}
             <div className="flex-shrink-0" style={{ minWidth: '180px' }}>
-              <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Planning Area
-              </label>
+              <div className="flex items-center gap-1 mb-1.5">
+                <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700">
+                  Planning Area
+                </label>
+                <div className="relative group">
+                  <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                  <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <p className="mb-2">Why planning area?</p>
+                    <p className="mb-2 text-gray-300">Primary school competition is evaluated at the planning area level.</p>
+                    <Link
+                      href="/family/psle-school"
+                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View school pressure by area
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <select
                 id="planning-area"
                 value={selectedPlanningArea}
@@ -939,9 +959,26 @@ function NeighbourhoodsPageContent() {
 
             {/* Lease Range Filter */}
             <div className="flex-shrink-0">
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Remaining Lease
-              </label>
+              <div className="flex items-center gap-1 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-700">
+                  Remaining Lease
+                </label>
+                <div className="relative group">
+                  <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+                  <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <p className="mb-2">Why does lease matter?</p>
+                    <p className="mb-2 text-gray-300">Shorter remaining leases can limit resale value and future financing.</p>
+                    <Link
+                      href="/hdb/lease-price"
+                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Learn more about lease risks
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setLeaseTier('all')}
@@ -1046,18 +1083,18 @@ function NeighbourhoodsPageContent() {
             {selectedForCompare.size >= 2 ? (
               <>
                 <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    Comparing {selectedForCompare.size} neighbourhoods
+                  <div className="text-base font-semibold text-gray-900">
+                    Compare shortlisted neighbourhoods
                   </div>
-                  <div className="text-xs text-gray-600 mt-0.5">
-                    See key differences side by side
+                  <div className="text-sm text-gray-600 mt-0.5">
+                    See housing, lease, commute, and school trade-offs side by side.
                   </div>
                 </div>
                 <button
                   onClick={handleCompareSelected}
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                 >
-                  View comparison
+                  Compare now
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </>
@@ -1168,38 +1205,46 @@ function NeighbourhoodsPageContent() {
                     </div>
                   </div>
                   {viewMode === 'list' && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 mr-2">Sort by:</span>
-                    <button
-                      onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
-                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                        sortPreset === 'price'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                      }`}
-                    >
-                      Price
-                    </button>
-                    <button
-                      onClick={() => setSortPreset(sortPreset === 'area' ? 'default' : 'area')}
-                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                        sortPreset === 'area'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                      }`}
-                    >
-                      Area
-                    </button>
-                    <button
-                      onClick={() => setSortPreset(sortPreset === 'psm' ? 'default' : 'psm')}
-                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                        sortPreset === 'psm'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                      }`}
-                    >
-                      Price/m²
-                    </button>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 mr-2">Sort by:</span>
+                        <button
+                          onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
+                          className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                            sortPreset === 'price'
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          Price
+                        </button>
+                        <button
+                          onClick={() => setSortPreset(sortPreset === 'area' ? 'default' : 'area')}
+                          className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                            sortPreset === 'area'
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          Area
+                        </button>
+                        <button
+                          onClick={() => setSortPreset(sortPreset === 'psm' ? 'default' : 'psm')}
+                          className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                            sortPreset === 'psm'
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          Price/m²
+                        </button>
+                      </div>
+                      <Link
+                        href="/hdb"
+                        className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        How have prices changed recently?
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -1302,12 +1347,55 @@ function NeighbourhoodsPageContent() {
                       )}
                       
                       {/* Lease */}
-                      {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Lease:</span>
-                          <span className="font-semibold text-gray-900">{Number(neighbourhood.summary.median_lease_years_12m).toFixed(1)} years</span>
-                        </div>
-                      )}
+                      {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (() => {
+                        const leaseYears = Number(neighbourhood.summary.median_lease_years_12m)
+                        const isShortLease = leaseYears < 70
+                        const isLongLease = leaseYears >= 80
+                        return (
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Lease:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">{leaseYears.toFixed(1)} years</span>
+                              {isShortLease && (
+                                <div className="relative group">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 cursor-help">
+                                    ⚠ Short lease
+                                  </span>
+                                  <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                    <p className="mb-2">Flats with shorter leases may face resale and financing constraints.</p>
+                                    <Link
+                                      href="/hdb/lease-price"
+                                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      See how lease length affects long-term value
+                                      <ArrowRight className="w-3 h-3" />
+                                    </Link>
+                                  </div>
+                                </div>
+                              )}
+                              {isLongLease && (
+                                <div className="relative group">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 cursor-help">
+                                    ✓ Long lease
+                                  </span>
+                                  <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                    <p className="mb-2">Longer remaining leases provide more flexibility for resale and financing.</p>
+                                    <Link
+                                      href="/hdb/lease-price"
+                                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      See how lease length affects long-term value
+                                      <ArrowRight className="w-3 h-3" />
+                                    </Link>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
                       
                       {/* MRT */}
                       {neighbourhood.access && (() => {
