@@ -41,7 +41,14 @@ interface Neighbourhood {
     median_price_12m: number | null
     median_psm_12m: number | null
     median_lease_years_12m: number | null
-    avg_floor_area_12m: number | null
+    avg_floor_area_12m?: number | null
+    growth_assessment?: {
+      growth_potential: 'high' | 'medium' | 'low' | 'insufficient'
+      lease_risk: 'green' | 'amber' | 'red'
+      trend_stability: 'stable' | 'volatile' | 'insufficient'
+      net_growth_rate?: number | null
+      net_growth_score?: number | null
+    } | null
   }>
   access: {
     mrt_station_count: number
@@ -50,6 +57,27 @@ interface Neighbourhood {
   } | null
   bbox?: number[] | null
   center?: { lat: number; lng: number } | null
+  growth_assessment?: {
+    growth_potential: 'high' | 'medium' | 'low' | 'insufficient'
+    lease_risk: 'green' | 'amber' | 'red'
+    trend_stability: 'stable' | 'volatile' | 'insufficient'
+    net_growth_score?: number
+  } | null
+  flat_type_details?: Array<{
+    flat_type: string
+    tx_12m: number
+    median_price_12m: number | null
+    median_psm_12m: number | null
+    median_lease_years_12m: number | null
+    avg_floor_area_12m?: number | null
+    growth_assessment?: {
+      growth_potential: 'high' | 'medium' | 'low' | 'insufficient'
+      lease_risk: 'green' | 'amber' | 'red'
+      trend_stability: 'stable' | 'volatile' | 'insufficient'
+      net_growth_rate?: number | null
+      net_growth_score?: number | null
+    } | null
+  }>
 }
 
 interface PlanningArea {
@@ -116,15 +144,15 @@ function NeighbourhoodsPageContent() {
       }
     }
     
-    // Convert lease_min to lease_tier if lease_tier not provided
+    // Convert lease_min to lease_tier if lease_tier not provided (unified terminology)
     if (urlLeaseTier === 'all' && urlLeaseMin) {
       const minLease = parseFloat(urlLeaseMin)
       if (minLease >= 80) {
-        urlLeaseTier = 'long'
-      } else if (minLease >= 60) {
+        urlLeaseTier = 'high'
+      } else if (minLease >= 70) {
         urlLeaseTier = 'medium'
       } else {
-        urlLeaseTier = 'short'
+        urlLeaseTier = 'low'
       }
     }
     
@@ -205,12 +233,12 @@ function NeighbourhoodsPageContent() {
         }
       }
       
-      // Set lease range based on tier
+      // Set lease range based on tier (unified with lease_risk: low/medium/high)
       if (leaseTier !== 'all') {
         const leaseRanges = {
-          short: [30, 60],
-          medium: [60, 80],
-          long: [80, 99]
+          low: [30, 70],      // < 70 years (high risk)
+          medium: [70, 80],   // 70-80 years (medium risk)
+          high: [80, 99]      // >= 80 years (low risk)
         }
         const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
         if (range) {
@@ -305,9 +333,9 @@ function NeighbourhoodsPageContent() {
           high: [1000000, 2000000]
         }
         const leaseRanges = {
-          short: [30, 60],
-          medium: [60, 80],
-          long: [80, 99]
+          low: [30, 70],      // < 70 years (high risk)
+          medium: [70, 80],   // 70-80 years (medium risk)
+          high: [80, 99]      // >= 80 years (low risk)
         }
         
         displayItems = displayItems.filter(item => {
@@ -825,34 +853,37 @@ function NeighbourhoodsPageContent() {
                   All
                 </button>
                 <button
-                  onClick={() => setLeaseTier('short')}
+                  onClick={() => setLeaseTier('low')}
                   className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'short'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                    leaseTier === 'low'
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
                   }`}
+                  title="< 70 years remaining lease (High Risk)"
                 >
-                  Short
+                  Low
                 </button>
                 <button
                   onClick={() => setLeaseTier('medium')}
                   className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     leaseTier === 'medium'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      ? 'bg-yellow-600 text-white border-yellow-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
                   }`}
+                  title="70-80 years remaining lease (Medium Risk)"
                 >
                   Med
                 </button>
                 <button
-                  onClick={() => setLeaseTier('long')}
+                  onClick={() => setLeaseTier('high')}
                   className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'long'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                    leaseTier === 'high'
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
                   }`}
+                  title="≥ 80 years remaining lease (Low Risk)"
                 >
-                  Long
+                  High
                 </button>
               </div>
             </div>
