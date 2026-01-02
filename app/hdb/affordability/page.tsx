@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { calculateAffordability } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, AlertTriangle, ArrowRight } from 'lucide-react'
-import CompareTownsCTA from '@/components/CompareTownsCTA'
+import { Calculator, Home, ArrowRight } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
@@ -92,7 +91,8 @@ export default function HDBAffordabilityPage() {
                   <option value={30}>30 years</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Loan term should align with HDB lease, age, and policy. 25 years is the realistic default for resale HDB.
+                  For most resale HDB buyers, a 25-year loan is the most common and practical choice.
+                  Longer loan terms are often limited by flat age and financing rules.
                 </p>
               </div>
 
@@ -245,52 +245,26 @@ export default function HDBAffordabilityPage() {
           </ChartCard>
         </div>
 
-        {/* Section 3: Lease Risk and Comparison CTA */}
-        <div className="space-y-4 mt-8">
-          {/* Lease Risk Warning */}
-          {results && results.maxPropertyPrice < 500000 && (
-            <div className="bg-blue-50/90 backdrop-blur-sm border border-blue-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-base font-bold text-gray-900 mb-1.5">Important Context: Lease Matters</div>
-                  <div className="text-sm text-gray-700 leading-relaxed mb-3">
-                    Many resale flats under {formatCurrency(results.maxPropertyPrice)} tend to have shorter remaining leases (below ~55 years),
-                    which can affect how easily you can sell, upgrade, or take another loan later.
-                  </div>
-                  <Link
-                    href="/hdb/lease-price"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
-                  >
-                    Understand lease risks
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
 
         {/* Section 4: CTA to Explore Neighbourhoods */}
         {results && (() => {
-          // Convert budget to price tier
           const budget = Math.round(results.maxPropertyPrice)
+          const budgetFormatted = formatCurrency(results.maxPropertyPrice)
+          
+          // Convert budget to price tier based on actual ranges
+          // low: 0-499999, medium: 500000-999999, high: 1000000+
           let priceTier = 'all'
-          if (budget <= 500000) {
+          if (budget <= 499999) {
             priceTier = 'low'
-          } else if (budget <= 1000000) {
+          } else if (budget <= 999999) {
             priceTier = 'medium'
           } else {
             priceTier = 'high'
           }
           
-          // Convert lease_min=60 to lease_tier=medium
-          const leaseTier = 'medium' // 60 years corresponds to medium tier [60, 80)
-          
-          const budgetFormatted = formatCurrency(results.maxPropertyPrice)
+          const params = new URLSearchParams()
+          params.set('price_tier', priceTier)
+          params.set('source', 'affordability')
           
           return (
             <div className="mt-8">
@@ -306,7 +280,7 @@ export default function HDBAffordabilityPage() {
                     Based on recent resale prices, see which neighbourhoods are realistically within your budget.
                   </p>
                   <Link
-                    href={`/neighbourhoods?price_tier=${priceTier}&lease_tier=${leaseTier}&source=affordability`}
+                    href={`/neighbourhoods?${params.toString()}`}
                     className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
                   >
                     See neighbourhoods under {budgetFormatted}
@@ -319,8 +293,6 @@ export default function HDBAffordabilityPage() {
         })()}
 
 
-        {/* Redirect CTA to Compare Towns */}
-        <CompareTownsCTA text="Compare neighbourhoods and see what changes" />
       </main>
     </div>
   )
