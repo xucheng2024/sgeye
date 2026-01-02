@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     
     let monthlyQuery = supabase
       .from('agg_neighbourhood_monthly')
-      .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, month')
+      .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, avg_floor_area, month')
       .in('neighbourhood_id', neighbourhoodIds)
       .gte('month', startDate.toISOString().split('T')[0])
       .lte('month', endDate.toISOString().split('T')[0])
@@ -122,6 +122,7 @@ export async function GET(request: NextRequest) {
       prices: number[]
       psms: number[]
       leases: number[]
+      areas: number[]
       total_tx: number
     }>()
     
@@ -138,6 +139,7 @@ export async function GET(request: NextRequest) {
             prices: [],
             psms: [],
             leases: [],
+            areas: [],
             total_tx: 0
           })
         }
@@ -147,6 +149,7 @@ export async function GET(request: NextRequest) {
         if (item.median_price) entry.prices.push(Number(item.median_price))
         if (item.median_psm) entry.psms.push(Number(item.median_psm))
         if (item.median_lease_years) entry.leases.push(Number(item.median_lease_years))
+        if (item.avg_floor_area) entry.areas.push(Number(item.avg_floor_area))
         if (item.tx_count) entry.total_tx += Number(item.tx_count)
       })
     }
@@ -157,6 +160,11 @@ export async function GET(request: NextRequest) {
       const sortedPsms = entry.psms.sort((a, b) => a - b)
       const sortedLeases = entry.leases.sort((a, b) => a - b)
       
+      // Calculate average area (use average of monthly averages, not median)
+      const avgArea = entry.areas.length > 0 
+        ? entry.areas.reduce((sum, val) => sum + val, 0) / entry.areas.length 
+        : null
+      
       return {
         neighbourhood_id: entry.neighbourhood_id,
         flat_type: entry.flat_type,
@@ -164,6 +172,7 @@ export async function GET(request: NextRequest) {
         median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
         median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
         median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
+        avg_floor_area_12m: avgArea,
       }
     })
     
@@ -172,6 +181,7 @@ export async function GET(request: NextRequest) {
       prices: number[]
       psms: number[]
       leases: number[]
+      areas: number[]
       total_tx: number
     }>()
     
@@ -181,6 +191,7 @@ export async function GET(request: NextRequest) {
           prices: [],
           psms: [],
           leases: [],
+          areas: [],
           total_tx: 0
         })
       }
@@ -190,6 +201,7 @@ export async function GET(request: NextRequest) {
       if (summary.median_price_12m) nbhdSummary.prices.push(summary.median_price_12m)
       if (summary.median_psm_12m) nbhdSummary.psms.push(summary.median_psm_12m)
       if (summary.median_lease_years_12m) nbhdSummary.leases.push(summary.median_lease_years_12m)
+      if (summary.avg_floor_area_12m) nbhdSummary.areas.push(summary.avg_floor_area_12m)
       nbhdSummary.total_tx += summary.tx_12m
     })
     
@@ -199,12 +211,18 @@ export async function GET(request: NextRequest) {
       const sortedPsms = data.psms.sort((a, b) => a - b)
       const sortedLeases = data.leases.sort((a, b) => a - b)
       
+      // Calculate average area (average of flat_type averages)
+      const avgArea = data.areas.length > 0 
+        ? data.areas.reduce((sum, val) => sum + val, 0) / data.areas.length 
+        : null
+      
       return {
         neighbourhood_id: nbhdId,
         tx_12m: data.total_tx,
         median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
         median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
         median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
+        avg_floor_area_12m: avgArea,
         updated_at: new Date().toISOString()
       }
     })
@@ -267,6 +285,9 @@ export async function GET(request: NextRequest) {
           median_price_12m: summary.median_price_12m,
           median_psm_12m: summary.median_psm_12m,
           median_lease_years_12m: summary.median_lease_years_12m,
+          avg_floor_area_12m: flatType ? 
+            (flatTypeData.find(ft => ft.flat_type === flatType)?.avg_floor_area_12m ?? summary.avg_floor_area_12m) :
+            summary.avg_floor_area_12m,
           updated_at: summary.updated_at
         } : null,
         flat_type_details: flatTypeData.map(ft => ({
@@ -274,7 +295,8 @@ export async function GET(request: NextRequest) {
           tx_12m: ft.tx_12m,
           median_price_12m: ft.median_price_12m,
           median_psm_12m: ft.median_psm_12m,
-          median_lease_years_12m: ft.median_lease_years_12m
+          median_lease_years_12m: ft.median_lease_years_12m,
+          avg_floor_area_12m: ft.avg_floor_area_12m
         })),
         access: access ? {
           mrt_station_count: access.mrt_station_count,

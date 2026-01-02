@@ -26,6 +26,7 @@ interface Neighbourhood {
     median_price_12m: number | null
     median_psm_12m: number | null
     median_lease_years_12m: number | null
+    avg_floor_area_12m?: number | null
   } | null
   flat_type_details?: Array<{
     flat_type: string
@@ -33,6 +34,7 @@ interface Neighbourhood {
     median_price_12m: number | null
     median_psm_12m: number | null
     median_lease_years_12m: number | null
+    avg_floor_area_12m: number | null
   }>
   access: {
     mrt_station_count: number
@@ -46,7 +48,7 @@ interface PlanningArea {
   name: string
 }
 
-type SortPreset = 'affordable' | 'lease' | 'mrt' | 'activity' | 'default'
+type SortPreset = 'affordable' | 'lease' | 'mrt' | 'activity' | 'price' | 'area' | 'psm' | 'default'
 
 function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
@@ -269,7 +271,8 @@ function NeighbourhoodsPageContent() {
                   tx_12m: ftDetail.tx_12m,
                   median_price_12m: ftDetail.median_price_12m,
                   median_psm_12m: ftDetail.median_psm_12m,
-                  median_lease_years_12m: ftDetail.median_lease_years_12m
+                  median_lease_years_12m: ftDetail.median_lease_years_12m,
+                  avg_floor_area_12m: ftDetail.avg_floor_area_12m
                 }
               })
             })
@@ -418,14 +421,47 @@ function NeighbourhoodsPageContent() {
           return txB - txA // Higher transaction count first
         })
       
+      case 'price':
+        return sorted.sort((a, b) => {
+          const priceA = a.summary?.median_price_12m ? Number(a.summary.median_price_12m) : Infinity
+          const priceB = b.summary?.median_price_12m ? Number(b.summary.median_price_12m) : Infinity
+          // Put null/undefined values at the end
+          if (priceA === Infinity && priceB === Infinity) return 0
+          if (priceA === Infinity) return 1
+          if (priceB === Infinity) return -1
+          return priceA - priceB // Lower price first
+        })
+      
+      case 'area':
+        return sorted.sort((a, b) => {
+          const areaA = a.summary?.avg_floor_area_12m ? Number(a.summary.avg_floor_area_12m) : -1
+          const areaB = b.summary?.avg_floor_area_12m ? Number(b.summary.avg_floor_area_12m) : -1
+          // Put null/undefined values at the end
+          if (areaA === -1 && areaB === -1) return 0
+          if (areaA === -1) return 1
+          if (areaB === -1) return -1
+          return areaB - areaA // Larger area first
+        })
+      
+      case 'psm':
+        return sorted.sort((a, b) => {
+          const psmA = a.summary?.median_psm_12m ? Number(a.summary.median_psm_12m) : Infinity
+          const psmB = b.summary?.median_psm_12m ? Number(b.summary.median_psm_12m) : Infinity
+          // Put null/undefined values at the end
+          if (psmA === Infinity && psmB === Infinity) return 0
+          if (psmA === Infinity) return 1
+          if (psmB === Infinity) return -1
+          return psmA - psmB // Lower price per sqm first
+        })
+      
       default:
         return sorted
     }
   }
 
   useEffect(() => {
-    if (neighbourhoods.length > 0) {
-      const sorted = applySortPreset(neighbourhoods, sortPreset)
+    if (neighbourhoods.length > 0 && sortPreset !== 'default') {
+      const sorted = applySortPreset([...neighbourhoods], sortPreset)
       setNeighbourhoods(sorted)
     }
   }, [sortPreset])
@@ -951,16 +987,54 @@ function NeighbourhoodsPageContent() {
               </div>
             ) : (
               <>
-                <div className="mb-4 text-sm text-gray-600">
-                  {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 mr-2">Sort by:</span>
+                    <button
+                      onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        sortPreset === 'price'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      Price
+                    </button>
+                    <button
+                      onClick={() => setSortPreset(sortPreset === 'area' ? 'default' : 'area')}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        sortPreset === 'area'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      Area
+                    </button>
+                    <button
+                      onClick={() => setSortPreset(sortPreset === 'psm' ? 'default' : 'psm')}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        sortPreset === 'psm'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      Price/m²
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {neighbourhoods.map(neighbourhood => {
                 const isSelected = selectedForCompare.has(neighbourhood.id)
+                const displayFlatType = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type
+                // Use unique key: neighbourhood_id + flat_type (for "All" mode) or just neighbourhood_id (for specific flat type)
+                const uniqueKey = displayFlatType ? `${neighbourhood.id}-${displayFlatType}` : neighbourhood.id
                 
                 return (
                   <div
-                    key={neighbourhood.id}
+                    key={uniqueKey}
                     className={`bg-white rounded-lg border-2 p-6 hover:shadow-lg transition-all relative ${
                       isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
                     }`}
@@ -1001,13 +1075,21 @@ function NeighbourhoodsPageContent() {
                       </button>
                     </div>
 
-                    {/* Key metrics (condensed) - Fixed order: Price → Lease → MRT */}
+                    {/* Key metrics (condensed) - Fixed order: Price → Area → Lease → MRT */}
                     <div className="space-y-1.5 text-sm mb-4">
                       {/* Price */}
                       {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Price:</span>
                           <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
+                        </div>
+                      )}
+                      
+                      {/* Area */}
+                      {neighbourhood.summary?.avg_floor_area_12m != null && Number(neighbourhood.summary.avg_floor_area_12m) > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Area:</span>
+                          <span className="font-semibold text-gray-900">{Number(neighbourhood.summary.avg_floor_area_12m).toFixed(1)} m²</span>
                         </div>
                       )}
                       
