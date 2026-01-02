@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
         planning_area_id,
         type,
         bbox,
+        center,
         created_at,
         updated_at,
         planning_areas(id, name, region)
@@ -104,32 +105,103 @@ export async function GET(request: NextRequest) {
     // Get neighbourhood IDs
     const neighbourhoodIds = neighbourhoodsData.map(n => n.id)
 
-    // Fetch center points from geom using PostGIS ST_Centroid via raw SQL
-    // Since Supabase client doesn't support PostGIS functions directly, we'll use a workaround
+    // Get centre points - prefer database center, fallback to calculating from transactions
     const centerPointsMap = new Map<string, { lat: number; lng: number }>()
     
-    // Try to get centers from raw_resale_2017 data (which has lat/lng) as fallback
-    if (neighbourhoodIds.length > 0) {
-      const { data: locationData } = await supabase
+    // First, use centers from database if available
+    neighbourhoodsData.forEach(n => {
+      if (n.center) {
+        try {
+          const center = typeof n.center === 'string' ? JSON.parse(n.center) : n.center
+          if (center?.lat && center?.lng) {
+            centerPointsMap.set(n.id, { lat: center.lat, lng: center.lng })
+          }
+        } catch (e) {
+          console.error('Error parsing center for neighbourhood', n.id, ':', e)
+        }
+      }
+    })
+    
+    console.log('Centers from database:', {
+      count: centerPointsMap.size,
+      sample: Array.from(centerPointsMap.entries()).slice(0, 3)
+    })
+    
+    // For neighbourhoods without database center, try to calculate from raw_resale_2017
+    const neighbourhoodsNeedingCenter = neighbourhoodIds.filter(id => !centerPointsMap.has(id))
+    if (neighbourhoodsNeedingCenter.length > 0) {
+      console.log('Calculating centers for', neighbourhoodsNeedingCenter.length, 'neighbourhoods from transaction data')
+      console.log('Fetching location data for neighbourhood IDs:', neighbourhoodsNeedingCenter.slice(0, 5))
+      
+      // Remove limit to get all data, or use a much higher limit
+      const { data: locationData, error: locationError } = await supabase
         .from('raw_resale_2017')
         .select('neighbourhood_id, latitude, longitude')
-        .in('neighbourhood_id', neighbourhoodIds)
+        .in('neighbourhood_id', neighbourhoodsNeedingCenter)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .limit(10000)
+        .limit(50000) // Increased limit to ensure we get all data
       
-      if (locationData) {
+      if (locationError) {
+        console.error('Error fetching location data:', locationError)
+      }
+      
+      console.log('Raw location query result:', { 
+        returned: locationData?.length || 0,
+        sampleIds: locationData?.slice(0, 5).map(d => d.neighbourhood_id) || []
+      })
+      
+      if (locationData && locationData.length > 0) {
+        const uniqueIdsInData = [...new Set(locationData.map(item => item.neighbourhood_id).filter(Boolean))]
+        const missingIds = neighbourhoodIds.filter(id => !uniqueIdsInData.includes(id))
+        console.log('Location data fetched:', { 
+          count: locationData.length, 
+          sample: locationData.slice(0, 3),
+          neighbourhoodIdsQueried: neighbourhoodIds.length,
+          uniqueNeighbourhoodIdsInData: uniqueIdsInData.length,
+          uniqueIdsList: uniqueIdsInData.slice(0, 10),
+          queriedIds: neighbourhoodIds.slice(0, 10),
+          missingFromData: missingIds.slice(0, 10),
+          missingNames: missingIds.map(id => neighbourhoodsData.find(n => n.id === id)?.name).slice(0, 10)
+        })
+        
         // Calculate average lat/lng for each neighbourhood
         const locationMap = new Map<string, { lats: number[]; lngs: number[] }>()
+        let skippedCount = 0
+        let skippedSamples: any[] = []
         locationData.forEach(item => {
-          if (item.neighbourhood_id && item.latitude && item.longitude) {
-            if (!locationMap.has(item.neighbourhood_id)) {
-              locationMap.set(item.neighbourhood_id, { lats: [], lngs: [] })
+          if (item.neighbourhood_id && item.latitude != null && item.longitude != null) {
+            const lat = Number(item.latitude)
+            const lng = Number(item.longitude)
+            // More lenient coordinate validation - Singapore bounds approximately
+            if (!isNaN(lat) && !isNaN(lng) && lat > 0 && lat < 2 && lng > 100 && lng < 110) {
+              if (!locationMap.has(item.neighbourhood_id)) {
+                locationMap.set(item.neighbourhood_id, { lats: [], lngs: [] })
+              }
+              const loc = locationMap.get(item.neighbourhood_id)!
+              loc.lats.push(lat)
+              loc.lngs.push(lng)
+            } else {
+              skippedCount++
+              if (skippedSamples.length < 3) {
+                skippedSamples.push({ neighbourhood_id: item.neighbourhood_id, lat, lng })
+              }
             }
-            const loc = locationMap.get(item.neighbourhood_id)!
-            loc.lats.push(Number(item.latitude))
-            loc.lngs.push(Number(item.longitude))
           }
+        })
+        
+        if (skippedCount > 0) {
+          console.log(`Skipped ${skippedCount} records due to coordinate validation, samples:`, skippedSamples)
+        }
+        
+        console.log('Location map after processing:', { 
+          size: locationMap.size, 
+          sample: Array.from(locationMap.entries()).slice(0, 5).map(([id, loc]) => ({
+            id,
+            count: loc.lats.length,
+            avgLat: loc.lats.reduce((sum, val) => sum + val, 0) / loc.lats.length,
+            avgLng: loc.lngs.reduce((sum, val) => sum + val, 0) / loc.lngs.length
+          }))
         })
         
         // Calculate average center for each neighbourhood
@@ -140,6 +212,8 @@ export async function GET(request: NextRequest) {
             centerPointsMap.set(nbhdId, { lat: avgLat, lng: avgLng })
           }
         })
+      } else {
+        console.log('No location data found for neighbourhoods:', neighbourhoodIds.slice(0, 5))
       }
     }
     
@@ -147,8 +221,36 @@ export async function GET(request: NextRequest) {
     neighbourhoodsData.forEach(n => {
       if (!centerPointsMap.has(n.id) && n.bbox) {
         let minLng: number, minLat: number, maxLng: number, maxLat: number
+        
+        // Handle different bbox formats
         if (Array.isArray(n.bbox) && n.bbox.length >= 4) {
           [minLng, minLat, maxLng, maxLat] = n.bbox
+        } else if (typeof n.bbox === 'object' && n.bbox !== null) {
+          // Try to parse as JSON string first
+          try {
+            const parsed = typeof n.bbox === 'string' ? JSON.parse(n.bbox) : n.bbox
+            if (Array.isArray(parsed) && parsed.length >= 4) {
+              [minLng, minLat, maxLng, maxLat] = parsed
+            } else if (parsed.minLng !== undefined && parsed.minLat !== undefined && 
+                       parsed.maxLng !== undefined && parsed.maxLat !== undefined) {
+              minLng = parsed.minLng
+              minLat = parsed.minLat
+              maxLng = parsed.maxLng
+              maxLat = parsed.maxLat
+            } else {
+              return // Skip if can't parse
+            }
+          } catch (e) {
+            return // Skip if parse error
+          }
+        } else {
+          return // Skip if not array or object
+        }
+        
+        // Validate coordinates
+        if (typeof minLng === 'number' && typeof minLat === 'number' && 
+            typeof maxLng === 'number' && typeof maxLat === 'number' &&
+            !isNaN(minLng) && !isNaN(minLat) && !isNaN(maxLng) && !isNaN(maxLat)) {
           centerPointsMap.set(n.id, {
             lat: (minLat + maxLat) / 2,
             lng: (minLng + maxLng) / 2
@@ -156,6 +258,76 @@ export async function GET(request: NextRequest) {
         }
       }
     })
+    
+    const finalMissingCenterIds = neighbourhoodIds.filter(id => !centerPointsMap.has(id))
+    console.log('Center points map:', { 
+      size: centerPointsMap.size, 
+      total: neighbourhoodIds.length,
+      sample: Array.from(centerPointsMap.entries()).slice(0, 3),
+      missingCount: finalMissingCenterIds.length,
+      missing: finalMissingCenterIds.slice(0, 10),
+      missingNames: finalMissingCenterIds.slice(0, 10).map(id => 
+        neighbourhoodsData.find(n => n.id === id)?.name
+      )
+    })
+    
+    // If we're still missing centers for some neighbourhoods, try a more aggressive query
+    const stillMissingIds = neighbourhoodIds.filter(id => !centerPointsMap.has(id))
+    if (stillMissingIds.length > 0) {
+      console.log(`Missing centers for ${stillMissingIds.length} neighbourhoods, trying alternative query...`)
+      // Try querying with a smaller batch or different approach
+      const { data: altLocationData } = await supabase
+        .from('raw_resale_2017')
+        .select('neighbourhood_id, latitude, longitude')
+        .in('neighbourhood_id', stillMissingIds)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+      
+      if (altLocationData && altLocationData.length > 0) {
+        console.log('Alternative location query returned:', altLocationData.length, 'records')
+        const locationMap = new Map<string, { lats: number[]; lngs: number[] }>()
+        let altSkippedCount = 0
+        altLocationData.forEach(item => {
+          if (item.neighbourhood_id && item.latitude != null && item.longitude != null) {
+            const lat = Number(item.latitude)
+            const lng = Number(item.longitude)
+            // More lenient coordinate validation - Singapore bounds approximately
+            if (!isNaN(lat) && !isNaN(lng) && lat > 0 && lat < 2 && lng > 100 && lng < 110) {
+              if (!locationMap.has(item.neighbourhood_id)) {
+                locationMap.set(item.neighbourhood_id, { lats: [], lngs: [] })
+              }
+              locationMap.get(item.neighbourhood_id)!.lats.push(lat)
+              locationMap.get(item.neighbourhood_id)!.lngs.push(lng)
+            } else {
+              altSkippedCount++
+            }
+          }
+        })
+        
+        if (altSkippedCount > 0) {
+          console.log(`Alternative query: Skipped ${altSkippedCount} records due to coordinate validation`)
+        }
+        
+        console.log('Alternative location map after processing:', { 
+          size: locationMap.size, 
+          sample: Array.from(locationMap.entries()).slice(0, 5).map(([id, loc]) => ({
+            id,
+            count: loc.lats.length
+          }))
+        })
+        
+        locationMap.forEach((loc, nbhdId) => {
+          if (loc.lats.length > 0 && loc.lngs.length > 0 && !centerPointsMap.has(nbhdId)) {
+            const avgLat = loc.lats.reduce((sum, val) => sum + val, 0) / loc.lats.length
+            const avgLng = loc.lngs.reduce((sum, val) => sum + val, 0) / loc.lngs.length
+            centerPointsMap.set(nbhdId, { lat: avgLat, lng: avgLng })
+            console.log('Added center for', nbhdId, 'from alternative query:', { lat: avgLat, lng: avgLng })
+          }
+        })
+      } else {
+        console.log('Alternative query returned no data for missing neighbourhoods:', stillMissingIds.slice(0, 5))
+      }
+    }
 
     // Fetch summary data from agg_neighbourhood_monthly (last 12 months)
     // If flat_type is specified, filter by that type. Otherwise, get all types and merge.
@@ -315,6 +487,118 @@ export async function GET(request: NextRequest) {
       .select('*')
       .in('neighbourhood_id', neighbourhoodIds)
 
+    // Fetch MRT stations for each neighbourhood
+    // First, get stations within neighbourhoods (in area)
+    const { data: mrtStationsInArea, error: mrtError } = await supabase
+      .from('mrt_stations')
+      .select('neighbourhood_id, station_code')
+      .in('neighbourhood_id', neighbourhoodIds)
+      .not('station_code', 'is', null)
+      .order('station_code', { ascending: true })
+    
+    if (mrtError) {
+      console.error('Error fetching MRT stations:', mrtError)
+    }
+    
+    console.log('MRT stations in area:', { count: mrtStationsInArea?.length || 0, sample: mrtStationsInArea?.slice(0, 3) })
+    
+    // Create MRT stations map by neighbourhood
+    const mrtStationsMap = new Map<string, string[]>()
+    
+    // Add stations in area
+    if (mrtStationsInArea) {
+      mrtStationsInArea.forEach(station => {
+        if (station.neighbourhood_id && station.station_code) {
+          if (!mrtStationsMap.has(station.neighbourhood_id)) {
+            mrtStationsMap.set(station.neighbourhood_id, [])
+          }
+          mrtStationsMap.get(station.neighbourhood_id)!.push(station.station_code)
+        }
+      })
+    }
+    
+    console.log('MRT stations map (in area):', { size: mrtStationsMap.size, sample: Array.from(mrtStationsMap.entries()).slice(0, 3) })
+    
+    // For neighbourhoods without stations in area, find nearest station using PostGIS
+    const neighbourhoodsWithoutStations = neighbourhoodIds.filter(id => {
+      return !mrtStationsMap.has(id) || mrtStationsMap.get(id)!.length === 0
+    })
+    
+    if (neighbourhoodsWithoutStations.length > 0) {
+      // Query nearest MRT station for each neighbourhood
+      // Get neighbourhood centers (try center first, fallback to bbox if needed)
+      const { data: neighbourhoodsWithCenters } = await supabase
+        .from('neighbourhoods')
+        .select('id, center, bbox')
+        .in('id', neighbourhoodsWithoutStations)
+      
+      // Get all MRT stations with coordinates
+      const { data: allMrtStations } = await supabase
+        .from('mrt_stations')
+        .select('station_code, latitude, longitude')
+        .not('station_code', 'is', null)
+      
+      if (neighbourhoodsWithCenters && allMrtStations && allMrtStations.length > 0) {
+        // For each neighbourhood, find nearest station using Haversine formula
+        for (const n of neighbourhoodsWithCenters) {
+          let lat: number | null = null
+          let lng: number | null = null
+          
+          // Try to get coordinates from center first
+          if (n.center) {
+            const center = typeof n.center === 'string' ? JSON.parse(n.center) : n.center
+            if (center?.lat && center?.lng) {
+              lat = center.lat
+              lng = center.lng
+            }
+          }
+          
+          // Fallback to bbox center if center is not available
+          if ((lat === null || lng === null) && n.bbox) {
+            const bbox = typeof n.bbox === 'string' ? JSON.parse(n.bbox) : n.bbox
+            if (bbox && Array.isArray(bbox) && bbox.length === 4) {
+              // bbox format: [minLng, minLat, maxLng, maxLat]
+              lat = (bbox[1] + bbox[3]) / 2
+              lng = (bbox[0] + bbox[2]) / 2
+            }
+          }
+          
+          if (lat === null || lng === null) continue
+          
+          // Find nearest station
+          let nearestStation: { name: string; distance: number } | null = null
+          
+          for (const station of allMrtStations) {
+            if (!station.latitude || !station.longitude) continue
+            
+            // Haversine distance calculation (in meters)
+            const R = 6371000 // Earth radius in meters
+            const lat1 = lat * Math.PI / 180
+            const lat2 = Number(station.latitude) * Math.PI / 180
+            const deltaLat = (Number(station.latitude) - lat) * Math.PI / 180
+            const deltaLng = (Number(station.longitude) - lng) * Math.PI / 180
+            
+            const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                     Math.cos(lat1) * Math.cos(lat2) *
+                     Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            const distance = R * c
+            
+            if (!nearestStation || distance < nearestStation.distance) {
+              nearestStation = { name: station.station_code, distance }
+            }
+          }
+          
+          if (nearestStation) {
+            if (!mrtStationsMap.has(n.id)) {
+              mrtStationsMap.set(n.id, [])
+            }
+            mrtStationsMap.get(n.id)!.push(nearestStation.name)
+          }
+        }
+      }
+    }
+
     // Fetch planning areas with region data separately to ensure region is included
     const planningAreaIds = [...new Set(neighbourhoodsData.map(n => n.planning_area_id).filter(Boolean))]
     const { data: planningAreasData } = await supabase
@@ -404,6 +688,7 @@ export async function GET(request: NextRequest) {
           mrt_station_count: access.mrt_station_count,
           mrt_access_type: access.mrt_access_type,
           avg_distance_to_mrt: access.avg_distance_to_mrt,
+          mrt_station_names: mrtStationsMap.get(n.id) || [],
           updated_at: access.updated_at
         } : null,
         created_at: n.created_at,
@@ -413,6 +698,31 @@ export async function GET(request: NextRequest) {
 
     console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
     console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatType, region })
+    
+    // Debug: Log centre point statistics
+    const withCenter = neighbourhoods.filter(n => n.center !== null).length
+    const withoutCenter = neighbourhoods.filter(n => n.center === null).length
+    console.log('API: Center point stats:', { 
+      total: neighbourhoods.length, 
+      withCenter, 
+      withoutCenter,
+      withoutCenterNames: neighbourhoods.filter(n => n.center === null).slice(0, 5).map(n => n.name)
+    })
+    
+    // Debug: Log sample neighbourhood with MRT data
+    if (neighbourhoods.length > 0) {
+      const sampleWithMRT = neighbourhoods.find(n => n.access?.mrt_station_names && n.access.mrt_station_names.length > 0)
+      if (sampleWithMRT) {
+        console.log('Sample neighbourhood with MRT:', {
+          name: sampleWithMRT.name,
+          mrt_station_names: sampleWithMRT.access?.mrt_station_names,
+          mrt_station_count: sampleWithMRT.access?.mrt_station_count,
+          distance: sampleWithMRT.access?.avg_distance_to_mrt
+        })
+      } else {
+        console.log('No neighbourhoods with MRT station names found in response')
+      }
+    }
     
     // Apply filters (including region filter)
     if (priceMin !== null || priceMax !== null || leaseMin !== null || leaseMax !== null || mrtDistanceMax !== null || (region && region !== 'all')) {

@@ -140,6 +140,8 @@ export default function NeighbourhoodMap({ neighbourhoods, selectedFlatType }: N
       sample: neighbourhoods.slice(0, 3).map(n => ({
         name: n.name,
         hasBbox: !!n.bbox,
+        hasCenter: !!n.center,
+        center: n.center,
         bbox: n.bbox,
         bboxType: typeof n.bbox,
         isArray: Array.isArray(n.bbox)
@@ -147,9 +149,21 @@ export default function NeighbourhoodMap({ neighbourhoods, selectedFlatType }: N
     })
     
     const validCenters = neighbourhoods
-      .map(n => ({ name: n.name, center: getCenter(n.bbox), bbox: n.bbox }))
+      .map(n => {
+        // Try center first
+        let center: [number, number] | null = null
+        if (n.center && n.center.lat && n.center.lng) {
+          center = [n.center.lat, n.center.lng]
+        } else {
+          center = getCenter(n.bbox)
+        }
+        return { name: n.name, center, bbox: n.bbox, hasCenter: !!n.center }
+      })
       .filter(n => n.center !== null)
     console.log('Map: valid centers:', validCenters.length, 'out of', neighbourhoods.length)
+    if (validCenters.length === 0 && neighbourhoods.length > 0) {
+      console.warn('Map: No valid centers found. Sample data:', neighbourhoods.slice(0, 2))
+    }
   }, [neighbourhoods])
 
   return (
@@ -171,10 +185,19 @@ export default function NeighbourhoodMap({ neighbourhoods, selectedFlatType }: N
           let center: [number, number] | null = null
           if (neighbourhood.center && neighbourhood.center.lat && neighbourhood.center.lng) {
             center = [neighbourhood.center.lat, neighbourhood.center.lng]
-          } else {
+          } else if (neighbourhood.bbox) {
             center = getCenter(neighbourhood.bbox)
           }
-          if (!center) return null
+          
+          if (!center) {
+            console.warn('Map: No center for neighbourhood:', neighbourhood.name, {
+              hasCenter: !!neighbourhood.center,
+              center: neighbourhood.center,
+              hasBbox: !!neighbourhood.bbox,
+              bbox: neighbourhood.bbox
+            })
+            return null
+          }
 
           const displayFlatType = neighbourhood.display_flat_type || selectedFlatType
           const price = neighbourhood.summary?.median_price_12m

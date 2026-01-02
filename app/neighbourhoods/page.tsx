@@ -12,7 +12,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map, List } from 'lucide-react'
+import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 
 // Dynamically import map component to avoid SSR issues
@@ -56,6 +56,7 @@ interface Neighbourhood {
     mrt_station_count: number
     mrt_access_type: string
     avg_distance_to_mrt: number | null
+    mrt_station_names?: string[]
   } | null
   bbox?: number[] | null
   center?: { lat: number; lng: number } | null
@@ -105,6 +106,7 @@ function NeighbourhoodsPageContent() {
   const sourceParam = searchParams.get('source')
   
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
+  const [originalNeighbourhoods, setOriginalNeighbourhoods] = useState<Neighbourhood[]>([]) // Store original for map view
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
   const [selectedPlanningArea, setSelectedPlanningArea] = useState<string>(planningAreaId)
   const [loading, setLoading] = useState(true)
@@ -293,6 +295,9 @@ function NeighbourhoodsPageContent() {
       }
       
       const loaded = data.neighbourhoods || []
+      
+      // Store original data for map view (before expansion)
+      setOriginalNeighbourhoods(loaded)
       
       console.log('Loaded neighbourhoods:', {
         count: loaded.length,
@@ -676,7 +681,7 @@ function NeighbourhoodsPageContent() {
     if (hasMRT && !hasPrice && !hasLease) {
       const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
       const stationCount = n.access?.mrt_station_count ? Number(n.access.mrt_station_count) : null
-      const mrtInfo = getMRTAccessLabel(mrtAccess, distance, stationCount)
+      const mrtInfo = getMRTAccessLabel(mrtAccess, distance, stationCount, n.access?.mrt_station_names || [])
       return `MRT access: ${mrtInfo.text}, no price or lease data (last 12 months)`
     }
     if (hasTx && !hasPrice && !hasLease) {
@@ -712,20 +717,45 @@ function NeighbourhoodsPageContent() {
     return `${(meters / 1000).toFixed(1)}km`
   }
 
-  function getMRTAccessLabel(type: string | null, distance: number | null = null, stationCount: number | null = null): { text: string; isInArea: boolean } {
+  function getMRTAccessLabel(
+    type: string | null, 
+    distance: number | null = null, 
+    stationCount: number | null = null,
+    stationNames: string[] = []
+  ): { text: string; isInArea: boolean } {
     // If there are stations within the neighbourhood (in area)
     if (stationCount !== null && stationCount > 0) {
-      return {
-        text: `${stationCount} station${stationCount > 1 ? 's' : ''} in area`,
-        isInArea: true
+      if (stationNames.length > 0) {
+        // Show station names: "MRT1名字, MRT2名字 in area"
+        const stationNamesText = stationNames.slice(0, 3).join(', ') + (stationNames.length > 3 ? ` +${stationNames.length - 3} more` : '')
+        return {
+          text: `${stationNamesText} in area`,
+          isInArea: true
+        }
+      } else {
+        // Fallback to count if names not available
+        return {
+          text: `${stationCount} station${stationCount > 1 ? 's' : ''} in area`,
+          isInArea: true
+        }
       }
     }
     
     // If no stations in area but distance data available (outside area)
     if (distance !== null && distance > 0) {
-      return {
-        text: `${formatDistance(distance)} outside area`,
-        isInArea: false
+      if (stationNames.length > 0) {
+        // Show nearest station name: "MRT名字 461m outside area"
+        const nearestStation = stationNames[0]
+        return {
+          text: `${nearestStation} ${formatDistance(distance)} outside area`,
+          isInArea: false
+        }
+      } else {
+        // Fallback to distance only if names not available
+        return {
+          text: `${formatDistance(distance)} outside area`,
+          isInArea: false
+        }
       }
     }
     
@@ -755,7 +785,8 @@ function NeighbourhoodsPageContent() {
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* First Row: Flat Type, Planning Area, Region */}
+          <div className="flex flex-wrap gap-4 mb-4">
             {/* Flat Type Filter */}
             <div>
               <label htmlFor="flat-type" className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -776,7 +807,7 @@ function NeighbourhoodsPageContent() {
             </div>
 
             {/* Planning Area Filter */}
-            <div>
+            <div className="flex-shrink-0" style={{ minWidth: '180px' }}>
               <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Planning Area
               </label>
@@ -802,109 +833,8 @@ function NeighbourhoodsPageContent() {
               </select>
             </div>
 
-            {/* Price Range Filter */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Price Range
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setPriceTier('all')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setPriceTier('low')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'low'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  Low
-                </button>
-                <button
-                  onClick={() => setPriceTier('medium')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'medium'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  Med
-                </button>
-                <button
-                  onClick={() => setPriceTier('high')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'high'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  High
-                </button>
-              </div>
-            </div>
-
-            {/* Lease Range Filter */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Remaining Lease
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setLeaseTier('all')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setLeaseTier('low')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'low'
-                      ? 'bg-red-600 text-white border-red-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
-                  }`}
-                  title="< 70 years remaining lease (High Risk)"
-                >
-                  Low
-                </button>
-                <button
-                  onClick={() => setLeaseTier('medium')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'medium'
-                      ? 'bg-yellow-600 text-white border-yellow-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
-                  }`}
-                  title="70-80 years remaining lease (Medium Risk)"
-                >
-                  Med
-                </button>
-                <button
-                  onClick={() => setLeaseTier('high')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'high'
-                      ? 'bg-green-600 text-white border-green-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
-                  }`}
-                  title="≥ 80 years remaining lease (Low Risk)"
-                >
-                  High
-                </button>
-              </div>
-            </div>
-
             {/* Region Filter */}
-            <div>
+            <div className="flex-shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Region
               </label>
@@ -956,24 +886,127 @@ function NeighbourhoodsPageContent() {
             </div>
           </div>
 
-          {/* MRT Distance Filter - Full Width */}
-          <div className="mt-4">
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              MRT Distance
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setMrtTier('all')}
-                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                  mrtTier === 'all'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setMrtTier('close')}
+          {/* Second Row: Price Range, Remaining Lease, MRT Distance */}
+          <div className="flex flex-wrap gap-4">
+            {/* Price Range Filter */}
+            <div className="flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Price Range
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setPriceTier('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setPriceTier('low')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'low'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Low
+                </button>
+                <button
+                  onClick={() => setPriceTier('medium')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'medium'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  Med
+                </button>
+                <button
+                  onClick={() => setPriceTier('high')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    priceTier === 'high'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  High
+                </button>
+              </div>
+            </div>
+
+            {/* Lease Range Filter */}
+            <div className="flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Remaining Lease
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setLeaseTier('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setLeaseTier('low')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'low'
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
+                  }`}
+                  title="< 70 years remaining lease (High Risk)"
+                >
+                  Low
+                </button>
+                <button
+                  onClick={() => setLeaseTier('medium')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'medium'
+                      ? 'bg-yellow-600 text-white border-yellow-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
+                  }`}
+                  title="70-80 years remaining lease (Medium Risk)"
+                >
+                  Med
+                </button>
+                <button
+                  onClick={() => setLeaseTier('high')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    leaseTier === 'high'
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
+                  }`}
+                  title="≥ 80 years remaining lease (Low Risk)"
+                >
+                  High
+                </button>
+              </div>
+            </div>
+
+            {/* MRT Distance Filter */}
+            <div className="flex-shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                MRT Distance
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setMrtTier('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    mrtTier === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setMrtTier('close')}
                 className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
                   mrtTier === 'close'
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -981,9 +1014,9 @@ function NeighbourhoodsPageContent() {
                 }`}
               >
                 ≤500m
-              </button>
-              <button
-                onClick={() => setMrtTier('medium')}
+                </button>
+                <button
+                  onClick={() => setMrtTier('medium')}
                 className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
                   mrtTier === 'medium'
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -991,9 +1024,9 @@ function NeighbourhoodsPageContent() {
                 }`}
               >
                 ≤1km
-              </button>
-              <button
-                onClick={() => setMrtTier('far')}
+                </button>
+                <button
+                  onClick={() => setMrtTier('far')}
                 className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
                   mrtTier === 'far'
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -1001,7 +1034,8 @@ function NeighbourhoodsPageContent() {
                 }`}
               >
                 ≤2km
-              </button>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1128,7 +1162,7 @@ function NeighbourhoodsPageContent() {
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                         }`}
                       >
-                        <Map className="w-4 h-4 inline mr-1" />
+                        <MapIcon className="w-4 h-4 inline mr-1" />
                         Map
                       </button>
                     </div>
@@ -1173,7 +1207,16 @@ function NeighbourhoodsPageContent() {
                   <div className="mb-6">
                     {typeof window !== 'undefined' && (
                       <NeighbourhoodMap 
-                        neighbourhoods={neighbourhoods} 
+                        neighbourhoods={(() => {
+                          // Deduplicate neighbourhoods for map view (remove duplicate IDs from expanded "All" view)
+                          const uniqueMap = new Map<string, typeof originalNeighbourhoods[0]>()
+                          neighbourhoods.forEach(n => {
+                            if (!uniqueMap.has(n.id)) {
+                              uniqueMap.set(n.id, n)
+                            }
+                          })
+                          return Array.from(uniqueMap.values())
+                        })()} 
                         selectedFlatType={selectedFlatType}
                       />
                     )}
@@ -1268,10 +1311,17 @@ function NeighbourhoodsPageContent() {
                       
                       {/* MRT */}
                       {neighbourhood.access && (() => {
+                        const stationNames = neighbourhood.access.mrt_station_names || []
+                        console.log('MRT display for', neighbourhood.name, { 
+                          stationCount: neighbourhood.access.mrt_station_count,
+                          stationNames,
+                          distance: neighbourhood.access.avg_distance_to_mrt 
+                        })
                         const mrtInfo = getMRTAccessLabel(
                           neighbourhood.access.mrt_access_type,
                           neighbourhood.access.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null,
-                          neighbourhood.access.mrt_station_count ? Number(neighbourhood.access.mrt_station_count) : null
+                          neighbourhood.access.mrt_station_count ? Number(neighbourhood.access.mrt_station_count) : null,
+                          stationNames
                         )
                         return (
                           <div className="flex items-center justify-between">
