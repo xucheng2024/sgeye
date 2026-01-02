@@ -340,8 +340,16 @@ function NeighbourhoodsPageContent() {
           }
         })
       } else {
-        // Specific flat type selected, show as is
-        displayItems = loaded
+        // Specific flat type selected: filter to only show neighbourhoods that have this flat type
+        displayItems = loaded.filter((neighbourhood: Neighbourhood) => {
+          // Check if this neighbourhood has data for the selected flat type
+          if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
+            return neighbourhood.flat_type_details.some(ft => ft.flat_type === selectedFlatType)
+          }
+          // If no flat_type_details, check if summary exists (API might have filtered already)
+          // But to be safe, if there's no flat_type_details, we should exclude it
+          return false
+        })
       }
       
       // Apply client-side price and lease filters when "All" is selected

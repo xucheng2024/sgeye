@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { GraduationCap, AlertCircle, Home, TrendingUp } from 'lucide-react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { GraduationCap, AlertCircle, Home, TrendingUp, GitCompare } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
 import ChartCard from '@/components/ChartCard'
+import Link from 'next/link'
 import { 
   calculateSchoolPressureIndex, 
   getSchoolLandscape, 
@@ -18,23 +20,82 @@ import { formatCurrency } from '@/lib/utils'
 // All data aggregation is done by neighbourhood_id
 const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'BUKIT PANJANG', 'BUKIT TIMAH', 'CENTRAL AREA', 'CHOA CHU KANG', 'CLEMENTI', 'GEYLANG', 'HOUGANG', 'JURONG EAST', 'JURONG WEST', 'KALLANG/WHAMPOA', 'MARINE PARADE', 'PASIR RIS', 'PUNGGOL', 'QUEENSTOWN', 'SEMBAWANG', 'SENGKANG', 'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN']
 
-export default function PSLESchoolPage() {
-  const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
+function PSLESchoolPageContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const compareParam = searchParams.get('compare')
+  const compareAreas = compareParam ? compareParam.split(',').filter(Boolean).slice(0, 2) : []
+  const isCompareMode = compareAreas.length >= 2
+  
+  const [selectedTown, setSelectedTown] = useState<string>(compareAreas[0] || 'ANG MO KIO')
   const [landscape, setLandscape] = useState<SchoolLandscape | null>(null)
   const [spi, setSpi] = useState<SchoolPressureIndex | null>(null)
   const [housingProfile, setHousingProfile] = useState<NeighbourhoodProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [availableTowns, setAvailableTowns] = useState<string[]>(TOWNS)
+  
+  // Compare mode state
+  const [compareLandscape1, setCompareLandscape1] = useState<SchoolLandscape | null>(null)
+  const [compareLandscape2, setCompareLandscape2] = useState<SchoolLandscape | null>(null)
+  const [compareSpi1, setCompareSpi1] = useState<SchoolPressureIndex | null>(null)
+  const [compareSpi2, setCompareSpi2] = useState<SchoolPressureIndex | null>(null)
+  const [compareHousing1, setCompareHousing1] = useState<NeighbourhoodProfile | null>(null)
+  const [compareHousing2, setCompareHousing2] = useState<NeighbourhoodProfile | null>(null)
+  const [compareLoading, setCompareLoading] = useState(false)
 
   useEffect(() => {
     loadTowns()
   }, [])
 
   useEffect(() => {
-    if (selectedTown) {
+    if (isCompareMode) {
+      loadCompareData()
+    } else if (selectedTown) {
       loadData()
     }
-  }, [selectedTown])
+  }, [selectedTown, isCompareMode, compareAreas.join(',')])
+  
+  async function loadCompareData() {
+    if (compareAreas.length < 2) return
+    
+    setCompareLoading(true)
+    try {
+      const [area1, area2] = compareAreas
+      
+      // Load data for both areas in parallel
+      const [
+        landscape1, landscape2,
+        spi1, spi2,
+        neighbourhoodId1, neighbourhoodId2
+      ] = await Promise.all([
+        getSchoolLandscape(area1),
+        getSchoolLandscape(area2),
+        calculateSchoolPressureIndex(area1),
+        calculateSchoolPressureIndex(area2),
+        getNeighbourhoodIdFromTown(area1),
+        getNeighbourhoodIdFromTown(area2)
+      ])
+      
+      setCompareLandscape1(landscape1)
+      setCompareLandscape2(landscape2)
+      setCompareSpi1(spi1)
+      setCompareSpi2(spi2)
+      
+      // Load housing profiles if neighbourhood IDs are available
+      if (neighbourhoodId1) {
+        const housing1 = await getNeighbourhoodProfile(neighbourhoodId1, '4 ROOM')
+        setCompareHousing1(housing1)
+      }
+      if (neighbourhoodId2) {
+        const housing2 = await getNeighbourhoodProfile(neighbourhoodId2, '4 ROOM')
+        setCompareHousing2(housing2)
+      }
+    } catch (error) {
+      console.error('Error loading compare data:', error)
+    } finally {
+      setCompareLoading(false)
+    }
+  }
 
   async function loadTowns() {
     try {
@@ -156,6 +217,171 @@ export default function PSLESchoolPage() {
     return summary
   }
 
+  // Compare mode UI
+  if (isCompareMode) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Compare school pressure by planning area</h1>
+                <p className="mt-2 text-gray-600">
+                  Side-by-side comparison of school competition and housing trade-offs
+                </p>
+              </div>
+              <Link
+                href="/family/psle-school"
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                ← Back to explore mode
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {compareLoading ? (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              Loading comparison data...
+            </div>
+          ) : (
+            <>
+              {/* Compare Header */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+                <div className="flex items-center justify-center gap-4 text-2xl font-bold text-gray-900">
+                  <span className="px-4 py-2 bg-blue-50 rounded-lg">{compareAreas[0]}</span>
+                  <span className="text-gray-400">vs</span>
+                  <span className="px-4 py-2 bg-blue-50 rounded-lg">{compareAreas[1]}</span>
+                </div>
+              </div>
+
+              {/* Quick Takeaway */}
+              {compareSpi1 && compareSpi2 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick takeaway</h2>
+                  {(() => {
+                    const spi1 = compareSpi1.spi
+                    const spi2 = compareSpi2.spi
+                    const level1 = compareSpi1.level
+                    const level2 = compareSpi2.level
+                    const landscape1 = compareLandscape1
+                    const landscape2 = compareLandscape2
+                    
+                    if (spi1 < spi2 - 5) {
+                      return (
+                        <p className="text-base text-gray-800">
+                          <strong>{compareAreas[0]}</strong> offers lower overall school pressure and more choice stability.
+                          <strong> {compareAreas[1]}</strong> has {landscape2?.schoolCount || 'fewer'} schools and {landscape2?.highDemandSchools && landscape2.highDemandSchools > (landscape1?.highDemandSchools || 0) ? 'higher' : 'similar'} concentration in popular ones.
+                        </p>
+                      )
+                    } else if (spi2 < spi1 - 5) {
+                      return (
+                        <p className="text-base text-gray-800">
+                          <strong>{compareAreas[1]}</strong> offers lower overall school pressure and more choice stability.
+                          <strong> {compareAreas[0]}</strong> has {landscape1?.schoolCount || 'fewer'} schools and {landscape1?.highDemandSchools && landscape1.highDemandSchools > (landscape2?.highDemandSchools || 0) ? 'higher' : 'similar'} concentration in popular ones.
+                        </p>
+                      )
+                    } else {
+                      return (
+                        <p className="text-base text-gray-800">
+                          Both areas have similar school pressure levels, with different trade-offs in school distribution and housing costs.
+                        </p>
+                      )
+                    }
+                  })()}
+                </div>
+              )}
+
+              {/* Core Comparison Table */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Comparison</h2>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{compareAreas[0]}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{compareAreas[1]}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">SPI</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {compareSpi1 ? (
+                          <div>
+                            <span className="font-semibold">{compareSpi1.spi}</span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({compareSpi1.level === 'low' ? 'Low' : compareSpi1.level === 'medium' ? 'Medium' : 'High'})
+                            </span>
+                          </div>
+                        ) : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {compareSpi2 ? (
+                          <div>
+                            <span className="font-semibold">{compareSpi2.spi}</span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({compareSpi2.level === 'low' ? 'Low' : compareSpi2.level === 'medium' ? 'Medium' : 'High'})
+                            </span>
+                          </div>
+                        ) : 'N/A'}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Primary schools</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape1?.schoolCount || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape2?.schoolCount || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">High-demand schools</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape1?.highDemandSchools || 0}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape2?.highDemandSchools || 0}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Choice breadth</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {compareLandscape1 && compareLandscape2 ? (
+                          compareLandscape1.schoolCount > compareLandscape2.schoolCount ? 'Wider' :
+                          compareLandscape1.schoolCount < compareLandscape2.schoolCount ? 'Narrower' : 'Similar'
+                        ) : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {compareLandscape1 && compareLandscape2 ? (
+                          compareLandscape2.schoolCount > compareLandscape1.schoolCount ? 'Wider' :
+                          compareLandscape2.schoolCount < compareLandscape1.schoolCount ? 'Narrower' : 'Similar'
+                        ) : 'N/A'}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Trade-off Interpretation */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-3">Trade-off interpretation</h2>
+                <p className="text-sm text-gray-800 mb-3">
+                  This comparison reflects a common trade-off:
+                </p>
+                <ul className="space-y-2 text-sm text-gray-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-500 mt-0.5">•</span>
+                    <span>Central areas often face higher school concentration and competition</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-gray-500 mt-0.5">•</span>
+                    <span>Larger heartland areas tend to offer more distributed school options</span>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    )
+  }
+
+  // Explore mode UI (existing)
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -172,20 +398,29 @@ export default function PSLESchoolPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Planning Area Selector */}
-        <div className="mb-6">
-          <label htmlFor="town-select" className="block text-sm font-medium text-gray-700 mb-2">
-            Select Planning Area
-          </label>
-          <select
-            id="town-select"
-            value={selectedTown}
-            onChange={(e) => setSelectedTown(e.target.value)}
-            className="block w-full max-w-md rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2 border"
+        <div className="mb-6 flex items-end gap-4">
+          <div className="flex-1 max-w-md">
+            <label htmlFor="town-select" className="block text-sm font-medium text-gray-700 mb-2">
+              Select Planning Area
+            </label>
+            <select
+              id="town-select"
+              value={selectedTown}
+              onChange={(e) => setSelectedTown(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2 border"
+            >
+              {availableTowns.map(town => (
+                <option key={town} value={town}>{town}</option>
+              ))}
+            </select>
+          </div>
+          <Link
+            href={`/family/psle-school?compare=${selectedTown},${availableTowns.find(t => t !== selectedTown) || availableTowns[0]}`}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
           >
-            {availableTowns.map(town => (
-              <option key={town} value={town}>{town}</option>
-            ))}
-          </select>
+            <GitCompare className="w-4 h-4" />
+            Compare with another area
+          </Link>
         </div>
 
         {loading ? (
@@ -487,5 +722,17 @@ export default function PSLESchoolPage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function PSLESchoolPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    }>
+      <PSLESchoolPageContent />
+    </Suspense>
   )
 }
