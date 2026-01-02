@@ -162,19 +162,19 @@ export default function PSLESchoolPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">PSLE & School Location</h1>
           <p className="mt-2 text-gray-600">
-            Understand structural school pressure and housing trade-offs by location
+            Understand structural school pressure and housing trade-offs by planning area
           </p>
           <p className="mt-1 text-xs text-gray-500 italic">
-            This tool helps you understand structural constraints, not individual school selection.
+            Analysis is at planning area level. Housing data shows a representative neighbourhood within the area.
           </p>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Town Selector */}
+        {/* Planning Area Selector */}
         <div className="mb-6">
           <label htmlFor="town-select" className="block text-sm font-medium text-gray-700 mb-2">
-            Select Town / Planning Area
+            Select Planning Area
           </label>
           <select
             id="town-select"
@@ -253,21 +253,21 @@ export default function PSLESchoolPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">🟢</span>
                     <p className="text-base text-gray-800">
-                      <strong>Good news:</strong> Most families here face relatively low competition for primary schools.
+                      <strong>Structural insight:</strong> Most families here face relatively low competition for primary schools.
                     </p>
                   </div>
                 ) : spi.level === 'high' ? (
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">🔴</span>
                     <p className="text-base text-gray-800">
-                      <strong>Higher pressure:</strong> Competition for primary schools is more intense here, with fewer lower-risk options.
+                      <strong>Overall pattern:</strong> Competition for primary schools is more intense here, with fewer lower-risk options.
                     </p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-2xl">🟡</span>
                     <p className="text-base text-gray-800">
-                      <strong>Moderate pressure:</strong> School competition varies, with a mix of options available.
+                      <strong>Overall pattern:</strong> School competition varies, with a mix of options available.
                     </p>
                   </div>
                 )}
@@ -417,7 +417,8 @@ export default function PSLESchoolPage() {
 
                 <div className="p-3 bg-amber-50 rounded-lg border-l-4 border-amber-400">
                   <p className="text-xs text-gray-700">
-                    <strong>Note:</strong> This shows structural trends for {selectedTown}. 
+                    <strong>Note:</strong> This shows structural trends for {selectedTown} planning area. 
+                    School data is aggregated at planning area level. Housing data represents a typical neighbourhood within this area.
                     Final school allocation depends on specific unit location, distance bands, and cohort demand.
                   </p>
                 </div>
@@ -434,7 +435,7 @@ export default function PSLESchoolPage() {
                         } else if (isAffordable && !isLowPressure) {
                           return `This area offers lower entry costs but comes with higher school competition pressure.`
                         } else if (!isAffordable && isLowPressure) {
-                          return `This area commands higher prices but offers lower school pressure and more options.`
+                          return `This area commands higher prices but offers lower school pressure and more options. This reflects a common trade-off: families often pay a price premium to reduce school competition and increase choice flexibility.`
                         } else {
                           return `This area presents a balance between housing costs and school environment, with trade-offs to consider.`
                         }
@@ -480,8 +481,8 @@ export default function PSLESchoolPage() {
               </div>
             </ChartCard>
 
-            {/* Redirect CTA to Compare Towns */}
-            <CompareTownsCTA text="Compare education impact when moving between neighbourhoods" />
+            {/* Redirect CTA to Compare Planning Areas */}
+            <CompareTownsCTA text="See how school pressure changes across planning areas" />
           </>
         )}
       </main>

@@ -3,13 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { TrendingUp, Clock, GraduationCap, Heart, Train, ChevronDown, Users } from 'lucide-react'
+import { TrendingUp, Clock, GraduationCap, ChevronDown, Users } from 'lucide-react'
 
 export default function GlobalNav() {
   const pathname = usePathname()
   const [housingOpen, setHousingOpen] = useState(false)
   const [familyOpen, setFamilyOpen] = useState(false)
-  const [futureOpen, setFutureOpen] = useState(false)
 
   // Housing sub-items: Buy / Rent / Risk
   const buyRentRiskItems = [
@@ -145,43 +144,6 @@ export default function GlobalNav() {
                       </Link>
                     )
                   })}
-                </div>
-              )}
-            </div>
-
-            {/* More: Transport / Healthcare */}
-            <div
-              className="relative"
-              onMouseEnter={() => setFutureOpen(true)}
-              onMouseLeave={() => setFutureOpen(false)}
-            >
-              <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === '/hdb/transport'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                More
-                <ChevronDown className={`w-4 h-4 transition-transform ${futureOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {futureOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                  <Link
-                    href="/hdb/transport"
-                    className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                      pathname === '/hdb/transport'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Train className="w-4 h-4" />
-                    Transport
-                  </Link>
-                  <div className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400">
-                    <Heart className="w-4 h-4" />
-                    Healthcare <span className="text-xs ml-auto">(Coming later)</span>
-                  </div>
                 </div>
               )}
             </div>
