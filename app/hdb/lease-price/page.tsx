@@ -8,6 +8,7 @@ import { Clock, ArrowRight, AlertTriangle } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
 import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
 import Link from 'next/link'
+import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
 
 const FLAT_TYPES = ['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
 
@@ -71,6 +72,11 @@ export default function HDBLeasePricePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <h1 className="text-3xl font-bold text-gray-900">Lease Depreciation Analysis</h1>
           <p className="mt-2 text-gray-600">Island-wide analysis showing how lease decay affects prices structurally across all neighbourhoods</p>
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-700 italic">
+              {LONG_TERM_RISK_DEFINITION}
+            </p>
+          </div>
         </div>
       </header>
 

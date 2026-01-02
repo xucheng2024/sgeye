@@ -7,6 +7,7 @@ import { Calculator, Home, AlertTriangle, ArrowRight } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
+import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -156,7 +157,16 @@ export default function HDBAffordabilityPage() {
                   With your current income and savings, your realistic HDB resale budget is around <span className="font-bold text-blue-600">{formatCurrency(results.maxPropertyPrice)}</span>.
                 </p>
                 <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                  Affordable resale options may carry lease-related risks that should be carefully considered.
+                  Affordable resale flats often have shorter remaining leases.
+                  This can make them harder to sell or refinance later.
+                  {' '}
+                  <Link
+                    href="/hdb/lease-price"
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  >
+                    See why lease length matters
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </p>
                 <p className="text-xs text-gray-500 italic">
                   In short: You can afford to buy, but only within a limited price range, and lease matters.
@@ -246,9 +256,17 @@ export default function HDBAffordabilityPage() {
                 </div>
                 <div className="flex-1">
                   <div className="text-base font-bold text-gray-900 mb-1.5">Important Context: Lease Matters</div>
-                  <div className="text-sm text-gray-700 leading-relaxed">
-                    Many resale flats under {formatCurrency(results.maxPropertyPrice)} tend to have shorter remaining leases (below ~55 years), which may affect long-term resale value and future financing.
+                  <div className="text-sm text-gray-700 leading-relaxed mb-3">
+                    Many resale flats under {formatCurrency(results.maxPropertyPrice)} tend to have shorter remaining leases (below ~55 years),
+                    which can affect how easily you can sell, upgrade, or take another loan later.
                   </div>
+                  <Link
+                    href="/hdb/lease-price"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  >
+                    Understand lease risks
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
               </div>
             </div>
@@ -272,21 +290,26 @@ export default function HDBAffordabilityPage() {
           // Convert lease_min=60 to lease_tier=medium
           const leaseTier = 'medium' // 60 years corresponds to medium tier [60, 80)
           
+          const budgetFormatted = formatCurrency(results.maxPropertyPrice)
+          
           return (
             <div className="mt-8">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl border border-blue-500 p-8 shadow-lg">
                 <div className="max-w-2xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-medium text-blue-200 uppercase tracking-wide">Next step</span>
+                  </div>
                   <h3 className="text-2xl font-bold text-white mb-3">
-                    Find neighbourhoods that fit your budget
+                    Where can you actually buy within {budgetFormatted}?
                   </h3>
                   <p className="text-blue-50 text-lg mb-6 leading-relaxed">
-                    Based on your income, explore neighbourhoods where recent resale prices are within your realistic budget.
+                    Based on recent resale prices, see which neighbourhoods are realistically within your budget.
                   </p>
                   <Link
                     href={`/neighbourhoods?price_tier=${priceTier}&lease_tier=${leaseTier}&source=affordability`}
                     className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
                   >
-                    Explore neighbourhoods
+                    See neighbourhoods under {budgetFormatted}
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </div>

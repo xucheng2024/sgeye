@@ -178,7 +178,10 @@ export const PREFERENCE_WEIGHTS = {
     school: 0.55,
     stability: 0.05,
   },
-} as const
+}
+
+// Long-term risk definition (reusable across the site)
+export const LONG_TERM_RISK_DEFINITION = 'Long-term risk refers to how remaining lease length affects resale value, financing options, and price sustainability over time.' as const
 
 // ============================================
 // Family Profile Adjustment Constants
