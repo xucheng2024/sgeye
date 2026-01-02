@@ -350,7 +350,11 @@ export async function getTownsWithSchools(): Promise<string[]> {
 
     if (error) throw error
 
-    const uniqueTowns = [...new Set((data || []).map(s => s.town).filter(Boolean))]
+    // Normalize town names by removing quotes
+    const uniqueTowns = [...new Set((data || [])
+      .map(s => s.town)
+      .filter(Boolean)
+      .map(town => town.replace(/^["']|["']$/g, '').trim()))]
     return uniqueTowns.sort()
   } catch (error) {
     console.error('Error getting towns with schools:', error)

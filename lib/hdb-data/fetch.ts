@@ -631,28 +631,59 @@ export async function getNeighbourhoodTimeAccess(neighbourhoodId: string): Promi
 export async function getNeighbourhoodIdFromTown(town: string): Promise<string | null> {
   try {
     if (supabase) {
-      const normalizedTown = town.toUpperCase().trim()
+      // Normalize town name: remove quotes and trim
+      const cleanTown = town.replace(/^["']|["']$/g, '').trim().toUpperCase()
       
-      // Get neighbourhood_ids for this town, ordered by frequency
-      const { data, error } = await supabase
-        .from('raw_resale_2017')
-        .select('neighbourhood_id')
-        .eq('town', normalizedTown)
-        .not('neighbourhood_id', 'is', null)
-        .limit(10000)
+      // Try multiple variations to match database data
+      const townVariations = [
+        cleanTown,           // Without quotes
+        `"${cleanTown}"`,    // With double quotes
+        `'${cleanTown}'`,    // With single quotes
+      ]
       
-      if (error) {
-        console.error('Error fetching neighbourhood_id from town:', error)
-        return null
+      let allData: any[] = []
+      
+      // Try each variation
+      for (const townVar of townVariations) {
+        const { data, error } = await supabase
+          .from('raw_resale_2017')
+          .select('neighbourhood_id')
+          .eq('town', townVar)
+          .not('neighbourhood_id', 'is', null)
+          .limit(10000)
+        
+        if (error) {
+          console.error('Error fetching neighbourhood_id from town:', error)
+          continue
+        }
+        
+        if (data && data.length > 0) {
+          allData = allData.concat(data)
+        }
       }
       
-      if (!data || data.length === 0) {
+      // If still no data, try case-insensitive search
+      if (allData.length === 0) {
+        const { data: ciData, error: ciError } = await supabase
+          .from('raw_resale_2017')
+          .select('town, neighbourhood_id')
+          .ilike('town', cleanTown)
+          .not('neighbourhood_id', 'is', null)
+          .limit(10000)
+        
+        if (!ciError && ciData) {
+          allData = ciData
+        }
+      }
+      
+      if (allData.length === 0) {
+        console.warn(`No neighbourhood_id found for town: "${town}" (tried: ${townVariations.join(', ')})`)
         return null
       }
       
       // Count frequency of each neighbourhood_id
       const frequencyMap = new Map<string, number>()
-      data.forEach(item => {
+      allData.forEach(item => {
         if (item.neighbourhood_id) {
           frequencyMap.set(item.neighbourhood_id, (frequencyMap.get(item.neighbourhood_id) || 0) + 1)
         }

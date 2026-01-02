@@ -2,13 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { TrendingUp, Map, Clock, Calculator, Home } from 'lucide-react'
+import { TrendingUp, Clock, Home } from 'lucide-react'
 
 const navItems = [
   { href: '/hdb', label: 'Trends', icon: TrendingUp },
-  { href: '/hdb/heatmap', label: 'Heatmap', icon: Map },
   { href: '/hdb/lease-price', label: 'Lease Analysis', icon: Clock },
-  { href: '/hdb/affordability', label: 'Affordability', icon: Calculator },
 ]
 
 export default function HDBNav() {
