@@ -13,6 +13,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map, List } from 'lucide-react'
+import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -27,6 +28,7 @@ interface Neighbourhood {
   planning_area: {
     id: string
     name: string
+    region?: 'CCR' | 'RCR' | 'OCR' | null
   } | null
   summary: {
     tx_12m: number
@@ -97,6 +99,7 @@ function NeighbourhoodsPageContent() {
   const priceTierParam = searchParams.get('price_tier') || 'all'
   const leaseTierParam = searchParams.get('lease_tier') || 'all'
   const mrtTierParam = searchParams.get('mrt_tier') || 'all'
+  const regionParam = searchParams.get('region') || 'all'
   const priceMaxParam = searchParams.get('price_max')
   const leaseMinParam = searchParams.get('lease_min')
   const sourceParam = searchParams.get('source')
@@ -117,6 +120,7 @@ function NeighbourhoodsPageContent() {
   const [priceTier, setPriceTier] = useState<string>(priceTierParam)
   const [leaseTier, setLeaseTier] = useState<string>(leaseTierParam)
   const [mrtTier, setMrtTier] = useState<string>(mrtTierParam)
+  const [region, setRegion] = useState<string>(regionParam)
   
   useEffect(() => {
     loadPlanningAreas()
@@ -129,6 +133,7 @@ function NeighbourhoodsPageContent() {
     let urlPriceTier = searchParams.get('price_tier') || 'all'
     let urlLeaseTier = searchParams.get('lease_tier') || 'all'
     const urlMrtTier = searchParams.get('mrt_tier') || 'all'
+    const urlRegion = searchParams.get('region') || 'all'
     const urlPriceMax = searchParams.get('price_max')
     const urlLeaseMin = searchParams.get('lease_min')
     
@@ -171,6 +176,9 @@ function NeighbourhoodsPageContent() {
     if (urlMrtTier !== mrtTier) {
       setMrtTier(urlMrtTier)
     }
+    if (urlRegion !== region) {
+      setRegion(urlRegion)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -182,11 +190,12 @@ function NeighbourhoodsPageContent() {
     if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
     if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
     if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+    if (region && region !== 'all') params.set('region', region)
     
     const currentParams = new URLSearchParams(window.location.search)
     const newParamsString = params.toString()
     const currentParamsString = Array.from(currentParams.entries())
-      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier'].includes(key))
+      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier', 'region'].includes(key))
       .map(([key, value]) => `${key}=${value}`)
       .join('&')
     
@@ -195,11 +204,12 @@ function NeighbourhoodsPageContent() {
       const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier])
+  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier, region])
 
   useEffect(() => {
     loadNeighbourhoods()
-  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier, region])
 
   async function loadPlanningAreas() {
     try {
@@ -265,6 +275,11 @@ function NeighbourhoodsPageContent() {
           far: 2000
         }
         params.set('mrt_distance_max', mrtDistances[mrtTier as keyof typeof mrtDistances].toString())
+      }
+      
+      // Set region filter
+      if (region && region !== 'all') {
+        params.set('region', region)
       }
       
       params.set('limit', '500')
@@ -887,6 +902,58 @@ function NeighbourhoodsPageContent() {
                 </button>
               </div>
             </div>
+
+            {/* Region Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Region
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setRegion('all')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    region === 'all'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setRegion('CCR')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    region === 'CCR'
+                      ? 'bg-purple-600 text-white border-purple-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
+                  title="Core Central Region - 核心中央区"
+                >
+                  CCR
+                </button>
+                <button
+                  onClick={() => setRegion('RCR')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    region === 'RCR'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                  title="Rest of Central Region - 中央区外围"
+                >
+                  RCR
+                </button>
+                <button
+                  onClick={() => setRegion('OCR')}
+                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    region === 'OCR'
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
+                  }`}
+                  title="Outside Central Region - 中央区以外"
+                >
+                  OCR
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* MRT Distance Filter - Full Width */}
@@ -1024,6 +1091,14 @@ function NeighbourhoodsPageContent() {
                       Clear MRT Filter
                     </button>
                   )}
+                  {region !== 'all' && (
+                    <button
+                      onClick={() => setRegion('all')}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
+                    >
+                      Clear Region Filter
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1123,9 +1198,20 @@ function NeighbourhoodsPageContent() {
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{neighbourhood.name}</h3>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {neighbourhood.planning_area && (
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
-                              {neighbourhood.planning_area.name}
-                            </span>
+                            <>
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
+                                {neighbourhood.planning_area.name}
+                              </span>
+                              {neighbourhood.planning_area.region && (() => {
+                                const regionInfo = getRegionInfo(neighbourhood.planning_area.region as RegionType)
+                                if (!regionInfo) return null
+                                return (
+                                  <span className={`text-xs px-2 py-1 rounded border font-medium ${regionInfo.bgColor} ${regionInfo.color} ${regionInfo.borderColor}`} title={regionInfo.fullName}>
+                                    {regionInfo.code}
+                                  </span>
+                                )
+                              })()}
+                            </>
                           )}
                           {/* Show the specific flat type when "All" is selected and expanded */}
                           {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type && (
@@ -1207,13 +1293,13 @@ function NeighbourhoodsPageContent() {
                         )
                       })()}
                       
-                      {/* Show message only if all data is missing */}
+                      {/* Show message if no transaction data (price/lease) is available */}
                       {(!neighbourhood.summary || 
+                        neighbourhood.summary.tx_12m === 0 ||
                         ((!neighbourhood.summary.median_price_12m || Number(neighbourhood.summary.median_price_12m) <= 0) && 
-                         (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0))) &&
-                       (!neighbourhood.access || (!neighbourhood.access.avg_distance_to_mrt && !neighbourhood.access.mrt_station_count)) && (
-                        <div className="text-xs text-gray-500 italic">
-                          No recent data (last 12 months)
+                         (!neighbourhood.summary.median_lease_years_12m || Number(neighbourhood.summary.median_lease_years_12m) <= 0))) && (
+                        <div className="text-xs text-gray-500 italic mt-2">
+                          No recent transaction data (last 12 months)
                         </div>
                       )}
                     </div>

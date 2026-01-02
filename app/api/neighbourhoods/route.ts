@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const planningAreaId = searchParams.get('planning_area_id')
     const flatType = searchParams.get('flat_type')
+    const region = searchParams.get('region')
     const priceMin = searchParams.get('price_min') ? parseFloat(searchParams.get('price_min')!) : null
     const priceMax = searchParams.get('price_max') ? parseFloat(searchParams.get('price_max')!) : null
     const leaseMin = searchParams.get('lease_min') ? parseFloat(searchParams.get('lease_min')!) : null
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
         bbox,
         created_at,
         updated_at,
-        planning_areas(id, name)
+        planning_areas(id, name, region)
       `)
       .order('name', { ascending: true })
       .range(offset, offset + limit - 1)
@@ -69,6 +70,19 @@ export async function GET(request: NextRequest) {
       count: neighbourhoodsData?.length || 0,
       planningAreaId
     })
+    
+    // Debug: Check if region is being returned in planning_areas
+    if (neighbourhoodsData && neighbourhoodsData.length > 0) {
+      const sample = neighbourhoodsData.find(n => n.planning_areas && n.planning_areas.length > 0)
+      if (sample && sample.planning_areas && sample.planning_areas[0]) {
+        console.log('Sample planning_area structure:', {
+          id: sample.planning_areas[0].id,
+          name: sample.planning_areas[0].name,
+          region: sample.planning_areas[0].region,
+          allKeys: Object.keys(sample.planning_areas[0])
+        })
+      }
+    }
 
     if (error) {
       console.error('Error fetching neighbourhoods:', error)
@@ -301,6 +315,21 @@ export async function GET(request: NextRequest) {
       .select('*')
       .in('neighbourhood_id', neighbourhoodIds)
 
+    // Fetch planning areas with region data separately to ensure region is included
+    const planningAreaIds = [...new Set(neighbourhoodsData.map(n => n.planning_area_id).filter(Boolean))]
+    const { data: planningAreasData } = await supabase
+      .from('planning_areas')
+      .select('id, name, region')
+      .in('id', planningAreaIds)
+    
+    // Create planning area lookup map
+    const planningAreaMap = new Map()
+    if (planningAreasData) {
+      planningAreasData.forEach(pa => {
+        planningAreaMap.set(pa.id, pa)
+      })
+    }
+
     // Create lookup maps
     const summaryMap = new Map()
     if (summaryData) {
@@ -318,9 +347,23 @@ export async function GET(request: NextRequest) {
 
     // Transform data to flatten structure and apply filters
     let neighbourhoods = neighbourhoodsData.map(n => {
-      const planningArea = Array.isArray(n.planning_areas) && n.planning_areas.length > 0
-        ? n.planning_areas[0]
-        : null
+      // Try to get planning area from nested query first, fallback to lookup map
+      let planningArea = null
+      if (Array.isArray(n.planning_areas) && n.planning_areas.length > 0) {
+        planningArea = n.planning_areas[0]
+      } else if (n.planning_area_id) {
+        // Fallback: use lookup map if nested query didn't work
+        planningArea = planningAreaMap.get(n.planning_area_id) || null
+      }
+      
+      // If planning area exists but missing region, try to get it from map
+      if (planningArea && !planningArea.region && planningArea.id) {
+        const paFromMap = planningAreaMap.get(planningArea.id)
+        if (paFromMap && paFromMap.region) {
+          planningArea.region = paFromMap.region
+        }
+      }
+      
       const summary = summaryMap.get(n.id) || null
       const access = accessMap.get(n.id) || null
       
@@ -333,7 +376,8 @@ export async function GET(request: NextRequest) {
         one_liner: n.one_liner,
         planning_area: planningArea ? {
           id: planningArea.id,
-          name: planningArea.name
+          name: planningArea.name,
+          region: planningArea.region || null
         } : null,
         type: n.type,
         bbox: n.bbox,
@@ -368,10 +412,10 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
-    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatType })
+    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatType, region })
     
-    // Apply filters
-    if (priceMin !== null || priceMax !== null || leaseMin !== null || leaseMax !== null || mrtDistanceMax !== null) {
+    // Apply filters (including region filter)
+    if (priceMin !== null || priceMax !== null || leaseMin !== null || leaseMax !== null || mrtDistanceMax !== null || (region && region !== 'all')) {
       let beforeFilter = neighbourhoods.length
       let filteredByPrice = 0
       let filteredByLease = 0
@@ -431,6 +475,15 @@ export async function GET(request: NextRequest) {
             }
           }
           
+          // Region filter (CCR/RCR/OCR) - applies to neighbourhood
+          if (region && region !== 'all') {
+            const neighbourhoodRegion = n.planning_area?.region
+            // Case-insensitive comparison
+            if (!neighbourhoodRegion || neighbourhoodRegion.toUpperCase() !== region.toUpperCase()) {
+              return false
+            }
+          }
+          
           return true
           
         } else {
@@ -478,6 +531,15 @@ export async function GET(request: NextRequest) {
                 filteredByMRT++
                 return false
               }
+            }
+          }
+          
+          // Region filter (CCR/RCR/OCR)
+          if (region && region !== 'all') {
+            const neighbourhoodRegion = n.planning_area?.region
+            // Case-insensitive comparison
+            if (!neighbourhoodRegion || neighbourhoodRegion.toUpperCase() !== region.toUpperCase()) {
+              return false
             }
           }
           
