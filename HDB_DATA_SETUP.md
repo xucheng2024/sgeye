@@ -156,3 +156,4 @@ serve(async (req) => {
 3. **Lease parsing errors**: Verify `parse_lease_years()` function exists
 4. **Aggregation missing**: Run the aggregation SQL manually
 
+

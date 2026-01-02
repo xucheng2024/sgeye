@@ -1,14 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { calculateAffordability, findAffordableProperties, calculateMonthlyMortgage } from '@/lib/hdb-data'
+import { calculateAffordability } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
 import { Calculator, Home, AlertTriangle, ArrowRight } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
-import { formatCurrency, formatCurrencyFull } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
-
-const TOWNS = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'BUKIT BATOK', 'BUKIT MERAH', 'CENTRAL AREA', 'CLEMENTI', 'TAMPINES', 'WOODLANDS']
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -17,16 +15,12 @@ export default function HDBAffordabilityPage() {
   const [interestRate, setInterestRate] = useState(2.6)
   const [otherDebts, setOtherDebts] = useState(0)
   const [results, setResults] = useState<any>(null)
-  const [affordableProperties, setAffordableProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
   const handleCalculate = async () => {
     setLoading(true)
     const calc = calculateAffordability(monthlyIncome, downPayment, loanYears, interestRate, otherDebts)
     setResults(calc)
-
-    const properties = await findAffordableProperties(calc.maxPropertyPrice)
-    setAffordableProperties(properties)
     setLoading(false)
   }
 
@@ -34,42 +28,6 @@ export default function HDBAffordabilityPage() {
     handleCalculate()
   }, [])
 
-  // Select best comparison pair (Town A: price-oriented, Town B: long-term oriented)
-  const selectComparisonPair = () => {
-    if (affordableProperties.length < 2) return null
-
-    const budget = results?.maxPropertyPrice || 0
-    const sortedByCloseness = [...affordableProperties].sort((a, b) => {
-      const diffA = Math.abs(a.medianPrice - budget)
-      const diffB = Math.abs(b.medianPrice - budget)
-      return diffA - diffB
-    })
-
-    // Step 1: Filter candidates within budget, sorted by closeness
-    const candidates = sortedByCloseness.filter(t => t.medianPrice <= budget)
-
-    if (candidates.length < 2) {
-      // Fallback: just use first two
-      return {
-        townA: candidates[0] || affordableProperties[0],
-        townB: candidates[1] || affordableProperties[1],
-      }
-    }
-
-    // Step 2: Select Town A (price-oriented, may have higher lease risk)
-    // Prefer towns with shorter lease (< 60 years) as they're typically cheaper
-    const townA = candidates.find(t => t.medianLeaseYears < 60) || candidates[0]
-
-    // Step 3: Select Town B (long-term oriented, healthier lease)
-    // Prefer towns with longer lease (>= 60 years) and different from Town A
-    const townB = candidates.find(
-      t => t.medianLeaseYears >= 60 && t.town !== townA.town
-    ) || candidates.find(t => t.town !== townA.town) || candidates[1]
-
-    return { townA, townB }
-  }
-
-  const comparisonPair = selectComparisonPair()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -296,52 +254,46 @@ export default function HDBAffordabilityPage() {
             </div>
           )}
 
-          {/* Comparison CTA */}
-          {affordableProperties.length > 0 && comparisonPair && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex-1">
-                  <h4 className="text-base font-semibold text-gray-900 mb-1.5">
-                    Compare your best options
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    See what you gain and trade off between two towns that fit your budget.
-                  </p>
-                </div>
-                <Link
-                  href="/compare"
-                  className="inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg whitespace-nowrap flex-shrink-0"
-                >
-                  Compare now
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Section 4: CTA to Explore Neighbourhoods */}
-        {results && (
-          <div className="mt-8">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl border border-blue-500 p-8 shadow-lg">
-              <div className="max-w-2xl">
-                <h3 className="text-2xl font-bold text-white mb-3">
-                  Find neighbourhoods that fit your budget
-                </h3>
-                <p className="text-blue-50 text-lg mb-6 leading-relaxed">
-                  Based on your income, explore neighbourhoods where recent resale prices are within your realistic budget.
-                </p>
-                <Link
-                  href={`/neighbourhoods?price_max=${Math.round(results.maxPropertyPrice)}&lease_min=60&source=affordability`}
-                  className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
-                >
-                  Explore neighbourhoods
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
+        {results && (() => {
+          // Convert budget to price tier
+          const budget = Math.round(results.maxPropertyPrice)
+          let priceTier = 'all'
+          if (budget <= 500000) {
+            priceTier = 'low'
+          } else if (budget <= 1000000) {
+            priceTier = 'medium'
+          } else {
+            priceTier = 'high'
+          }
+          
+          // Convert lease_min=60 to lease_tier=medium
+          const leaseTier = 'medium' // 60 years corresponds to medium tier [60, 80)
+          
+          return (
+            <div className="mt-8">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl border border-blue-500 p-8 shadow-lg">
+                <div className="max-w-2xl">
+                  <h3 className="text-2xl font-bold text-white mb-3">
+                    Find neighbourhoods that fit your budget
+                  </h3>
+                  <p className="text-blue-50 text-lg mb-6 leading-relaxed">
+                    Based on your income, explore neighbourhoods where recent resale prices are within your realistic budget.
+                  </p>
+                  <Link
+                    href={`/neighbourhoods?price_tier=${priceTier}&lease_tier=${leaseTier}&source=affordability`}
+                    className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
+                  >
+                    Explore neighbourhoods
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
 
 
         {/* Redirect CTA to Compare Towns */}

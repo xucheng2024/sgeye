@@ -13,10 +13,9 @@ CREATE INDEX IF NOT EXISTS idx_planning_areas_region ON planning_areas(region);
 -- CCR (Core Central Region) - Core downtown and prime areas
 UPDATE planning_areas SET region = 'CCR' 
 WHERE LOWER(TRIM(name)) IN (
-  'orchard', 'river valley', 'newton', 'dover', 'marina east', 
+  'orchard', 'river valley', 'newton', 'novena', 'marina east', 
   'marina south', 'marina bay', 'downtown core', 'museum', 
-  'rochor', 'singapore river', 'straits view',
-  'bukit timah'
+  'rochor', 'singapore river', 'straits view', 'tanglin', 'sentosa'
 );
 
 -- RCR (Rest of Central Region) - Fringe of central region
@@ -24,26 +23,22 @@ UPDATE planning_areas SET region = 'RCR'
 WHERE LOWER(TRIM(name)) IN (
   'queenstown', 'bishan', 'toa payoh', 'kallang', 'whampoa',
   'geylang', 'marine parade', 'mountbatten', 'joo chiat',
-  'pasir ris', 'tampines', 'bedok', 'hougang', 'sengkang',
-  'punggol', 'serangoon', 'ang mo kio', 'yio chu kang',
-  'novena', 'bukit merah', 'clementi',
+  'bukit merah', 'clementi',
   'pasir panjang', 'telok blangah', 'redhill', 'queensway',
-  'alexandra', 'boon lay', 'pioneer', 'tuas', 'jurong east',
-  'jurong west', 'choa chu kang', 'bukit panjang', 'woodlands',
-  'sembawang', 'yishun', 'lim chu kang', 'sungei gedong',
-  'mandai', 'seletar'
+  'alexandra', 'bukit timah', 'dover', 'outram'
 );
 
 -- OCR (Outside Central Region) - Outer areas
--- Note: Some areas above might need adjustment based on actual URA classification
--- This is a general mapping - you may want to refine based on official URA data
-
--- Additional OCR areas (most outer areas default to OCR if not specified above)
+-- Explicitly set OCR areas (all areas not in CCR or RCR)
 UPDATE planning_areas SET region = 'OCR' 
-WHERE region IS NULL 
-  AND id NOT IN (
-    SELECT id FROM planning_areas WHERE region IN ('CCR', 'RCR')
-  );
+WHERE LOWER(TRIM(name)) IN (
+  'pasir ris', 'tampines', 'bedok', 'hougang', 'sengkang',
+  'punggol', 'serangoon', 'ang mo kio', 'yio chu kang',
+  'jurong east', 'jurong west', 'choa chu kang', 'bukit panjang', 
+  'woodlands', 'sembawang', 'yishun', 'boon lay', 'pioneer', 
+  'tuas', 'lim chu kang', 'sungei gedong', 'mandai', 'seletar'
+)
+OR region IS NULL;
 
 -- Add comment to column
 COMMENT ON COLUMN planning_areas.region IS 'URA Regional Classification: CCR (Core Central Region), RCR (Rest of Central Region), OCR (Outside Central Region)';

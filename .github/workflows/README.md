@@ -88,3 +88,4 @@ After the workflow runs and inserts new data, you need to run the aggregation SQ
 - Currently requires manual SQL execution
 - Future: Can be automated with Supabase Edge Functions
 
+

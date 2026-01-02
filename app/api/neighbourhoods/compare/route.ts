@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - months)
 
-    // Fetch neighbourhoods with summary and access
+    // Fetch neighbourhoods with access (summary will be calculated if flat_type is specified)
     const { data: neighbourhoods, error: neighbourhoodsError } = await supabase
       .from('neighbourhoods')
       .select(`
@@ -48,13 +48,6 @@ export async function POST(request: NextRequest) {
         one_liner,
         planning_area_id,
         planning_areas(id, name),
-        neighbourhood_summary(
-          tx_12m,
-          median_price_12m,
-          median_psm_12m,
-          median_lease_years_12m,
-          updated_at
-        ),
         neighbourhood_access(
           mrt_station_count,
           mrt_access_type,
@@ -92,17 +85,68 @@ export async function POST(request: NextRequest) {
 
     const trendsResults = await Promise.all(trendsPromises)
 
+    // Calculate summary from monthly data if flat_type is specified, otherwise use neighbourhood_summary
+    const summaryPromises = neighbourhoodIds.map(async (id: string) => {
+      if (flat_type && flat_type !== 'All') {
+        // Calculate from monthly data for specific flat type
+        const { data: monthlyData } = await supabase
+          .from('agg_neighbourhood_monthly')
+          .select('median_price, median_psm, median_lease_years, tx_count, month')
+          .eq('neighbourhood_id', id)
+          .eq('flat_type', flat_type)
+          .gte('month', startDate.toISOString().split('T')[0])
+          .lte('month', endDate.toISOString().split('T')[0])
+        
+        if (monthlyData && monthlyData.length > 0) {
+          const prices = monthlyData.map(m => Number(m.median_price)).filter(p => p > 0 && !isNaN(p)).sort((a, b) => a - b)
+          const psms = monthlyData.map(m => Number(m.median_psm)).filter(p => p > 0 && !isNaN(p)).sort((a, b) => a - b)
+          const leases = monthlyData.map(m => Number(m.median_lease_years)).filter(l => l > 0 && !isNaN(l)).sort((a, b) => a - b)
+          const txCounts = monthlyData.map(m => Number(m.tx_count) || 0)
+          
+          return {
+            id,
+            summary: {
+              tx_12m: txCounts.reduce((a, b) => a + b, 0),
+              median_price_12m: prices.length > 0 ? prices[Math.floor(prices.length / 2)] : null,
+              median_psm_12m: psms.length > 0 ? psms[Math.floor(psms.length / 2)] : null,
+              median_lease_years_12m: leases.length > 0 ? leases[Math.floor(leases.length / 2)] : null,
+              updated_at: new Date().toISOString()
+            }
+          }
+        }
+        return { id, summary: null }
+      } else {
+        // Use neighbourhood_summary for all flat types
+        const { data: summaryData } = await supabase
+          .from('neighbourhood_summary')
+          .select('tx_12m, median_price_12m, median_psm_12m, median_lease_years_12m, updated_at')
+          .eq('neighbourhood_id', id)
+          .single()
+        
+        return {
+          id,
+          summary: summaryData ? {
+            tx_12m: summaryData.tx_12m,
+            median_price_12m: summaryData.median_price_12m,
+            median_psm_12m: summaryData.median_psm_12m,
+            median_lease_years_12m: summaryData.median_lease_years_12m,
+            updated_at: summaryData.updated_at
+          } : null
+        }
+      }
+    })
+
+    const summaryResults = await Promise.all(summaryPromises)
+
     // Combine data
     const comparison = neighbourhoodIds.map((id: string) => {
       const neighbourhood = neighbourhoods?.find((n: any) => n.id === id)
       const trendsData = trendsResults.find((t: any) => t.id === id)
+      const summaryData = summaryResults.find((s: any) => s.id === id)
 
       // Supabase returns related data as arrays even for one-to-one relationships
       const planningArea = Array.isArray(neighbourhood?.planning_areas) && neighbourhood.planning_areas.length > 0
         ? neighbourhood.planning_areas[0]
-        : null
-      const summary = Array.isArray(neighbourhood?.neighbourhood_summary) && neighbourhood.neighbourhood_summary.length > 0
-        ? neighbourhood.neighbourhood_summary[0]
         : null
       const access = Array.isArray(neighbourhood?.neighbourhood_access) && neighbourhood.neighbourhood_access.length > 0
         ? neighbourhood.neighbourhood_access[0]
@@ -116,13 +160,7 @@ export async function POST(request: NextRequest) {
           id: planningArea.id,
           name: planningArea.name
         } : null,
-        summary: summary ? {
-          tx_12m: summary.tx_12m,
-          median_price_12m: summary.median_price_12m,
-          median_psm_12m: summary.median_psm_12m,
-          median_lease_years_12m: summary.median_lease_years_12m,
-          updated_at: summary.updated_at
-        } : null,
+        summary: summaryData?.summary || null,
         access: access ? {
           mrt_station_count: access.mrt_station_count,
           mrt_access_type: access.mrt_access_type,

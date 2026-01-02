@@ -56,6 +56,7 @@ export const PLANNING_AREA_REGIONS: Record<string, RegionType> = {
   'ORCHARD': 'CCR',
   'RIVER VALLEY': 'CCR',
   'NEWTON': 'CCR',
+  'NOVENA': 'CCR',
   'MARINA EAST': 'CCR',
   'MARINA SOUTH': 'CCR',
   'MARINA BAY': 'CCR',
@@ -64,6 +65,8 @@ export const PLANNING_AREA_REGIONS: Record<string, RegionType> = {
   'ROCHOR': 'CCR',
   'SINGAPORE RIVER': 'CCR',
   'STRAITS VIEW': 'CCR',
+  'TANGLIN': 'CCR',
+  'SENTOSA': 'CCR',
   
   // RCR (most common for HDB)
   'QUEENSTOWN': 'RCR',
@@ -73,9 +76,18 @@ export const PLANNING_AREA_REGIONS: Record<string, RegionType> = {
   'WHAMPOA': 'RCR',
   'GEYLANG': 'RCR',
   'MARINE PARADE': 'RCR',
-  'NOVENA': 'RCR',
+  'MOUNTBATTEN': 'RCR',
+  'JOO CHIAT': 'RCR',
   'BUKIT MERAH': 'RCR',
   'CLEMENTI': 'RCR',
+  'PASIR PANJANG': 'RCR',
+  'TELOK BLANGAH': 'RCR',
+  'REDHILL': 'RCR',
+  'QUEENSWAY': 'RCR',
+  'ALEXANDRA': 'RCR',
+  'BUKIT TIMAH': 'RCR',
+  'DOVER': 'RCR',
+  'OUTRAM': 'RCR',
   
   // OCR
   'JURONG EAST': 'OCR',

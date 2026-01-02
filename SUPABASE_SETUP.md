@@ -52,3 +52,4 @@ After redeploying:
 - You can update data in Supabase tables and charts will reflect the changes
 
 
+
