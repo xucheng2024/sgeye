@@ -70,21 +70,6 @@ interface Neighbourhood {
     trend_stability: 'stable' | 'volatile' | 'insufficient'
     net_growth_score?: number
   } | null
-  flat_type_details?: Array<{
-    flat_type: string
-    tx_12m: number
-    median_price_12m: number | null
-    median_psm_12m: number | null
-    median_lease_years_12m: number | null
-    avg_floor_area_12m?: number | null
-    growth_assessment?: {
-      growth_potential: 'high' | 'medium' | 'low' | 'insufficient'
-      lease_risk: 'green' | 'amber' | 'red'
-      trend_stability: 'stable' | 'volatile' | 'insufficient'
-      net_growth_rate?: number | null
-      net_growth_score?: number | null
-    } | null
-  }>
 }
 
 interface PlanningArea {
@@ -510,7 +495,7 @@ function NeighbourhoodsPageContent() {
       
       // Apply profile-based sorting if enabled
       if (useProfileSort && calculateDecisionProfile()) {
-        displayItems = sortByProfileFit(displayItems)
+        displayItems = sortByProfileFit(displayItems as any) as typeof displayItems
       }
       
       setNeighbourhoods(displayItems)
@@ -639,7 +624,7 @@ function NeighbourhoodsPageContent() {
       
       // Then apply profile sort if enabled
       if (useProfileSort && calculateDecisionProfile()) {
-        sorted = sortByProfileFit(sorted)
+        sorted = sortByProfileFit(sorted as any) as typeof sorted
       }
       
       setNeighbourhoods(sorted)

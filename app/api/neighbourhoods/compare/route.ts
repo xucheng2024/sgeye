@@ -169,21 +169,27 @@ export async function POST(request: NextRequest) {
       const summaryData = summaryResults.find((s: any) => s.id === id)
 
       // Supabase returns related data differently depending on relationship type
-      // planning_areas is returned as object for belongs-to relationship
-      // neighbourhood_access is returned as object for one-to-one relationship
-      const planningArea = neighbourhood?.planning_areas || null
-      const access = neighbourhood?.neighbourhood_access || null
+      // planning_areas might be returned as array or object
+      // neighbourhood_access might be returned as array or object
+      const planningAreaRaw = neighbourhood?.planning_areas
+      const planningArea = Array.isArray(planningAreaRaw) 
+        ? (planningAreaRaw.length > 0 ? planningAreaRaw[0] : null)
+        : planningAreaRaw || null
+      const accessRaw = neighbourhood?.neighbourhood_access
+      const access = Array.isArray(accessRaw)
+        ? (accessRaw.length > 0 ? accessRaw[0] : null)
+        : accessRaw || null
 
       return {
         id,
         name: neighbourhood?.name || null,
         one_liner: neighbourhood?.one_liner || null,
-        planning_area: planningArea ? {
+        planning_area: planningArea && typeof planningArea === 'object' && 'id' in planningArea && 'name' in planningArea ? {
           id: planningArea.id,
           name: planningArea.name
         } : null,
         summary: summaryData?.summary || null,
-        access: access ? {
+        access: access && typeof access === 'object' && 'mrt_station_count' in access ? {
           mrt_station_count: access.mrt_station_count,
           mrt_access_type: access.mrt_access_type,
           avg_distance_to_mrt: access.avg_distance_to_mrt,

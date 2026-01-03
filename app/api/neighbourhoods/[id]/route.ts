@@ -100,6 +100,13 @@ export async function GET(
       )
     }
 
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Neighbourhood not found' },
+        { status: 404 }
+      )
+    }
+
     // Transform data
     // Supabase returns related data as arrays even for one-to-one relationships
     const planningArea = Array.isArray(data.planning_areas) && data.planning_areas.length > 0 

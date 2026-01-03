@@ -40,7 +40,7 @@ function MapBounds({ neighbourhoods }: { neighbourhoods: Neighbourhood[] }) {
   const map = useMap()
 
   useEffect(() => {
-    const validBounds: [[number, number], [number, number]][] = []
+    const validPoints: [number, number][] = []
     
     neighbourhoods.forEach(n => {
       if (!n.bbox) return
@@ -49,26 +49,26 @@ function MapBounds({ neighbourhoods }: { neighbourhoods: Neighbourhood[] }) {
       
       if (Array.isArray(n.bbox) && n.bbox.length >= 4) {
         [minLng, minLat, maxLng, maxLat] = n.bbox
-      } else if (typeof n.bbox === 'object' && 
-                 n.bbox.minLng !== undefined && n.bbox.minLat !== undefined &&
-                 n.bbox.maxLng !== undefined && n.bbox.maxLat !== undefined) {
-        minLng = n.bbox.minLng
-        minLat = n.bbox.minLat
-        maxLng = n.bbox.maxLng
-        maxLat = n.bbox.maxLat
+      } else if (n.bbox && typeof n.bbox === 'object' && !Array.isArray(n.bbox) &&
+                 'minLng' in n.bbox && 'minLat' in n.bbox &&
+                 'maxLng' in n.bbox && 'maxLat' in n.bbox) {
+        minLng = (n.bbox as any).minLng
+        minLat = (n.bbox as any).minLat
+        maxLng = (n.bbox as any).maxLng
+        maxLat = (n.bbox as any).maxLat
       } else {
         return
       }
       
-      // Validate coordinates
+      // Validate coordinates and add corner points
       if (typeof minLng === 'number' && typeof minLat === 'number' && 
           typeof maxLng === 'number' && typeof maxLat === 'number') {
-        validBounds.push([[minLat, minLng], [maxLat, maxLng]])
+        validPoints.push([minLat, minLng], [maxLat, maxLng])
       }
     })
 
-    if (validBounds.length > 0) {
-      const bounds = L.latLngBounds(validBounds)
+    if (validPoints.length > 0) {
+      const bounds = L.latLngBounds(validPoints)
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 })
     } else {
       // Default to Singapore center if no bounds
@@ -87,9 +87,8 @@ export default function NeighbourhoodMap({ neighbourhoods, selectedFlatType }: N
     
     let minLng: number, minLat: number, maxLng: number, maxLat: number
     
-    if (Array.isArray(bbox)) {
-      if (bbox.length < 4) return null
-      [minLng, minLat, maxLng, maxLat] = bbox
+    if (Array.isArray(bbox) && bbox.length >= 4) {
+      [minLng, minLat, maxLng, maxLat] = bbox as [number, number, number, number]
     } else if (typeof bbox === 'object') {
       // Try object format
       if (bbox.minLng !== undefined && bbox.minLat !== undefined && 
