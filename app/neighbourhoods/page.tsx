@@ -14,9 +14,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
-import DecisionProfileDisplay from '@/components/DecisionProfile'
-import { recordBehaviorEvent, calculateDecisionProfile, getProfileDisplay } from '@/lib/decision-profile'
-import { sortByProfileFit } from '@/lib/recommendations'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 
 // Dynamically import map component to avoid SSR issues
@@ -105,8 +103,6 @@ function NeighbourhoodsPageContent() {
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
-  const [useProfileSort, setUseProfileSort] = useState(false)
-  const [currentPath, setCurrentPath] = useState<string | null>(null)
   
   // Filter states - initialize from URL params
   const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
@@ -120,39 +116,6 @@ function NeighbourhoodsPageContent() {
     AnalyticsEvents.viewExplore()
   }, [])
 
-  useEffect(() => {
-    // Determine which path user is currently exploring based on filters and profile
-    const profile = calculateDecisionProfile()
-    
-    // Check active filters first (stronger signal of current intent)
-    if (leaseTier === 'high' && (mrtTier === 'all' || mrtTier === 'far')) {
-      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Longer lease over daily convenience')
-    } else if (mrtTier === 'close' && leaseTier !== 'high') {
-      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Daily commute convenience over long-term lease safety')
-    } else if (priceTier === 'low' && leaseTier !== 'high' && mrtTier !== 'close') {
-      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Entry price over other factors')
-    } else if (profile) {
-      // Fall back to profile if no clear filter signal
-      switch (profile.type) {
-        case 'long-term-stability':
-          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Longer lease over daily convenience')
-          break
-        case 'convenience-driven':
-          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Daily commute convenience over long-term lease safety')
-          break
-        case 'budget-first':
-          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Entry price over other factors')
-          break
-        case 'school-stability':
-          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Predictable school environments')
-          break
-        default:
-          setCurrentPath(null)
-      }
-    } else {
-      setCurrentPath(null)
-    }
-  }, [leaseTier, mrtTier, priceTier])
 
   useEffect(() => {
     // Track filter usage
@@ -493,11 +456,6 @@ function NeighbourhoodsPageContent() {
       // Apply sorting based on preset
       displayItems = applySortPreset(displayItems, sortPreset)
       
-      // Apply profile-based sorting if enabled
-      if (useProfileSort && calculateDecisionProfile()) {
-        displayItems = sortByProfileFit(displayItems as any) as typeof displayItems
-      }
-      
       setNeighbourhoods(displayItems)
     } catch (err) {
       const error = err as Error
@@ -622,14 +580,9 @@ function NeighbourhoodsPageContent() {
         sorted = applySortPreset(sorted, sortPreset)
       }
       
-      // Then apply profile sort if enabled
-      if (useProfileSort && calculateDecisionProfile()) {
-        sorted = sortByProfileFit(sorted as any) as typeof sorted
-      }
-      
       setNeighbourhoods(sorted)
     }
-  }, [sortPreset, useProfileSort])
+  }, [sortPreset])
 
   function handlePresetClick(preset: SortPreset) {
     setSortPreset(preset)
@@ -647,7 +600,6 @@ function NeighbourhoodsPageContent() {
         return
       }
       newSet.add(neighbourhoodId)
-      // Track add to compare event
       AnalyticsEvents.addToCompare({ neighbourhoodId })
     }
     setSelectedForCompare(newSet)
@@ -894,18 +846,6 @@ function NeighbourhoodsPageContent() {
             </div>
           )}
         </div>
-
-        {/* Decision Profile */}
-        <DecisionProfileDisplay variant="explore" />
-
-        {/* Path Indicator */}
-        {currentPath && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
-            <p className="text-sm font-semibold text-gray-900 whitespace-pre-line leading-relaxed">
-              {currentPath}
-            </p>
-          </div>
-        )}
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
@@ -1352,18 +1292,6 @@ function NeighbourhoodsPageContent() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-gray-500 mr-2">Sort by:</span>
-                        {calculateDecisionProfile() && (
-                          <button
-                            onClick={() => setUseProfileSort(!useProfileSort)}
-                            className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                              useProfileSort
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}
-                          >
-                            Best fit for you
-                          </button>
-                        )}
                         <button
                           onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
                           className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
