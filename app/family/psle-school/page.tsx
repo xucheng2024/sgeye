@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { GraduationCap, AlertCircle, Home, TrendingUp, GitCompare } from 'lucide-react'
+import { GraduationCap, AlertCircle, Home, TrendingUp, GitCompare, Info } from 'lucide-react'
 import CompareTownsCTA from '@/components/CompareTownsCTA'
 import ChartCard from '@/components/ChartCard'
 import Link from 'next/link'
@@ -137,6 +137,32 @@ function PSLESchoolPageContent() {
     }
   }
 
+  // Get competition level label and visual bar
+  function getCompetitionLevel(spi: number): { label: string; description: string; barWidth: string; color: string } {
+    if (spi <= 20) {
+      return { 
+        label: 'Low pressure', 
+        description: 'More predictable',
+        barWidth: '20%',
+        color: 'bg-green-500'
+      }
+    } else if (spi <= 40) {
+      return { 
+        label: 'Moderate pressure', 
+        description: 'Mixed outcomes',
+        barWidth: '50%',
+        color: 'bg-yellow-500'
+      }
+    } else {
+      return { 
+        label: 'High pressure', 
+        description: 'More competitive',
+        barWidth: '80%',
+        color: 'bg-red-500'
+      }
+    }
+  }
+
   function getSPIColor(level: string) {
     switch (level) {
       case 'low': return 'text-green-600 bg-green-50'
@@ -225,6 +251,10 @@ function PSLESchoolPageContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center justify-between">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <GitCompare className="w-6 h-6 text-blue-600" />
+                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Compare Mode</span>
+                </div>
                 <h1 className="text-3xl font-bold text-gray-900">Compare school pressure by planning area</h1>
                 <p className="mt-2 text-gray-600">
                   Side-by-side comparison of school competition and housing trade-offs
@@ -232,7 +262,7 @@ function PSLESchoolPageContent() {
               </div>
               <Link
                 href="/family/psle-school"
-                className="text-sm text-gray-600 hover:text-gray-900"
+                className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
                 ← Back to explore mode
               </Link>
@@ -247,13 +277,42 @@ function PSLESchoolPageContent() {
             </div>
           ) : (
             <>
-              {/* Compare Header */}
+              {/* Compare Header - Interactive */}
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
                 <div className="flex items-center justify-center gap-4 text-2xl font-bold text-gray-900">
-                  <span className="px-4 py-2 bg-blue-50 rounded-lg">{compareAreas[0]}</span>
+                  <div className="relative group">
+                    <select
+                      value={compareAreas[0]}
+                      onChange={(e) => {
+                        const newArea = e.target.value
+                        router.push(`/family/psle-school?compare=${newArea},${compareAreas[1]}`)
+                      }}
+                      className="appearance-none px-6 py-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border-2 border-transparent hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 text-xl font-bold pr-10"
+                    >
+                      {availableTowns.map(town => (
+                        <option key={town} value={town}>{town}</option>
+                      ))}
+                    </select>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-600 text-sm">⌄</span>
+                  </div>
                   <span className="text-gray-400">vs</span>
-                  <span className="px-4 py-2 bg-blue-50 rounded-lg">{compareAreas[1]}</span>
+                  <div className="relative group">
+                    <select
+                      value={compareAreas[1]}
+                      onChange={(e) => {
+                        const newArea = e.target.value
+                        router.push(`/family/psle-school?compare=${compareAreas[0]},${newArea}`)
+                      }}
+                      className="appearance-none px-6 py-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border-2 border-transparent hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 text-xl font-bold pr-10"
+                    >
+                      {availableTowns.map(town => (
+                        <option key={town} value={town}>{town}</option>
+                      ))}
+                    </select>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-600 text-sm">⌄</span>
+                  </div>
                 </div>
+                <p className="text-center text-xs text-gray-500 mt-3">Click area name to change comparison</p>
               </div>
 
               {/* Quick Takeaway */}
@@ -272,14 +331,14 @@ function PSLESchoolPageContent() {
                       return (
                         <p className="text-base text-gray-800">
                           <strong>{compareAreas[0]}</strong> offers lower overall school pressure and more choice stability.
-                          <strong> {compareAreas[1]}</strong> has {landscape2?.schoolCount || 'fewer'} schools and {landscape2?.highDemandSchools && landscape2.highDemandSchools > (landscape1?.highDemandSchools || 0) ? 'higher' : 'similar'} concentration in popular ones.
+                          <strong> {compareAreas[1]}</strong> has fewer buffer schools, with demand more concentrated in popular options.
                         </p>
                       )
                     } else if (spi2 < spi1 - 5) {
                       return (
                         <p className="text-base text-gray-800">
                           <strong>{compareAreas[1]}</strong> offers lower overall school pressure and more choice stability.
-                          <strong> {compareAreas[0]}</strong> has {landscape1?.schoolCount || 'fewer'} schools and {landscape1?.highDemandSchools && landscape1.highDemandSchools > (landscape2?.highDemandSchools || 0) ? 'higher' : 'similar'} concentration in popular ones.
+                          <strong> {compareAreas[0]}</strong> has fewer buffer schools, with demand more concentrated in popular options.
                         </p>
                       )
                     } else {
@@ -302,55 +361,91 @@ function PSLESchoolPageContent() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{compareAreas[0]}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{compareAreas[1]}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conclusion</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     <tr>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">SPI</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span>Overall school competition</span>
+                          <div className="group relative">
+                            <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                            <div className="invisible group-hover:visible absolute left-0 top-6 z-10 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg">
+                              <p className="font-semibold mb-1">School Pressure Index (SPI)</p>
+                              <p>SPI reflects how competitive and predictable primary school allocation tends to be in an area. Lower SPI generally means less stress for most families.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {compareSpi1 ? (
                           <div>
-                            <span className="font-semibold">{compareSpi1.spi}</span>
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({compareSpi1.level === 'low' ? 'Low' : compareSpi1.level === 'medium' ? 'Medium' : 'High'})
-                            </span>
+                            <div className="font-semibold mb-1">
+                              {getCompetitionLevel(compareSpi1.spi).description}
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${getCompetitionLevel(compareSpi1.spi).color}`}
+                                  style={{ width: getCompetitionLevel(compareSpi1.spi).barWidth }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500">{getCompetitionLevel(compareSpi1.spi).label}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">SPI: {compareSpi1.spi}</div>
                           </div>
                         ) : 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         {compareSpi2 ? (
                           <div>
-                            <span className="font-semibold">{compareSpi2.spi}</span>
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({compareSpi2.level === 'low' ? 'Low' : compareSpi2.level === 'medium' ? 'Medium' : 'High'})
-                            </span>
+                            <div className="font-semibold mb-1">
+                              {getCompetitionLevel(compareSpi2.spi).description}
+                            </div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${getCompetitionLevel(compareSpi2.spi).color}`}
+                                  style={{ width: getCompetitionLevel(compareSpi2.spi).barWidth }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500">{getCompetitionLevel(compareSpi2.spi).label}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">SPI: {compareSpi2.spi}</div>
                           </div>
                         ) : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {compareSpi1 && compareSpi2 ? (
+                          compareSpi1.spi < compareSpi2.spi - 3 ? `${compareAreas[0]} less competitive` :
+                          compareSpi2.spi < compareSpi1.spi - 3 ? `${compareAreas[1]} less competitive` :
+                          'Similar level'
+                        ) : ''}
                       </td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm font-medium text-gray-700">Primary schools</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape1?.schoolCount || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape2?.schoolCount || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {compareLandscape1 && compareLandscape2 ? (
+                          Math.abs(compareLandscape1.schoolCount - compareLandscape2.schoolCount) <= 1 ? 'Similar' :
+                          compareLandscape1.schoolCount > compareLandscape2.schoolCount ? `${compareAreas[0]} more options` :
+                          `${compareAreas[1]} more options`
+                        ) : ''}
+                      </td>
                     </tr>
                     <tr>
                       <td className="px-4 py-3 text-sm font-medium text-gray-700">High-demand schools</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape1?.highDemandSchools || 0}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{compareLandscape2?.highDemandSchools || 0}</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Choice breadth</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-600">
                         {compareLandscape1 && compareLandscape2 ? (
-                          compareLandscape1.schoolCount > compareLandscape2.schoolCount ? 'Wider' :
-                          compareLandscape1.schoolCount < compareLandscape2.schoolCount ? 'Narrower' : 'Similar'
-                        ) : 'N/A'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {compareLandscape1 && compareLandscape2 ? (
-                          compareLandscape2.schoolCount > compareLandscape1.schoolCount ? 'Wider' :
-                          compareLandscape2.schoolCount < compareLandscape1.schoolCount ? 'Narrower' : 'Similar'
-                        ) : 'N/A'}
+                          compareLandscape1.highDemandSchools === compareLandscape2.highDemandSchools ? 'Similar' :
+                          compareLandscape1.highDemandSchools < compareLandscape2.highDemandSchools ? `${compareAreas[0]} less concentrated` :
+                          `${compareAreas[1]} less concentrated`
+                        ) : ''}
                       </td>
                     </tr>
                   </tbody>
@@ -363,7 +458,7 @@ function PSLESchoolPageContent() {
                 <p className="text-sm text-gray-800 mb-3">
                   This comparison reflects a common trade-off:
                 </p>
-                <ul className="space-y-2 text-sm text-gray-800">
+                <ul className="space-y-2 text-sm text-gray-800 mb-4">
                   <li className="flex items-start gap-2">
                     <span className="text-gray-500 mt-0.5">•</span>
                     <span>Central areas often face higher school concentration and competition</span>
@@ -373,6 +468,19 @@ function PSLESchoolPageContent() {
                     <span>Larger heartland areas tend to offer more distributed school options</span>
                   </li>
                 </ul>
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">This means:</p>
+                  <ul className="space-y-1.5 text-sm text-gray-800">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5">→</span>
+                      <span>Families prioritising predictability may prefer {compareSpi1 && compareSpi2 && compareSpi1.spi < compareSpi2.spi ? compareAreas[0] : compareAreas[1]}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5">→</span>
+                      <span>Families comfortable with competition may still consider {compareSpi1 && compareSpi2 && compareSpi1.spi >= compareSpi2.spi ? compareAreas[0] : compareAreas[1]}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </>
           )}
@@ -414,13 +522,23 @@ function PSLESchoolPageContent() {
               ))}
             </select>
           </div>
-          <Link
-            href={`/family/psle-school?compare=${selectedTown},${availableTowns.find(t => t !== selectedTown) || availableTowns[0]}`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
-          >
-            <GitCompare className="w-4 h-4" />
-            Compare with another area
-          </Link>
+        </div>
+
+        {/* Compare CTA - Prominent */}
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Want to see how this compares?</p>
+              <p className="text-xs text-gray-600 mt-0.5">Compare {selectedTown} side by side with another planning area</p>
+            </div>
+            <Link
+              href={`/family/psle-school?compare=${selectedTown},${availableTowns.find(t => t !== selectedTown) || availableTowns[0]}`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              <GitCompare className="w-4 h-4" />
+              Compare school pressure →
+            </Link>
+          </div>
         </div>
 
         {loading ? (
@@ -716,8 +834,22 @@ function PSLESchoolPageContent() {
               </div>
             </ChartCard>
 
-            {/* Redirect CTA to Compare Planning Areas */}
-            <CompareTownsCTA text="See how school pressure changes across planning areas" />
+            {/* Ready to Compare - Bottom CTA */}
+            <div className="mt-12 pt-8 border-t border-gray-200">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to compare?</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  See how {selectedTown} stacks up against another planning area side by side
+                </p>
+                <Link
+                  href={`/family/psle-school?compare=${selectedTown},${availableTowns.find(t => t !== selectedTown) || availableTowns[0]}`}
+                  className="inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  <GitCompare className="w-5 h-5" />
+                  Compare {selectedTown} with another planning area →
+                </Link>
+              </div>
+            </div>
           </>
         )}
       </main>
