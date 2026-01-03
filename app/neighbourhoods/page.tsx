@@ -1113,7 +1113,10 @@ function NeighbourhoodsPageContent() {
               <>
                 <div>
                   <div className="text-base font-semibold text-gray-900">
-                    Compare shortlisted neighbourhoods
+                    Compare: {Array.from(selectedForCompare)
+                      .map(id => neighbourhoods.find(n => n.id === id)?.name)
+                      .filter(Boolean)
+                      .join(' vs ')}
                   </div>
                   <div className="text-sm text-gray-600 mt-0.5">
                     See housing, lease, commute, and school trade-offs side by side.
@@ -1121,7 +1124,7 @@ function NeighbourhoodsPageContent() {
                 </div>
                 <button
                   onClick={handleCompareSelected}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors whitespace-nowrap"
                 >
                   Compare now
                   <ArrowRight className="w-4 h-4" />
@@ -1131,7 +1134,10 @@ function NeighbourhoodsPageContent() {
               <>
                 <div>
                   <div className="text-base font-semibold text-gray-900">
-                    1 neighbourhood selected
+                    {Array.from(selectedForCompare)
+                      .map(id => neighbourhoods.find(n => n.id === id)?.name)
+                      .filter(Boolean)
+                      .join('')} selected
                   </div>
                   <div className="text-sm text-gray-600 mt-0.5">
                     Select one more to compare side by side.

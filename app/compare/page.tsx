@@ -187,9 +187,12 @@ function ComparePageContent() {
     
     if (stationCount > 0) {
       // Has MRT stations in area
-      if (distance && distance > 0 && distance <= 500) {
+      if (distance === 0 || distance === null) {
+        // Stations are IN the neighbourhood
         return '≤500m'
-      } else if (distance && distance > 0 && distance <= 1000) {
+      } else if (distance > 0 && distance <= 500) {
+        return '≤500m'
+      } else if (distance > 500 && distance <= 1000) {
         return '500–1000m'
       } else {
         return '1000m+'

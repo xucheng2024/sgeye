@@ -168,13 +168,11 @@ export async function POST(request: NextRequest) {
       const trendsData = trendsResults.find((t: any) => t.id === id)
       const summaryData = summaryResults.find((s: any) => s.id === id)
 
-      // Supabase returns related data as arrays even for one-to-one relationships
-      const planningArea = Array.isArray(neighbourhood?.planning_areas) && neighbourhood.planning_areas.length > 0
-        ? neighbourhood.planning_areas[0]
-        : null
-      const access = Array.isArray(neighbourhood?.neighbourhood_access) && neighbourhood.neighbourhood_access.length > 0
-        ? neighbourhood.neighbourhood_access[0]
-        : null
+      // Supabase returns related data differently depending on relationship type
+      // planning_areas is returned as object for belongs-to relationship
+      // neighbourhood_access is returned as object for one-to-one relationship
+      const planningArea = neighbourhood?.planning_areas || null
+      const access = neighbourhood?.neighbourhood_access || null
 
       return {
         id,
