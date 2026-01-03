@@ -734,7 +734,7 @@ function NeighbourhoodsPageContent() {
     // If there are stations within the neighbourhood (in area)
     if (stationCount !== null && stationCount > 0) {
       if (stationNames.length > 0) {
-        // Show station names: "MRT1名字, MRT2名字 in area"
+        // Show station names: "MRT1, MRT2 in area"
         const stationNamesText = stationNames.slice(0, 3).join(', ') + (stationNames.length > 3 ? ` +${stationNames.length - 3} more` : '')
         return {
           text: `${stationNamesText} in area`,
@@ -752,7 +752,7 @@ function NeighbourhoodsPageContent() {
     // If no stations in area but distance data available (outside area)
     if (distance !== null && distance > 0) {
       if (stationNames.length > 0) {
-        // Show nearest station name: "MRT名字 461m outside area"
+        // Show nearest station name: "MRT 461m outside area"
         const nearestStation = stationNames[0]
         return {
           text: `${nearestStation} ${formatDistance(distance)} outside area`,
@@ -884,7 +884,7 @@ function NeighbourhoodsPageContent() {
                       ? 'bg-purple-600 text-white border-purple-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400 hover:bg-purple-50'
                   }`}
-                  title="Core Central Region - 核心中央区"
+                  title="Core Central Region"
                 >
                   CCR
                 </button>
@@ -895,7 +895,7 @@ function NeighbourhoodsPageContent() {
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
-                  title="Rest of Central Region - 中央区外围"
+                  title="Rest of Central Region"
                 >
                   RCR
                 </button>
@@ -906,7 +906,7 @@ function NeighbourhoodsPageContent() {
                       ? 'bg-green-600 text-white border-green-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
                   }`}
-                  title="Outside Central Region - 中央区以外"
+                  title="Outside Central Region"
                 >
                   OCR
                 </button>

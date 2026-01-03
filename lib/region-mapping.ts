@@ -1,7 +1,7 @@
 // URA Regional Classification Mapping
-// CCR: Core Central Region (核心中央区)
-// RCR: Rest of Central Region (中央区外围)
-// OCR: Outside Central Region (中央区以外)
+// CCR: Core Central Region
+// RCR: Rest of Central Region
+// OCR: Outside Central Region
 
 export type RegionType = 'CCR' | 'RCR' | 'OCR'
 
@@ -20,7 +20,7 @@ export const REGIONS: Record<RegionType, RegionInfo> = {
     code: 'CCR',
     name: 'Core Central',
     fullName: 'Core Central Region',
-    description: '核心中央区 - 城市最核心，离CBD最近',
+    description: 'Core Central Region - closest to the CBD and prime districts',
     color: 'text-purple-700',
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-300'
@@ -29,7 +29,7 @@ export const REGIONS: Record<RegionType, RegionInfo> = {
     code: 'RCR',
     name: 'Central Fringe',
     fullName: 'Rest of Central Region',
-    description: '中央区外围 - 通勤和生活平衡，HDB用户最爱',
+    description: 'Rest of Central Region - central fringe with balanced commute and lifestyle',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-300'
@@ -38,7 +38,7 @@ export const REGIONS: Record<RegionType, RegionInfo> = {
     code: 'OCR',
     name: 'Outside Central',
     fullName: 'Outside Central Region',
-    description: '中央区以外 - 价格友好，空间大，更居住型',
+    description: 'Outside Central Region - more space and generally more budget-friendly',
     color: 'text-green-700',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-300'
@@ -50,7 +50,7 @@ export function getRegionInfo(region: RegionType | null | undefined): RegionInfo
   return REGIONS[region]
 }
 
-// Common planning areas mapping (for reference, actual data should come from DB)
+// Common planning areas mapping (reference only; source of truth should come from DB)
 export const PLANNING_AREA_REGIONS: Record<string, RegionType> = {
   // CCR
   'ORCHARD': 'CCR',
