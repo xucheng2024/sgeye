@@ -12,6 +12,9 @@ import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar, ArrowRight, School, AlertCircle } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import DecisionProfileDisplay from '@/components/DecisionProfile'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
+import { ProfileFitReasons } from '@/components/ProfileRecommendations'
 
 interface Neighbourhood {
   id: string
@@ -62,8 +65,21 @@ export default function NeighbourhoodDetailPage() {
     if (id) {
       loadNeighbourhood()
       loadTrends()
+      // Track neighbourhood detail page visit
+      recordBehaviorEvent({ type: 'neighbourhood_detail', metadata: { id } })
     }
   }, [id, flatType])
+
+  useEffect(() => {
+    // Track lease-related interactions
+    if (neighbourhood?.summary?.median_lease_years_12m) {
+      const lease = Number(neighbourhood.summary.median_lease_years_12m)
+      if (lease < 70) {
+        recordBehaviorEvent({ type: 'short_lease_warning', metadata: { lease } })
+      }
+      recordBehaviorEvent({ type: 'lease_view', metadata: { lease } })
+    }
+  }, [neighbourhood])
 
   useEffect(() => {
     if (neighbourhood?.planning_area?.id) {
@@ -389,6 +405,24 @@ export default function NeighbourhoodDetailPage() {
             <ArrowLeft className="w-4 h-4" />
             {returnTo?.includes('/compare') ? 'Back to comparison' : 'Back to Neighbourhoods'}
           </Link>
+
+          {/* Decision Profile */}
+          <DecisionProfileDisplay variant="detail" className="mb-4" />
+
+          {/* Why this fits your profile */}
+          {neighbourhood && (
+            <ProfileFitReasons 
+              neighbourhood={{
+                id: neighbourhood.id,
+                name: neighbourhood.name,
+                summary: neighbourhood.summary,
+                access: neighbourhood.access,
+                planning_area: neighbourhood.planning_area,
+              }}
+              className="mb-4"
+            />
+          )}
+
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{neighbourhood.name}</h1>

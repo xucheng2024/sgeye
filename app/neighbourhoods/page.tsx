@@ -14,6 +14,10 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
+import DecisionProfileDisplay from '@/components/DecisionProfile'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
+import { sortByProfileFit } from '@/lib/recommendations'
+import { calculateDecisionProfile } from '@/lib/decision-profile'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -116,6 +120,7 @@ function NeighbourhoodsPageContent() {
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [useProfileSort, setUseProfileSort] = useState(false)
   
   // Filter states - initialize from URL params
   const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
@@ -127,6 +132,42 @@ function NeighbourhoodsPageContent() {
   useEffect(() => {
     loadPlanningAreas()
   }, [])
+
+  useEffect(() => {
+    // Track filter usage
+    if (priceTier === 'low') {
+      recordBehaviorEvent({ type: 'price_filter', metadata: { tier: 'low' } })
+    }
+    if (leaseTier !== 'all') {
+      recordBehaviorEvent({ type: 'lease_filter', metadata: { tier: leaseTier } })
+      if (leaseTier === 'low' || leaseTier === 'medium') {
+        recordBehaviorEvent({ type: 'short_lease_warning' })
+      }
+    }
+    if (mrtTier === 'close') {
+      recordBehaviorEvent({ type: 'mrt_filter_close' })
+    }
+  }, [priceTier, leaseTier, mrtTier])
+
+  useEffect(() => {
+    // Track clicks on low-priced neighbourhoods
+    const handleLowPriceClick = (price: number | null) => {
+      if (price && price < priceThresholds.p25) {
+        recordBehaviorEvent({ type: 'low_price_click', metadata: { price } })
+      }
+    }
+    // This will be called when user clicks on a neighbourhood card
+    // For now, we'll track when viewing filtered results with low price tier
+    if (priceTier === 'low' && neighbourhoods.length > 0) {
+      // Implicit signal that user is browsing low-price options
+      const lowPriceCount = neighbourhoods.filter(n => 
+        n.summary?.median_price_12m && Number(n.summary.median_price_12m) < priceThresholds.p25
+      ).length
+      if (lowPriceCount > 5) {
+        recordBehaviorEvent({ type: 'low_price_click', metadata: { count: lowPriceCount } })
+      }
+    }
+  }, [neighbourhoods, priceTier, priceThresholds])
 
   // Sync filters from URL params when they change (e.g., when returning from detail page)
   useEffect(() => {
@@ -431,6 +472,11 @@ function NeighbourhoodsPageContent() {
       // Apply sorting based on preset
       displayItems = applySortPreset(displayItems, sortPreset)
       
+      // Apply profile-based sorting if enabled
+      if (useProfileSort && calculateDecisionProfile()) {
+        displayItems = sortByProfileFit(displayItems)
+      }
+      
       setNeighbourhoods(displayItems)
     } catch (err) {
       const error = err as Error
@@ -547,11 +593,22 @@ function NeighbourhoodsPageContent() {
   }
 
   useEffect(() => {
-    if (neighbourhoods.length > 0 && sortPreset !== 'default') {
-      const sorted = applySortPreset([...neighbourhoods], sortPreset)
+    if (neighbourhoods.length > 0) {
+      let sorted = [...neighbourhoods]
+      
+      // Apply preset sort first
+      if (sortPreset !== 'default') {
+        sorted = applySortPreset(sorted, sortPreset)
+      }
+      
+      // Then apply profile sort if enabled
+      if (useProfileSort && calculateDecisionProfile()) {
+        sorted = sortByProfileFit(sorted)
+      }
+      
       setNeighbourhoods(sorted)
     }
-  }, [sortPreset])
+  }, [sortPreset, useProfileSort])
 
   function handlePresetClick(preset: SortPreset) {
     setSortPreset(preset)
@@ -814,6 +871,9 @@ function NeighbourhoodsPageContent() {
             </div>
           )}
         </div>
+
+        {/* Decision Profile */}
+        <DecisionProfileDisplay variant="explore" />
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
@@ -1260,6 +1320,18 @@ function NeighbourhoodsPageContent() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-gray-500 mr-2">Sort by:</span>
+                        {calculateDecisionProfile() && (
+                          <button
+                            onClick={() => setUseProfileSort(!useProfileSort)}
+                            className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                              useProfileSort
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                            }`}
+                          >
+                            Best fit for you
+                          </button>
+                        )}
                         <button
                           onClick={() => setSortPreset(sortPreset === 'price' ? 'default' : 'price')}
                           className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${

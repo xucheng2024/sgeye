@@ -11,6 +11,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import DecisionProfileDisplay from '@/components/DecisionProfile'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
+import { ProfileRecommendationsForCompare } from '@/components/ProfileRecommendations'
 
 interface NeighbourhoodComparison {
   id: string
@@ -49,8 +52,22 @@ function ComparePageContent() {
   useEffect(() => {
     if (ids.length > 0) {
       loadComparison()
+      // Track compare page visit
+      recordBehaviorEvent({ type: 'compare_page' })
     }
   }, [idsParam, flatType, months])
+
+  useEffect(() => {
+    // Track transport section focus (when user looks at transport metrics in comparison)
+    if (comparisons.length >= 2) {
+      const hasTransportFocus = comparisons.some(c => 
+        c.access?.mrt_station_count && Number(c.access.mrt_station_count) > 0
+      )
+      if (hasTransportFocus) {
+        recordBehaviorEvent({ type: 'transport_section' })
+      }
+    }
+  }, [comparisons])
 
   async function loadComparison() {
     if (ids.length === 0) return
@@ -655,6 +672,9 @@ function ComparePageContent() {
         {/* Comparison Table */}
         {!loading && !error && comparisons.length > 0 && (
           <>
+            {/* Decision Profile */}
+            {comparisons.length >= 2 && <DecisionProfileDisplay variant="compare" />}
+
             {/* Quick Verdict */}
             {comparisons.length >= 2 && (() => {
               const verdict = generateQuickVerdict()
@@ -992,6 +1012,20 @@ function ComparePageContent() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Profile Recommendations */}
+            {comparisons.length >= 2 && (
+              <ProfileRecommendationsForCompare 
+                currentNeighbourhoods={comparisons.map(c => ({
+                  id: c.id,
+                  name: c.name,
+                  summary: c.summary,
+                  access: c.access,
+                  planning_area: c.planning_area,
+                }))}
+                className="mb-8"
+              />
             )}
 
             {/* Next dimension: School considerations */}

@@ -15,6 +15,7 @@ import {
 } from '@/lib/school-data'
 import { getNeighbourhoodProfile, NeighbourhoodProfile, getNeighbourhoodIdFromTown } from '@/lib/hdb-data'
 import { formatCurrency } from '@/lib/utils'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
 
 // Note: TOWNS list is kept for UI filtering/display only
 // All data aggregation is done by neighbourhood_id
@@ -48,8 +49,12 @@ function PSLESchoolPageContent() {
   }, [])
 
   useEffect(() => {
+    // Track PSLE/school page visits
+    recordBehaviorEvent({ type: 'psle_page' })
+    
     if (isCompareMode) {
       loadCompareData()
+      recordBehaviorEvent({ type: 'school_compare' })
     } else if (selectedTown) {
       loadData()
     }

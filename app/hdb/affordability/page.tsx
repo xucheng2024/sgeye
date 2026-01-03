@@ -7,6 +7,9 @@ import { Calculator, Home, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
+import { recordBehaviorEvent } from '@/lib/decision-profile'
+import RealityCheckCard from '@/components/RealityCheckCard'
+import DecisionPathCard from '@/components/DecisionPathCard'
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -16,6 +19,7 @@ export default function HDBAffordabilityPage() {
   const [otherDebts, setOtherDebts] = useState(0)
   const [results, setResults] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+  const [realityCheckData, setRealityCheckData] = useState<any>(null)
 
   const handleCalculate = async () => {
     setLoading(true)
@@ -26,7 +30,37 @@ export default function HDBAffordabilityPage() {
 
   useEffect(() => {
     handleCalculate()
+    // Track affordability calculator usage
+    recordBehaviorEvent({ type: 'affordability_calculator' })
   }, [])
+
+  useEffect(() => {
+    // Track when user calculates (stronger signal)
+    if (results) {
+      recordBehaviorEvent({ 
+        type: 'affordability_calculator',
+        metadata: { maxPrice: results.maxPropertyPrice }
+      })
+      
+      // Fetch reality check data
+      async function fetchRealityCheck() {
+        try {
+          const params = new URLSearchParams()
+          params.set('budget', results.maxPropertyPrice.toString())
+          
+          const res = await fetch(`/api/affordability/reality-check?${params.toString()}`)
+          const data = await res.json()
+          if (res.ok) {
+            setRealityCheckData(data)
+          }
+        } catch (error) {
+          console.error('Error fetching reality check:', error)
+        }
+      }
+      
+      fetchRealityCheck()
+    }
+  }, [results])
 
 
   return (
@@ -152,49 +186,30 @@ export default function HDBAffordabilityPage() {
             {/* Section 1: Summary Box */}
             {results && (
               <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
-                <h3 className="text-base font-bold text-gray-900 mb-2">Your Housing Reality (Summary)</h3>
+                <h3 className="text-base font-bold text-gray-900 mb-2">
+                  What {formatCurrency(results.maxPropertyPrice)} means in reality
+                </h3>
                 <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                  With your current income and savings, your realistic HDB resale budget is around <span className="font-bold text-blue-600">{formatCurrency(results.maxPropertyPrice)}</span>.
+                  With this budget, most families are choosing between:
                 </p>
-                <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                  Affordable resale flats often have shorter remaining leases.
-                  This can make them harder to sell or refinance later.
-                  {' '}
-                  <Link
-                    href="/hdb/lease-price"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm"
-                  >
-                    See why lease length matters
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </p>
-                <p className="text-xs text-gray-500 italic">
-                  In short: You can afford to buy, but only within a limited price range, and lease matters.
+                <ul className="text-sm text-gray-800 space-y-1 mb-2 list-disc list-inside">
+                  <li>Older flats with longer lease</li>
+                  <li>Smaller homes closer to MRT</li>
+                  <li>Lower school pressure areas further out</li>
+                </ul>
+                <p className="text-xs text-gray-600 italic">
+                  The actual trade-offs depend on your priorities, not just the budget number.
                 </p>
               </div>
             )}
             
-            {/* Transport Burden Hint */}
-            {results && (
-              <div className="mb-5 p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-sm text-gray-800 leading-relaxed">
-                  <strong>💡 Trade-off reminder:</strong> Lower price often comes with higher daily time burden. When comparing towns, consider how transport differences will affect your daily routine over 10–15 years.
-                </p>
-              </div>
-            )}
             {results ? (
               <div className="space-y-4">
-                {/* Final Budget - Most Prominent */}
+                {/* Budget - As emphasis only */}
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-300 shadow-lg">
-                  <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Final Budget</div>
+                  <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Your Budget Cap</div>
                   <div className="text-4xl font-bold text-purple-600 mb-2">
                     {formatCurrency(results.maxPropertyPrice)}
-                  </div>
-                  <div className="text-xs text-gray-600 italic mb-1">
-                    This is your realistic cap
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Used to filter towns and flat types below.
                   </div>
                 </div>
 
@@ -254,51 +269,22 @@ export default function HDBAffordabilityPage() {
         </div>
 
 
-        {/* Section 4: CTA to Explore Neighbourhoods */}
-        {results && (() => {
-          const budget = Math.round(results.maxPropertyPrice)
-          const budgetFormatted = formatCurrency(results.maxPropertyPrice)
-          
-          // Convert budget to price tier based on actual ranges
-          // low: 0-499999, medium: 500000-999999, high: 1000000+
-          let priceTier = 'all'
-          if (budget <= 499999) {
-            priceTier = 'low'
-          } else if (budget <= 999999) {
-            priceTier = 'medium'
-          } else {
-            priceTier = 'high'
-          }
-          
-          const params = new URLSearchParams()
-          params.set('price_tier', priceTier)
-          params.set('source', 'affordability')
-          
-          return (
-            <div className="mt-8">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl border border-blue-500 p-8 shadow-lg">
-                <div className="max-w-2xl">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs font-medium text-blue-200 uppercase tracking-wide">Next step</span>
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">
-                    Where can you actually buy within {budgetFormatted}?
-                  </h3>
-                  <p className="text-blue-50 text-lg mb-6 leading-relaxed">
-                    Based on recent resale prices, see which neighbourhoods are realistically within your budget.
-                  </p>
-                  <Link
-                    href={`/neighbourhoods?${params.toString()}`}
-                    className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
-                  >
-                    See neighbourhoods under {budgetFormatted}
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )
-        })()}
+        {/* Reality Check Card */}
+        {results && (
+          <RealityCheckCard 
+            budget={results.maxPropertyPrice}
+            className="mt-8"
+          />
+        )}
+
+        {/* Decision Path Card */}
+        {results && realityCheckData && (
+          <DecisionPathCard
+            budget={results.maxPropertyPrice}
+            realityCheckData={realityCheckData}
+            className="mt-6"
+          />
+        )}
 
 
       </main>
