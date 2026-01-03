@@ -15,9 +15,8 @@ import dynamic from 'next/dynamic'
 import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 import DecisionProfileDisplay from '@/components/DecisionProfile'
-import { recordBehaviorEvent } from '@/lib/decision-profile'
+import { recordBehaviorEvent, calculateDecisionProfile, getProfileDisplay } from '@/lib/decision-profile'
 import { sortByProfileFit } from '@/lib/recommendations'
-import { calculateDecisionProfile } from '@/lib/decision-profile'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -121,6 +120,7 @@ function NeighbourhoodsPageContent() {
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [useProfileSort, setUseProfileSort] = useState(false)
+  const [currentPath, setCurrentPath] = useState<string | null>(null)
   
   // Filter states - initialize from URL params
   const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
@@ -132,6 +132,40 @@ function NeighbourhoodsPageContent() {
   useEffect(() => {
     loadPlanningAreas()
   }, [])
+
+  useEffect(() => {
+    // Determine which path user is currently exploring based on filters and profile
+    const profile = calculateDecisionProfile()
+    
+    // Check active filters first (stronger signal of current intent)
+    if (leaseTier === 'high' && (mrtTier === 'all' || mrtTier === 'far')) {
+      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Longer lease over daily convenience')
+    } else if (mrtTier === 'close' && leaseTier !== 'high') {
+      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Daily commute convenience over long-term lease safety')
+    } else if (priceTier === 'low' && leaseTier !== 'high' && mrtTier !== 'close') {
+      setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Entry price over other factors')
+    } else if (profile) {
+      // Fall back to profile if no clear filter signal
+      switch (profile.type) {
+        case 'long-term-stability':
+          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Longer lease over daily convenience')
+          break
+        case 'convenience-driven':
+          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Daily commute convenience over long-term lease safety')
+          break
+        case 'budget-first':
+          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Entry price over other factors')
+          break
+        case 'school-stability':
+          setCurrentPath('You are exploring neighbourhoods prioritising:\n✔ Predictable school environments')
+          break
+        default:
+          setCurrentPath(null)
+      }
+    } else {
+      setCurrentPath(null)
+    }
+  }, [leaseTier, mrtTier, priceTier])
 
   useEffect(() => {
     // Track filter usage
@@ -874,6 +908,15 @@ function NeighbourhoodsPageContent() {
 
         {/* Decision Profile */}
         <DecisionProfileDisplay variant="explore" />
+
+        {/* Path Indicator */}
+        {currentPath && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
+            <p className="text-sm font-semibold text-gray-900 whitespace-pre-line leading-relaxed">
+              {currentPath}
+            </p>
+          </div>
+        )}
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
