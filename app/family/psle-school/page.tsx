@@ -355,7 +355,7 @@ function PSLESchoolPageContent() {
               {/* Core Comparison Table */}
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Comparison</h2>
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="responsive-table w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>

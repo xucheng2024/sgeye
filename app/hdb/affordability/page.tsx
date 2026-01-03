@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { calculateAffordability } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, ArrowRight } from 'lucide-react'
+import { Calculator, Home, ArrowRight, ChevronDown } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
@@ -198,46 +198,54 @@ export default function HDBAffordabilityPage() {
                   </div>
                 </div>
 
-                {/* Supporting Details - Less Prominent */}
-                <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-lg border border-blue-200">
-                  <div className="text-xs font-medium text-gray-600 mb-1">Maximum Monthly Payment</div>
-                  <div className="text-xl font-bold text-blue-600">
-                    {formatCurrency(results.maxMonthlyPayment)}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-blue-200">
-                    MSR: {formatCurrency(results.constraints.msr)} | TDSR: {formatCurrency(results.constraints.tdsr)}
-                  </div>
-                </div>
-
-                <div className="bg-green-50/80 backdrop-blur-sm p-4 rounded-lg border border-green-200">
-                  <div className="text-xs font-medium text-gray-600 mb-1">Maximum Loan Amount</div>
-                  <div className="text-xl font-bold text-green-600">
-                    {formatCurrency(results.maxLoanAmount)}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200">
-                  <div className="text-xs font-medium text-gray-600 mb-2">Breakdown:</div>
-                  <div className="space-y-1.5 text-xs text-gray-600">
-                    <div className="flex justify-between items-center py-0.5">
-                      <span>Max by Loan Capacity:</span>
-                      <span className="font-semibold text-gray-800">{formatCurrency(results.maxPropertyPriceByBudget)}</span>
+                {/* Supporting Details (collapsed by default to reduce scroll) */}
+                <details className="group bg-white/60 rounded-lg border border-gray-200">
+                  <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+                    <span className="text-sm font-semibold text-gray-900">More details</span>
+                    <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="px-4 pb-4 space-y-3">
+                    <div className="bg-blue-50/80 backdrop-blur-sm p-4 rounded-lg border border-blue-200">
+                      <div className="text-xs font-medium text-gray-600 mb-1">Maximum Monthly Payment</div>
+                      <div className="text-xl font-bold text-blue-600">
+                        {formatCurrency(results.maxMonthlyPayment)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-blue-200">
+                        MSR: {formatCurrency(results.constraints.msr)} | TDSR: {formatCurrency(results.constraints.tdsr)}
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center py-0.5">
-                      <span>Max by Down Payment / LTV:</span>
-                      <span className="font-semibold text-gray-800">{formatCurrency(results.constraints.ltv)}</span>
+
+                    <div className="bg-green-50/80 backdrop-blur-sm p-4 rounded-lg border border-green-200">
+                      <div className="text-xs font-medium text-gray-600 mb-1">Maximum Loan Amount</div>
+                      <div className="text-xl font-bold text-green-600">
+                        {formatCurrency(results.maxLoanAmount)}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200">
+                      <div className="text-xs font-medium text-gray-600 mb-2">Breakdown:</div>
+                      <div className="space-y-1.5 text-xs text-gray-600">
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Max by Loan Capacity:</span>
+                          <span className="font-semibold text-gray-800">{formatCurrency(results.maxPropertyPriceByBudget)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span>Max by Down Payment / LTV:</span>
+                          <span className="font-semibold text-gray-800">{formatCurrency(results.constraints.ltv)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-200">
+                      <div className="text-xs font-medium text-gray-500 mb-2">Regulatory Constraints (for reference):</div>
+                      <ul className="text-xs text-gray-500 space-y-1">
+                        <li>• MSR (Mortgage Servicing Ratio) ≤ 30%</li>
+                        <li>• TDSR (Total Debt Servicing Ratio) ≤ 55%</li>
+                        <li>• LTV (Loan-to-Value) ≤ 75% for resale flats</li>
+                      </ul>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-xs font-medium text-gray-500 mb-2">Regulatory Constraints (for reference):</div>
-                  <ul className="text-xs text-gray-500 space-y-1">
-                    <li>• MSR (Mortgage Servicing Ratio) ≤ 30%</li>
-                    <li>• TDSR (Total Debt Servicing Ratio) ≤ 55%</li>
-                    <li>• LTV (Loan-to-Value) ≤ 75% for resale flats</li>
-                  </ul>
-                </div>
+                </details>
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">Click "Calculate" to see results</div>

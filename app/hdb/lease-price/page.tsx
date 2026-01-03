@@ -106,7 +106,7 @@ export default function HDBLeasePricePage() {
             Lease Risk Guide
           </h3>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="responsive-table w-full">
               <thead>
                 <tr className="border-b-2 border-gray-300 bg-gray-50">
                   <th className="text-left py-3 px-4 font-bold text-gray-900">Remaining Lease</th>

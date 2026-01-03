@@ -19,6 +19,30 @@
   }
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Prevent wide tables from causing horizontal panning on small screens */
+.responsive-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.responsive-table th,
+.responsive-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

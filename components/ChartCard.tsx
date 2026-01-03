@@ -11,7 +11,7 @@ interface ChartCardProps {
 
 export default function ChartCard({ title, description, children, icon }: ChartCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-4">
         {icon && <div className="text-blue-600">{icon}</div>}
         <div>

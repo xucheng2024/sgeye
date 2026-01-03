@@ -30,22 +30,24 @@ export default function GlobalNav() {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-3">
           {/* Left: Logo/Brand */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-gray-900">Singapore Data Eye</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                Singapore Data Eye
+              </span>
             </Link>
             <span className="text-gray-300 hidden md:block">|</span>
             <span className="text-sm text-gray-600 hidden md:block">Living in Singapore</span>
           </div>
 
           {/* Right: Navigation Items */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             {/* Overview */}
             <Link
               href="/"
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isOverviewActive
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -61,7 +63,7 @@ export default function GlobalNav() {
               onMouseLeave={() => setHousingOpen(false)}
             >
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isHousingActive
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -103,13 +105,14 @@ export default function GlobalNav() {
               onMouseLeave={() => setFamilyOpen(false)}
             >
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isFamilyActive
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
-                Family with Children
+                <span className="hidden lg:inline">Family with Children</span>
+                <span className="lg:hidden">Family</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${familyOpen ? 'rotate-180' : ''}`} />
               </button>
               {familyOpen && (

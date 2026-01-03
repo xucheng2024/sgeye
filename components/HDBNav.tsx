@@ -15,16 +15,16 @@ export default function HDBNav() {
   return (
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between h-16 gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <Link href="/" className="flex items-center gap-2 text-gray-700 hover:text-gray-900">
               <Home className="w-5 h-5" />
-              <span className="font-medium">Home</span>
+              <span className="font-medium truncate">Home</span>
             </Link>
             <span className="text-gray-300">|</span>
-            <span className="text-lg font-semibold text-gray-900">HDB Resale</span>
+            <span className="text-lg font-semibold text-gray-900 truncate">HDB Resale</span>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 sm:gap-1 shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -32,7 +32,7 @@ export default function HDBNav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
