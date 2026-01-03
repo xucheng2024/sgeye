@@ -15,6 +15,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { ProfileFitReasons } from '@/components/ProfileRecommendations'
+import { AnalyticsEvents } from '@/lib/analytics'
 
 interface Neighbourhood {
   id: string
@@ -67,6 +68,7 @@ export default function NeighbourhoodDetailPage() {
       loadTrends()
       // Track neighbourhood detail page visit
       recordBehaviorEvent({ type: 'neighbourhood_detail', metadata: { id } })
+      AnalyticsEvents.neighbourDetailView({ neighbourhoodId: id })
     }
   }, [id, flatType])
 

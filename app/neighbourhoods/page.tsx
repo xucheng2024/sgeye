@@ -17,6 +17,7 @@ import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent, calculateDecisionProfile, getProfileDisplay } from '@/lib/decision-profile'
 import { sortByProfileFit } from '@/lib/recommendations'
+import { AnalyticsEvents } from '@/lib/analytics'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -131,6 +132,7 @@ function NeighbourhoodsPageContent() {
   
   useEffect(() => {
     loadPlanningAreas()
+    AnalyticsEvents.viewExplore()
   }, [])
 
   useEffect(() => {
@@ -660,6 +662,8 @@ function NeighbourhoodsPageContent() {
         return
       }
       newSet.add(neighbourhoodId)
+      // Track add to compare event
+      AnalyticsEvents.addToCompare({ neighbourhoodId })
     }
     setSelectedForCompare(newSet)
   }

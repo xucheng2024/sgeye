@@ -8,8 +8,9 @@ import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
-import RealityCheckCard from '@/components/RealityCheckCard'
 import DecisionPathCard from '@/components/DecisionPathCard'
+import FeedbackForm from '@/components/FeedbackForm'
+import { AnalyticsEvents } from '@/lib/analytics'
 
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
@@ -26,9 +27,12 @@ export default function HDBAffordabilityPage() {
     const calc = calculateAffordability(monthlyIncome, downPayment, loanYears, interestRate, otherDebts)
     setResults(calc)
     setLoading(false)
+    // Track affordability calculation event
+    AnalyticsEvents.affordabilityCalculate({ maxPrice: calc.maxPropertyPrice })
   }
 
   useEffect(() => {
+    AnalyticsEvents.viewAffordability()
     handleCalculate()
     // Track affordability calculator usage
     recordBehaviorEvent({ type: 'affordability_calculator' })
@@ -174,6 +178,41 @@ export default function HDBAffordabilityPage() {
                   'Calculate Affordability'
                 )}
               </button>
+              {results && (
+                <>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Based on recent HDB resale transactions (last 12–24 months)
+                  </p>
+                  
+                  {/* Reality Check - Compact Version */}
+                  {realityCheckData && (
+                    <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                        Reality check — what {formatCurrency(results.maxPropertyPrice)} really buys today
+                      </h4>
+                      <ul className="space-y-1 text-xs text-gray-700">
+                        {realityCheckData.lease?.p25 !== null && realityCheckData.lease?.p75 !== null && (
+                          <li><span className="font-medium">Remaining lease:</span> {realityCheckData.lease.p25}–{realityCheckData.lease.p75} years</li>
+                        )}
+                        {realityCheckData.size?.p25 !== null && realityCheckData.size?.p75 !== null && (
+                          <li><span className="font-medium">Flat size:</span> {realityCheckData.size.p25}–{realityCheckData.size.p75} sqm</li>
+                        )}
+                        {realityCheckData.mrtAccess && (
+                          <li>
+                            <span className="font-medium">MRT access:</span> {realityCheckData.mrtAccess.category === 'mrt-first' ? 'Often MRT-first' : realityCheckData.mrtAccess.category === 'mixed' ? 'Mixed (MRT and bus)' : 'Often bus-first'}
+                          </li>
+                        )}
+                        <li><span className="font-medium">School pressure:</span> Varies significantly by area</li>
+                        {realityCheckData.resaleActivity && (
+                          <li>
+                            <span className="font-medium">Resale activity:</span> {realityCheckData.resaleActivity.level === 'active' ? 'Active' : realityCheckData.resaleActivity.level === 'moderate' ? 'Moderate' : 'Moderate to thin'}
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </ChartCard>
 
@@ -213,8 +252,8 @@ export default function HDBAffordabilityPage() {
                   </div>
                 </div>
 
-                {/* Supporting Details (collapsed by default to reduce scroll) */}
-                <details className="group bg-white/60 rounded-lg border border-gray-200">
+                {/* Supporting Details (expanded by default) */}
+                <details open className="group bg-white/60 rounded-lg border border-gray-200">
                   <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
                     <span className="text-sm font-semibold text-gray-900">More details</span>
                     <ChevronDown className="w-4 h-4 text-gray-500 transition-transform group-open:rotate-180" />
@@ -268,24 +307,25 @@ export default function HDBAffordabilityPage() {
           </ChartCard>
         </div>
 
-
-        {/* Reality Check Card */}
-        {results && (
-          <RealityCheckCard 
-            budget={results.maxPropertyPrice}
-            className="mt-8"
-          />
-        )}
-
         {/* Decision Path Card */}
-        {results && realityCheckData && (
+        {results && (
           <DecisionPathCard
             budget={results.maxPropertyPrice}
-            realityCheckData={realityCheckData}
+            realityCheckData={realityCheckData || {}}
             className="mt-6"
           />
         )}
 
+        {/* Feedback Form */}
+        {results && (
+          <FeedbackForm
+            context="affordability"
+            question="Is this result very different from your expectation? What confuses you most? (Just one sentence)"
+            placeholder="My situation is..."
+            metadata={{ budget: results.maxPropertyPrice }}
+            className="mt-8"
+          />
+        )}
 
       </main>
     </div>

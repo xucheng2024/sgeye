@@ -89,7 +89,7 @@ export default function RealityCheckCard({ budget, flatType, className = '' }: R
   return (
     <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Reality check — what this budget usually means
+        Reality check — what {formatCurrency(budget)} really buys today
       </h3>
       <p className="text-base font-medium text-gray-900 mb-4">
         With a budget around {formatCurrency(budget)}, most families are not choosing neighbourhoods — they are choosing trade-offs.

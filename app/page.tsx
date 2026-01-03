@@ -1,7 +1,17 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowRight, Database, Home as HomeIcon, Users } from 'lucide-react'
+import HomeCTAs from '@/components/HomeCTAs'
+import FeedbackForm from '@/components/FeedbackForm'
+import { AnalyticsEvents } from '@/lib/analytics'
+import { useEffect } from 'react'
 
 export default function Home() {
+  useEffect(() => {
+    AnalyticsEvents.viewHome()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Section 1: Hero - Single Main CTA */}
@@ -14,21 +24,7 @@ export default function Home() {
             <p className="text-base md:text-2xl text-blue-100 mb-7 max-w-3xl mx-auto">
               Compare price, lease risk, schools, and convenience.
             </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
-              <Link
-                href="/hdb/affordability"
-                className="inline-flex items-center justify-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg w-full sm:w-auto sm:min-w-[280px]"
-              >
-                Start with my budget
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/neighbourhoods"
-                className="inline-flex items-center justify-center px-6 py-4 rounded-lg text-lg font-semibold text-white border border-white/40 hover:bg-white/10 hover:border-white/60 transition-colors w-full sm:w-auto sm:min-w-[280px]"
-              >
-                Browse all neighbourhoods
-              </Link>
-            </div>
+            <HomeCTAs />
             <div className="mt-10 pt-6 border-t border-white/10">
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-blue-200/85 leading-relaxed">
                 <span className="inline-flex items-center gap-1.5">
@@ -153,6 +149,17 @@ export default function Home() {
               <div className="text-xs text-gray-400">Transport & accessibility</div>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Feedback Form */}
+      <section className="bg-white py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FeedbackForm
+            context="home"
+            question="What are you hesitating about? (One sentence)"
+            placeholder="My situation is..."
+          />
         </div>
       </section>
 

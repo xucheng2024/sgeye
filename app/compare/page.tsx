@@ -14,6 +14,8 @@ import { ArrowLeft } from 'lucide-react'
 import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { ProfileRecommendationsForCompare } from '@/components/ProfileRecommendations'
+import FeedbackForm from '@/components/FeedbackForm'
+import { AnalyticsEvents } from '@/lib/analytics'
 
 interface NeighbourhoodComparison {
   id: string
@@ -54,6 +56,8 @@ function ComparePageContent() {
       loadComparison()
       // Track compare page visit
       recordBehaviorEvent({ type: 'compare_page' })
+      AnalyticsEvents.viewCompare()
+      AnalyticsEvents.compareView({ count: ids.length })
     }
   }, [idsParam, flatType, months])
 
@@ -1074,6 +1078,15 @@ function ComparePageContent() {
                 </div>
               )
             })()}
+
+            {/* Feedback Form */}
+            <FeedbackForm
+              context="compare"
+              question="Which side are you leaning towards now? Why? (Optional)"
+              placeholder="My situation is..."
+              metadata={ids.length > 0 ? { neighbourhood_ids: ids } : undefined}
+              className="mt-8"
+            />
           </>
         )}
       </div>
