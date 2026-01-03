@@ -111,14 +111,25 @@ function ComparePageContent() {
 
   // Get MRT convenience description
   function getMRTConvenienceDescription(c: NeighbourhoodComparison): string {
-    const stationCount = c.access?.mrt_station_count || 0
-    const distance = c.access?.avg_distance_to_mrt
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
     const accessType = c.access?.mrt_access_type
     
+    // If has stations in area
     if (stationCount > 0) {
+      if (distance && distance > 0) {
+        if (distance <= 500) {
+          return 'Within walking distance (≤500m)'
+        } else if (distance <= 1000) {
+          return 'Within walking distance (500–1000m)'
+        } else {
+          return 'Within walking distance (1000m+)'
+        }
+      }
       return 'Within walking distance'
     }
     
+    // No stations in area, check distance to nearest
     if (distance && distance > 0) {
       if (distance <= 500) {
         return '~5–10 min walk'
@@ -139,15 +150,15 @@ function ComparePageContent() {
   }
 
   function getPublicTransportConvenience(c: NeighbourhoodComparison): string {
-    const stationCount = c.access?.mrt_station_count || 0
-    const distance = c.access?.avg_distance_to_mrt
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
     const accessType = c.access?.mrt_access_type
     
     if (stationCount >= 2 || accessType === 'high') {
       return 'High'
-    } else if (stationCount === 1 || accessType === 'medium' || (distance && distance <= 800)) {
+    } else if (stationCount === 1 || accessType === 'medium' || (distance && distance > 0 && distance <= 800)) {
       return 'Medium'
-    } else if (accessType === 'low' || (distance && distance <= 1500)) {
+    } else if (accessType === 'low' || (distance && distance > 0 && distance <= 1500)) {
       return 'Low–medium'
     } else {
       return 'Low'
@@ -156,29 +167,36 @@ function ComparePageContent() {
 
   // Get MRT coverage tier (for structural comparison)
   function getMRTCoverage(c: NeighbourhoodComparison): string {
-    const stationCount = c.access?.mrt_station_count || 0
-    if (stationCount === 0) return 'None'
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
+    if (stationCount === 0) {
+      // Check if there's walkable distance
+      if (distance && distance > 0 && distance <= 800) {
+        return 'No direct MRT access'
+      }
+      return 'No walkable MRT'
+    }
     if (stationCount === 1) return 'Single-line'
     return 'Multi-line'
   }
 
   // Get walkability tier (for structural comparison)
   function getWalkability(c: NeighbourhoodComparison): string {
-    const stationCount = c.access?.mrt_station_count || 0
-    const distance = c.access?.avg_distance_to_mrt
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
     
     if (stationCount > 0) {
       // Has MRT stations in area
-      if (distance && distance <= 500) {
+      if (distance && distance > 0 && distance <= 500) {
         return '≤500m'
-      } else if (distance && distance <= 1000) {
+      } else if (distance && distance > 0 && distance <= 1000) {
         return '500–1000m'
       } else {
         return '1000m+'
       }
     } else {
       // No MRT in area
-      if (distance && distance <= 1000) {
+      if (distance && distance > 0 && distance <= 1000) {
         return '500–1000m'
       } else {
         return 'Bus-dependent'
@@ -188,13 +206,13 @@ function ComparePageContent() {
 
   // Get transport tier (for structural comparison)
   function getTransportTier(c: NeighbourhoodComparison): string {
-    const stationCount = c.access?.mrt_station_count || 0
-    const distance = c.access?.avg_distance_to_mrt
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
     const accessType = c.access?.mrt_access_type
     
     if (stationCount >= 2 || accessType === 'high') {
       return 'Rail-accessible'
-    } else if (stationCount === 1 || (distance && distance <= 1000)) {
+    } else if (stationCount === 1 || (distance && distance > 0 && distance <= 1000)) {
       return 'Feeder-dependent'
     } else {
       return 'Bus-first'
@@ -285,8 +303,8 @@ function ComparePageContent() {
     })
   }
 
-  // Generate verdict for each metric row - returns icon+keyword for display, full text for tooltip
-  function getMetricVerdict(metric: string, rawValues: (number | null | string)[]): { display: string; tooltip: string; icon: string } | null {
+  // Generate verdict for each metric row - returns neighbourhood name + value judgment
+  function getMetricVerdict(metric: string, rawValues: (number | null | string)[]): { display: string; tooltip: string } | null {
     if (rawValues.length < 2) return null
     
     // Extract numeric values from raw values
@@ -360,65 +378,83 @@ function ComparePageContent() {
       case 'Transactions (12m)':
         const maxTx = Math.max(...numericValues)
         const minTx = Math.min(...numericValues)
-        if (maxTx === minTx) return { display: '≈ Similar', tooltip: 'Similar transaction volume', icon: '≈' }
+        if (maxTx === minTx) return { display: 'Similar activity', tooltip: 'Both have similar transaction volume' }
         const maxTxIdx = numericValues.indexOf(maxTx)
         const txDiffPercent = ((maxTx - minTx) / minTx) * 100
+        const neighbourhoodName = comparisons[maxTxIdx]?.name || 'The former'
         if (txDiffPercent > 50) {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxTxIdx]?.name || 'The former'} is clearly more active`, icon: '🔺' }
+          return { display: `${neighbourhoodName} is more active`, tooltip: `${neighbourhoodName} has clearly more active resale market` }
         } else if (txDiffPercent > 20) {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxTxIdx]?.name || 'The former'} is more active`, icon: '🔺' }
+          return { display: `${neighbourhoodName} is more active`, tooltip: `${neighbourhoodName} has more active resale market` }
         } else {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxTxIdx]?.name || 'The former'} is slightly more active`, icon: '🔺' }
+          return { display: `${neighbourhoodName} is more active`, tooltip: `${neighbourhoodName} has slightly more active resale market` }
         }
       
       case 'Median Price':
-      case 'Price per sqm':
         const maxPrice = Math.max(...numericValues)
         const minPrice = Math.min(...numericValues)
         const diffPercent = ((maxPrice - minPrice) / minPrice) * 100
-        if (diffPercent < 5) return { display: '≈ Similar', tooltip: 'Similar price', icon: '≈' }
+        if (diffPercent < 5) return { display: 'Similar prices', tooltip: 'Both have similar median prices' }
         const maxPriceIdx = numericValues.indexOf(maxPrice)
+        const neighbourhoodNamePrice = comparisons[maxPriceIdx]?.name || 'The former'
         if (diffPercent > 30) {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxPriceIdx]?.name || 'The former'} is substantially higher`, icon: '🔺' }
+          return { display: `${neighbourhoodNamePrice} is more expensive`, tooltip: `${neighbourhoodNamePrice} is substantially higher` }
         } else if (diffPercent > 15) {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxPriceIdx]?.name || 'The former'} is clearly higher`, icon: '🔺' }
+          return { display: `${neighbourhoodNamePrice} is more expensive`, tooltip: `${neighbourhoodNamePrice} is clearly higher` }
         } else {
-          return { display: '🔺 Higher', tooltip: `${comparisons[maxPriceIdx]?.name || 'The former'} is higher`, icon: '🔺' }
+          return { display: `${neighbourhoodNamePrice} is more expensive`, tooltip: `${neighbourhoodNamePrice} is higher` }
+        }
+      case 'Price per sqm':
+        const maxPsm = Math.max(...numericValues)
+        const minPsm = Math.min(...numericValues)
+        const psmDiffPercent = ((maxPsm - minPsm) / minPsm) * 100
+        if (psmDiffPercent < 5) return { display: 'Similar unit prices', tooltip: 'Both have similar price per sqm' }
+        const maxPsmIdx = numericValues.indexOf(maxPsm)
+        const neighbourhoodNamePsm = comparisons[maxPsmIdx]?.name || 'The former'
+        if (psmDiffPercent > 30) {
+          return { display: `${neighbourhoodNamePsm} has higher unit prices`, tooltip: `${neighbourhoodNamePsm} has substantially higher price per sqm` }
+        } else if (psmDiffPercent > 15) {
+          return { display: `${neighbourhoodNamePsm} has higher unit prices`, tooltip: `${neighbourhoodNamePsm} has clearly higher price per sqm` }
+        } else {
+          return { display: `${neighbourhoodNamePsm} has higher unit prices`, tooltip: `${neighbourhoodNamePsm} has higher price per sqm` }
         }
       
       case 'Median Lease (years)':
         const maxLease = Math.max(...numericValues)
         const minLease = Math.min(...numericValues)
         const leaseDiff = maxLease - minLease
-        if (leaseDiff < 2) return { display: '≈ Similar', tooltip: 'Similar remaining lease', icon: '≈' }
+        if (leaseDiff < 2) return { display: 'Similar remaining lease', tooltip: 'Both have similar remaining lease' }
         const maxLeaseIdx = numericValues.indexOf(maxLease)
+        const neighbourhoodNameLease = comparisons[maxLeaseIdx]?.name || 'The former'
         if (leaseDiff > 10) {
-          return { display: '✓ Longer lease', tooltip: `${comparisons[maxLeaseIdx]?.name || 'The former'} has substantially longer lease`, icon: '✓' }
+          return { display: `${neighbourhoodNameLease} has a longer remaining lease`, tooltip: `${neighbourhoodNameLease} has substantially longer lease` }
         } else if (leaseDiff > 5) {
-          return { display: '✓ Longer lease', tooltip: `${comparisons[maxLeaseIdx]?.name || 'The former'} has longer lease`, icon: '✓' }
+          return { display: `${neighbourhoodNameLease} has a longer remaining lease`, tooltip: `${neighbourhoodNameLease} has longer lease` }
         } else {
-          return { display: '✓ Longer lease', tooltip: `${comparisons[maxLeaseIdx]?.name || 'The former'} has slightly longer lease`, icon: '✓' }
+          return { display: `${neighbourhoodNameLease} has a longer remaining lease`, tooltip: `${neighbourhoodNameLease} has slightly longer lease` }
         }
       
       case 'MRT Stations':
         const maxStations = Math.max(...numericValues)
         const minStations = Math.min(...numericValues)
-        if (maxStations === minStations) return { display: '≈ Similar', tooltip: 'Same MRT coverage', icon: '≈' }
+        if (maxStations === minStations) return { display: 'Similar MRT coverage', tooltip: 'Both have same number of MRT stations' }
         const maxStationsIdx = numericValues.indexOf(maxStations)
-        return { display: '🔺 More', tooltip: `${comparisons[maxStationsIdx]?.name || 'The former'} has more MRT stations`, icon: '🔺' }
+        const neighbourhoodNameStations = comparisons[maxStationsIdx]?.name || 'The former'
+        return { display: `${neighbourhoodNameStations} has more MRT stations`, tooltip: `${neighbourhoodNameStations} has better MRT coverage` }
       
       case 'Distance to MRT':
         const minDist = Math.min(...numericValues)
         const maxDist = Math.max(...numericValues)
-        if (Math.abs(maxDist - minDist) < 100) return { display: '≈ Similar', tooltip: 'Similar distance to MRT', icon: '≈' }
+        if (Math.abs(maxDist - minDist) < 100) return { display: 'Similar distance to MRT', tooltip: 'Both have similar distance to nearest MRT' }
         const minDistIdx = numericValues.indexOf(minDist)
+        const neighbourhoodNameDist = comparisons[minDistIdx]?.name || 'The former'
         const distDiffPercent = ((maxDist - minDist) / minDist) * 100
         if (distDiffPercent > 50) {
-          return { display: '🔻 Closer', tooltip: `${comparisons[minDistIdx]?.name || 'The former'} is substantially closer`, icon: '🔻' }
+          return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is substantially closer to nearest MRT` }
         } else if (distDiffPercent > 20) {
-          return { display: '🔻 Closer', tooltip: `${comparisons[minDistIdx]?.name || 'The former'} is closer`, icon: '🔻' }
+          return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is closer to nearest MRT` }
         } else {
-          return { display: '🔻 Closer', tooltip: `${comparisons[minDistIdx]?.name || 'The former'} is slightly closer`, icon: '🔻' }
+          return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is slightly closer to nearest MRT` }
         }
       
       default:
@@ -453,16 +489,28 @@ function ComparePageContent() {
       // Budget + long-term value focus (c1 cheaper and longer lease)
       if (priceDiff < -15 && leaseDiff > 5) {
         conclusion = `If budget and long-term value matter more, ${c1.name.toUpperCase()} is the safer choice.`
-        facts.push(`${c1.name} has lower price and longer remaining lease`)
-        if (priceDiff < -30) facts.push(`Substantially lower entry cost`)
-        if (leaseDiff > 10) facts.push(`Significantly longer lease provides more flexibility`)
+        const tx1 = c1.summary?.tx_12m || 0
+        const tx2 = c2.summary?.tx_12m || 0
+        const txDiff = tx1 - tx2
+        if (txDiff > 20) {
+          facts.push(`Lower median price with more active resale market`)
+        } else {
+          facts.push(`Lower median price`)
+        }
+        facts.push(`Longer remaining lease offers greater long-term flexibility`)
       }
       // Budget + long-term value focus (c2 cheaper and longer lease)
       else if (priceDiff > 15 && leaseDiff < -5) {
         conclusion = `If budget and long-term value matter more, ${c2.name.toUpperCase()} is the safer choice.`
-        facts.push(`${c2.name} has lower price and longer remaining lease`)
-        if (priceDiff > 30) facts.push(`Substantially lower entry cost`)
-        if (leaseDiff < -10) facts.push(`Significantly longer lease provides more flexibility`)
+        const tx1 = c1.summary?.tx_12m || 0
+        const tx2 = c2.summary?.tx_12m || 0
+        const txDiff = tx2 - tx1
+        if (txDiff > 20) {
+          facts.push(`Lower median price with more active resale market`)
+        } else {
+          facts.push(`Lower median price`)
+        }
+        facts.push(`Longer remaining lease offers greater long-term flexibility`)
       }
       // Location + price premium (c1 more expensive but better location)
       else if (priceDiff > 15 && mrtStations1 > mrtStations2) {
@@ -663,12 +711,7 @@ function ComparePageContent() {
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <div className="relative group inline-block">
-                              <span className="font-medium text-gray-700 cursor-help">{verdict.display}</span>
-                              <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                {verdict.tooltip}
-                              </div>
-                            </div>
+                            <span className="text-gray-700">{verdict.display}</span>
                           ) : ''}
                         </td>
                       )
@@ -686,12 +729,7 @@ function ComparePageContent() {
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <div className="relative group inline-block">
-                              <span className="font-medium text-gray-700 cursor-help">{verdict.display}</span>
-                              <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                {verdict.tooltip}
-                              </div>
-                            </div>
+                            <span className="text-gray-700">{verdict.display}</span>
                           ) : ''}
                         </td>
                       )
@@ -709,12 +747,7 @@ function ComparePageContent() {
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <div className="relative group inline-block">
-                              <span className="font-medium text-gray-700 cursor-help">{verdict.display}</span>
-                              <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                {verdict.tooltip}
-                              </div>
-                            </div>
+                            <span className="text-gray-700">{verdict.display}</span>
                           ) : ''}
                         </td>
                       )
@@ -732,12 +765,7 @@ function ComparePageContent() {
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <div className="relative group inline-block">
-                              <span className="font-medium text-gray-700 cursor-help">{verdict.display}</span>
-                              <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                {verdict.tooltip}
-                              </div>
-                            </div>
+                            <span className="text-gray-700">{verdict.display}</span>
                           ) : ''}
                         </td>
                       )
@@ -789,13 +817,8 @@ function ComparePageContent() {
                             return (
                               <td className="px-4 py-3 text-sm">
                                 {verdict ? (
-                                  <div className="relative group inline-block">
-                                    <span className="font-medium text-gray-700 cursor-help">{verdict.display}</span>
-                                    <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                      {verdict.tooltip}
-                                    </div>
-                                  </div>
-                                ) : <span className="font-medium text-gray-700">≈ Similar</span>}
+                                  <span className="text-gray-700">{verdict.display}</span>
+                                ) : <span className="text-gray-700">Similar distance to MRT</span>}
                               </td>
                             )
                           })()}
@@ -912,14 +935,14 @@ function ComparePageContent() {
                       const coverage2 = getMRTCoverage(comparisons[1])
                       
                       if (tier1 === tier2 && coverage1 === coverage2) {
-                        return `Both areas have similar transport accessibility. This may affect daily commute convenience over time.`
+                        return `Both areas have similar transport accessibility. This means daily commutes may rely more on buses and transfers over time.`
                       } else {
                         const getDesc = (tier: string, name: string) => {
                           if (tier === 'Bus-first') return `${name}: Mostly bus-dependent, limited MRT access`
                           if (tier === 'Feeder-dependent') return `${name}: Feeder-dependent, single MRT line`
                           return `${name}: Rail-accessible, multiple lines nearby`
                         }
-                        return `${getDesc(tier1, comparisons[0].name)}. ${getDesc(tier2, comparisons[1].name)}. → This may affect daily commute convenience over time.`
+                        return `${getDesc(tier1, comparisons[0].name)}. ${getDesc(tier2, comparisons[1].name)}. This means daily commutes may rely more on buses and transfers over time.`
                       }
                     })()}
                   </p>
@@ -971,27 +994,45 @@ function ComparePageContent() {
             {/* Next dimension: School considerations */}
             {comparisons.length >= 2 && (() => {
               const planningAreas = comparisons
-                .map(c => c.planning_area?.name)
-                .filter((name): name is string => name !== null && name !== undefined)
-                .filter((name, index, self) => self.indexOf(name) === index) // unique
+                .map(c => c.planning_area)
+                .filter((pa): pa is { id: string; name: string } => pa !== null && pa !== undefined)
               
-              if (planningAreas.length < 2) return null
+              const uniquePlanningAreas = planningAreas.filter((pa, index, self) => 
+                self.findIndex(p => p.id === pa.id) === index
+              )
               
-              const compareUrl = `/family/psle-school?compare=${planningAreas.slice(0, 2).join(',')}`
+              if (uniquePlanningAreas.length < 2) {
+                // If same planning area, still show link but to single area
+                if (uniquePlanningAreas.length === 1) {
+                  return (
+                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-8">
+                      <p className="text-sm text-gray-700 mb-2">
+                        Next step: Consider school pressure at the planning area level
+                      </p>
+                      <Link
+                        href={`/family/psle-school?planning_area_id=${uniquePlanningAreas[0].id}`}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        Compare school pressure →
+                      </Link>
+                    </div>
+                  )
+                }
+                return null
+              }
+              
+              const compareUrl = `/family/psle-school?compare=${uniquePlanningAreas.slice(0, 2).map(pa => pa.name).join(',')}`
               
               return (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 mb-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                    Next: School considerations
-                  </h2>
-                  <p className="text-sm text-gray-700 mb-4">
-                    Housing trade-offs are only part of the decision. School competition differs by planning area and can significantly affect family experience.
+                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-8">
+                  <p className="text-sm text-gray-700 mb-2">
+                    Next step: Consider school pressure at the planning area level
                   </p>
                   <Link
                     href={compareUrl}
-                    className="inline-flex items-center gap-2 text-base font-medium text-blue-700 hover:text-blue-800 transition-colors"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                   >
-                    Compare school pressure for these areas →
+                    Compare school pressure →
                   </Link>
                 </div>
               )

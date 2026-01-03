@@ -98,18 +98,42 @@ export async function POST(request: NextRequest) {
           .lte('month', endDate.toISOString().split('T')[0])
         
         if (monthlyData && monthlyData.length > 0) {
-          const prices = monthlyData.map(m => Number(m.median_price)).filter(p => p > 0 && !isNaN(p)).sort((a, b) => a - b)
-          const psms = monthlyData.map(m => Number(m.median_psm)).filter(p => p > 0 && !isNaN(p)).sort((a, b) => a - b)
-          const leases = monthlyData.map(m => Number(m.median_lease_years)).filter(l => l > 0 && !isNaN(l)).sort((a, b) => a - b)
+          // Filter out null/undefined values and convert to numbers
+          const prices = monthlyData
+            .map(m => m.median_price != null ? Number(m.median_price) : null)
+            .filter((p): p is number => p !== null && p > 0 && !isNaN(p))
+            .sort((a, b) => a - b)
+          
+          const psms = monthlyData
+            .map(m => m.median_psm != null ? Number(m.median_psm) : null)
+            .filter((p): p is number => p !== null && p > 0 && !isNaN(p))
+            .sort((a, b) => a - b)
+          
+          const leases = monthlyData
+            .map(m => m.median_lease_years != null ? Number(m.median_lease_years) : null)
+            .filter((l): l is number => l !== null && l > 0 && !isNaN(l))
+            .sort((a, b) => a - b)
+          
           const txCounts = monthlyData.map(m => Number(m.tx_count) || 0)
+          const totalTx = txCounts.reduce((a, b) => a + b, 0)
+          
+          // Calculate median: if even number of elements, take average of middle two
+          const getMedian = (arr: number[]): number | null => {
+            if (arr.length === 0) return null
+            if (arr.length === 1) return arr[0]
+            const mid = Math.floor(arr.length / 2)
+            return arr.length % 2 === 0 
+              ? (arr[mid - 1] + arr[mid]) / 2 
+              : arr[mid]
+          }
           
           return {
             id,
             summary: {
-              tx_12m: txCounts.reduce((a, b) => a + b, 0),
-              median_price_12m: prices.length > 0 ? prices[Math.floor(prices.length / 2)] : null,
-              median_psm_12m: psms.length > 0 ? psms[Math.floor(psms.length / 2)] : null,
-              median_lease_years_12m: leases.length > 0 ? leases[Math.floor(leases.length / 2)] : null,
+              tx_12m: totalTx,
+              median_price_12m: getMedian(prices),
+              median_psm_12m: getMedian(psms),
+              median_lease_years_12m: getMedian(leases),
               updated_at: new Date().toISOString()
             }
           }

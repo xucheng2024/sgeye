@@ -10,7 +10,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar } from 'lucide-react'
+import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar, ArrowRight, School, AlertCircle } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface Neighbourhood {
@@ -183,6 +183,41 @@ export default function NeighbourhoodDetailPage() {
     return 'None'
   }
 
+  function getTransportLabel(): string {
+    const mrtAccess = neighbourhood?.access?.mrt_access_type
+    const mrtStationCount = neighbourhood?.access?.mrt_station_count || 0
+    const mrtDistance = neighbourhood?.access?.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null
+    
+    if (mrtAccess === 'high' || mrtStationCount > 0) {
+      return 'Good'
+    } else if (mrtAccess === 'medium' || (mrtDistance && mrtDistance > 0 && mrtDistance <= 800)) {
+      return 'Moderate'
+    } else if (mrtAccess === 'low' || (mrtDistance && mrtDistance > 800)) {
+      return 'Limited'
+    }
+    return 'Limited'
+  }
+
+  function getLeaseRange(): { min: number; max: number } | null {
+    if (!neighbourhood?.summary?.median_lease_years_12m) return null
+    
+    const currentLease = Number(neighbourhood.summary.median_lease_years_12m)
+    // Estimate range: ±5 years from median
+    return {
+      min: Math.max(0, Math.floor(currentLease - 5)),
+      max: Math.ceil(currentLease + 5)
+    }
+  }
+
+  function getLeaseRiskLevel(): 'low' | 'medium' | 'high' {
+    const lease = neighbourhood?.summary?.median_lease_years_12m ? Number(neighbourhood.summary.median_lease_years_12m) : null
+    if (!lease) return 'medium'
+    
+    if (lease >= 80) return 'low'
+    if (lease >= 70) return 'medium'
+    return 'high'
+  }
+
   function getMainSignal(n: Neighbourhood): { strengths: string[]; watchOuts: string[] } {
     const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
     const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
@@ -347,9 +382,12 @@ export default function NeighbourhoodDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <Link href={returnTo || '/neighbourhoods'} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4">
+          <Link 
+            href={returnTo || '/neighbourhoods'} 
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+          >
             <ArrowLeft className="w-4 h-4" />
-            Back to Neighbourhoods
+            {returnTo?.includes('/compare') ? 'Back to comparison' : 'Back to Neighbourhoods'}
           </Link>
           <div className="flex items-start justify-between">
             <div>
@@ -434,6 +472,82 @@ export default function NeighbourhoodDetailPage() {
           )}
         </div>
 
+        {/* Transport hint */}
+        {neighbourhood.access && (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Train className="w-5 h-5 text-gray-600" />
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Transport access: {getTransportLabel()}
+                  </div>
+                  {(() => {
+                    const mrtAccess = neighbourhood.access?.mrt_access_type
+                    const mrtDistance = neighbourhood.access?.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null
+                    if (mrtAccess === 'none' || !mrtAccess) {
+                      return <div className="text-xs text-gray-600">Bus-first, limited walkable MRT</div>
+                    }
+                    return null
+                  })()}
+                </div>
+              </div>
+              <Link
+                href="/hdb/transport"
+                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                Explore transport accessibility
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Lease context */}
+        {neighbourhood.summary?.median_lease_years_12m && (() => {
+          const leaseRange = getLeaseRange()
+          const riskLevel = getLeaseRiskLevel()
+          const lease = Number(neighbourhood.summary.median_lease_years_12m)
+          
+          return (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+              <div className="flex items-start gap-3 mb-3">
+                <AlertCircle className={`w-5 h-5 ${
+                  riskLevel === 'high' ? 'text-red-600' : 
+                  riskLevel === 'medium' ? 'text-amber-600' : 
+                  'text-green-600'
+                }`} />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Lease context
+                  </h3>
+                  <p className="text-sm text-gray-700 mb-3">
+                    {leaseRange ? (
+                      <>Most resale flats in {neighbourhood.name} have remaining leases between {leaseRange.min}–{leaseRange.max} years.</>
+                    ) : (
+                      <>Most resale flats in {neighbourhood.name} have remaining leases around {lease.toFixed(0)} years.</>
+                    )}
+                    {riskLevel === 'high' ? (
+                      <> This may affect long-term resale value and financing options.</>
+                    ) : riskLevel === 'medium' ? (
+                      <> This is generally acceptable for owner-occupation, but may affect long-term resale.</>
+                    ) : (
+                      <> This is generally acceptable for owner-occupation and long-term resale.</>
+                    )}
+                  </p>
+                  <Link
+                    href="/hdb/lease-price"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Understand lease decay and long-term risk
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Module 3: Contextual Comparison */}
         {neighbourhood.planning_area && (
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
@@ -461,16 +575,24 @@ export default function NeighbourhoodDetailPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Price Trends (24 months)</h2>
-            <select
-              value={flatType}
-              onChange={(e) => setFlatType(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="3 ROOM">3 ROOM</option>
-              <option value="4 ROOM">4 ROOM</option>
-              <option value="5 ROOM">5 ROOM</option>
-              <option value="EXECUTIVE">EXECUTIVE</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <select
+                value={flatType}
+                onChange={(e) => setFlatType(e.target.value)}
+                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="3 ROOM">3 ROOM</option>
+                <option value="4 ROOM">4 ROOM</option>
+                <option value="5 ROOM">5 ROOM</option>
+                <option value="EXECUTIVE">EXECUTIVE</option>
+              </select>
+              <Link
+                href="/hdb"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View broader market trends →
+              </Link>
+            </div>
           </div>
           {chartData.length > 0 ? (
             <>
@@ -504,6 +626,53 @@ export default function NeighbourhoodDetailPage() {
           ) : (
             <p className="text-gray-500 text-center py-8">No trend data available</p>
           )}
+        </div>
+
+        {/* School context */}
+        {neighbourhood.planning_area && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <div className="flex items-start gap-3">
+              <School className="w-5 h-5 text-gray-600" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  School considerations
+                </h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  School competition is assessed at the planning area level.
+                  <br />
+                  <strong>{neighbourhood.name}</strong> belongs to the <strong>{neighbourhood.planning_area.name}</strong> planning area.
+                </p>
+                <Link
+                  href={`/family/psle-school?planning_area_id=${neighbourhood.planning_area.id}`}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  View school pressure in {neighbourhood.planning_area.name}
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Compare CTA */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Compare {neighbourhood.name} with another neighbourhood
+              </h3>
+              <p className="text-sm text-gray-600">
+                See side-by-side trade-offs in price, lease, transport, and school pressure.
+              </p>
+            </div>
+            <Link
+              href={`/neighbourhoods?add_to_compare=${neighbourhood.id}`}
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors whitespace-nowrap"
+            >
+              Compare now
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
         </div>
 
       </div>

@@ -138,6 +138,7 @@ function NeighbourhoodsPageContent() {
     const urlRegion = searchParams.get('region') || 'all'
     const urlPriceMax = searchParams.get('price_max')
     const urlLeaseMin = searchParams.get('lease_min')
+    const addToCompare = searchParams.get('add_to_compare')
     
     // Convert price_max to price_tier if price_tier not provided
     if (urlPriceTier === 'all' && urlPriceMax) {
@@ -180,6 +181,26 @@ function NeighbourhoodsPageContent() {
     }
     if (urlRegion !== region) {
       setRegion(urlRegion)
+    }
+    
+    // Handle add_to_compare parameter
+    if (addToCompare && !selectedForCompare.has(addToCompare)) {
+      const newSet = new Set(selectedForCompare)
+      if (newSet.size < 3) {
+        newSet.add(addToCompare)
+        setSelectedForCompare(newSet)
+        // Remove the parameter from URL after processing
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('add_to_compare')
+        window.history.replaceState({}, '', newUrl.toString())
+        // Scroll to the selected card after a short delay to allow rendering
+        setTimeout(() => {
+          const element = document.getElementById(`neighbourhood-${addToCompare}`)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 100)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -1109,13 +1130,30 @@ function NeighbourhoodsPageContent() {
             ) : (
               <>
                 <div>
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-base font-semibold text-gray-900">
                     1 neighbourhood selected
                   </div>
-                  <div className="text-xs text-gray-600 mt-0.5">
-                    Select one more to compare side by side
+                  <div className="text-sm text-gray-600 mt-0.5">
+                    Select one more to compare side by side.
                   </div>
                 </div>
+                <button
+                  onClick={() => {
+                    if (selectedForCompare.size < 2) {
+                      // Scroll to top of neighbourhood list to help user find another one
+                      const firstCard = document.querySelector('[id^="neighbourhood-"]')
+                      if (firstCard) {
+                        firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                    } else {
+                      handleCompareSelected()
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  {selectedForCompare.size >= 2 ? 'Compare now' : 'Select one more'}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </>
             )}
           </div>
@@ -1284,6 +1322,7 @@ function NeighbourhoodsPageContent() {
                 
                 return (
                   <div
+                    id={`neighbourhood-${neighbourhood.id}`}
                     key={uniqueKey}
                     className={`bg-white rounded-lg border-2 p-6 hover:shadow-lg transition-all relative ${
                       isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
@@ -1427,7 +1466,7 @@ function NeighbourhoodsPageContent() {
                                 ✓ {mrtInfo.text}
                               </span>
                             ) : mrtInfo.text !== 'None' ? (
-                              <span className="font-semibold text-gray-700">
+                              <span className="font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
                                 {mrtInfo.text}
                               </span>
                             ) : (
