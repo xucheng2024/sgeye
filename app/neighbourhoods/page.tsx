@@ -35,6 +35,8 @@ interface Neighbourhood {
   summary: {
     tx_12m: number
     median_price_12m: number | null
+    p25_price_12m: number | null
+    p75_price_12m: number | null
     median_psm_12m: number | null
     median_lease_years_12m: number | null
     avg_floor_area_12m?: number | null
@@ -43,6 +45,8 @@ interface Neighbourhood {
     flat_type: string
     tx_12m: number
     median_price_12m: number | null
+    p25_price_12m: number | null
+    p75_price_12m: number | null
     median_psm_12m: number | null
     median_lease_years_12m: number | null
     avg_floor_area_12m?: number | null
@@ -374,6 +378,8 @@ function NeighbourhoodsPageContent() {
                 summary: {
                   tx_12m: ftDetail.tx_12m,
                   median_price_12m: ftDetail.median_price_12m,
+                  p25_price_12m: ftDetail.p25_price_12m,
+                  p75_price_12m: ftDetail.p75_price_12m,
                   median_psm_12m: ftDetail.median_psm_12m,
                   median_lease_years_12m: ftDetail.median_lease_years_12m,
                   avg_floor_area_12m: ftDetail.avg_floor_area_12m
@@ -1419,7 +1425,15 @@ function NeighbourhoodsPageContent() {
                       {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
                         <div className="flex items-center justify-between">
                           <span className="text-gray-600">Price:</span>
-                          <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
+                          <div className="flex flex-col items-end">
+                            <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
+                            {neighbourhood.summary.p25_price_12m != null && neighbourhood.summary.p75_price_12m != null && 
+                             Number(neighbourhood.summary.p25_price_12m) > 0 && Number(neighbourhood.summary.p75_price_12m) > 0 && (
+                              <span className="text-xs text-gray-500 mt-0.5">
+                                {formatCurrency(Number(neighbourhood.summary.p25_price_12m))} - {formatCurrency(Number(neighbourhood.summary.p75_price_12m))}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                       

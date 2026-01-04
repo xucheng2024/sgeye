@@ -337,7 +337,7 @@ export async function GET(request: NextRequest) {
     
     let monthlyQuery = supabase
       .from('agg_neighbourhood_monthly')
-      .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, avg_floor_area, month')
+      .select('neighbourhood_id, flat_type, median_price, p25_price, p75_price, median_psm, median_lease_years, tx_count, avg_floor_area, month')
       .in('neighbourhood_id', neighbourhoodIds)
       .gte('month', startDate.toISOString().split('T')[0])
       .lte('month', endDate.toISOString().split('T')[0])
@@ -362,6 +362,8 @@ export async function GET(request: NextRequest) {
       neighbourhood_id: string
       flat_type: string
       prices: number[]
+      p25_prices: number[]
+      p75_prices: number[]
       psms: number[]
       leases: number[]
       areas: number[]
@@ -379,6 +381,8 @@ export async function GET(request: NextRequest) {
             neighbourhood_id: nbhdId,
             flat_type: flatTypeKey,
             prices: [],
+            p25_prices: [],
+            p75_prices: [],
             psms: [],
             leases: [],
             areas: [],
@@ -389,6 +393,8 @@ export async function GET(request: NextRequest) {
         
         // Collect values for this neighbourhood + flat_type combination
         if (item.median_price) entry.prices.push(Number(item.median_price))
+        if (item.p25_price) entry.p25_prices.push(Number(item.p25_price))
+        if (item.p75_price) entry.p75_prices.push(Number(item.p75_price))
         if (item.median_psm) entry.psms.push(Number(item.median_psm))
         if (item.median_lease_years) entry.leases.push(Number(item.median_lease_years))
         if (item.avg_floor_area) entry.areas.push(Number(item.avg_floor_area))
@@ -396,7 +402,15 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Calculate medians for each neighbourhood + flat_type combination
+    // Helper function to calculate percentile
+    const getPercentile = (arr: number[], percentile: number): number | null => {
+      if (arr.length === 0) return null
+      const sorted = [...arr].sort((a, b) => a - b)
+      const index = Math.floor((sorted.length - 1) * percentile)
+      return sorted[index] || null
+    }
+    
+    // Calculate medians and percentiles for each neighbourhood + flat_type combination
     const flatTypeSummaries = Array.from(tempSummaryMap.values()).map(entry => {
       const sortedPrices = entry.prices.sort((a, b) => a - b)
       const sortedPsms = entry.psms.sort((a, b) => a - b)
@@ -407,11 +421,22 @@ export async function GET(request: NextRequest) {
         ? entry.areas.reduce((sum, val) => sum + val, 0) / entry.areas.length 
         : null
       
+      // Calculate p25 and p75 from monthly p25/p75 values if available, otherwise from median prices
+      const p25_price_12m = entry.p25_prices.length > 0 
+        ? getPercentile(entry.p25_prices, 0.5) // median of monthly p25 values
+        : (sortedPrices.length > 0 ? getPercentile(sortedPrices, 0.25) : null)
+      
+      const p75_price_12m = entry.p75_prices.length > 0 
+        ? getPercentile(entry.p75_prices, 0.5) // median of monthly p75 values
+        : (sortedPrices.length > 0 ? getPercentile(sortedPrices, 0.75) : null)
+      
       return {
         neighbourhood_id: entry.neighbourhood_id,
         flat_type: entry.flat_type,
         tx_12m: entry.total_tx,
         median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
+        p25_price_12m,
+        p75_price_12m,
         median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
         median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
         avg_floor_area_12m: avgArea,
@@ -421,6 +446,8 @@ export async function GET(request: NextRequest) {
     // Now combine all flat types for each neighbourhood (for "All" view)
     const neighbourhoodSummaries = new Map<string, {
       prices: number[]
+      p25_prices: number[]
+      p75_prices: number[]
       psms: number[]
       leases: number[]
       areas: number[]
@@ -431,6 +458,8 @@ export async function GET(request: NextRequest) {
       if (!neighbourhoodSummaries.has(summary.neighbourhood_id)) {
         neighbourhoodSummaries.set(summary.neighbourhood_id, {
           prices: [],
+          p25_prices: [],
+          p75_prices: [],
           psms: [],
           leases: [],
           areas: [],
@@ -439,8 +468,10 @@ export async function GET(request: NextRequest) {
       }
       const nbhdSummary = neighbourhoodSummaries.get(summary.neighbourhood_id)!
       
-      // Add the flat_type's median to the neighbourhood's collection
+      // Add the flat_type's median and percentiles to the neighbourhood's collection
       if (summary.median_price_12m) nbhdSummary.prices.push(summary.median_price_12m)
+      if (summary.p25_price_12m) nbhdSummary.p25_prices.push(summary.p25_price_12m)
+      if (summary.p75_price_12m) nbhdSummary.p75_prices.push(summary.p75_price_12m)
       if (summary.median_psm_12m) nbhdSummary.psms.push(summary.median_psm_12m)
       if (summary.median_lease_years_12m) nbhdSummary.leases.push(summary.median_lease_years_12m)
       if (summary.avg_floor_area_12m) nbhdSummary.areas.push(summary.avg_floor_area_12m)
@@ -450,6 +481,8 @@ export async function GET(request: NextRequest) {
     // Final aggregation: median of flat_type medians
     const summaryData = Array.from(neighbourhoodSummaries.entries()).map(([nbhdId, data]) => {
       const sortedPrices = data.prices.sort((a, b) => a - b)
+      const sortedP25Prices = data.p25_prices.sort((a, b) => a - b)
+      const sortedP75Prices = data.p75_prices.sort((a, b) => a - b)
       const sortedPsms = data.psms.sort((a, b) => a - b)
       const sortedLeases = data.leases.sort((a, b) => a - b)
       
@@ -458,10 +491,19 @@ export async function GET(request: NextRequest) {
         ? data.areas.reduce((sum, val) => sum + val, 0) / data.areas.length 
         : null
       
+      // Calculate p25 and p75 from flat_type values
+      const getPercentile = (arr: number[], percentile: number): number | null => {
+        if (arr.length === 0) return null
+        const index = Math.floor((arr.length - 1) * percentile)
+        return arr[index] || null
+      }
+      
       return {
         neighbourhood_id: nbhdId,
         tx_12m: data.total_tx,
         median_price_12m: sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : null,
+        p25_price_12m: sortedP25Prices.length > 0 ? sortedP25Prices[Math.floor(sortedP25Prices.length / 2)] : (sortedPrices.length > 0 ? getPercentile(sortedPrices, 0.25) : null),
+        p75_price_12m: sortedP75Prices.length > 0 ? sortedP75Prices[Math.floor(sortedP75Prices.length / 2)] : (sortedPrices.length > 0 ? getPercentile(sortedPrices, 0.75) : null),
         median_psm_12m: sortedPsms.length > 0 ? sortedPsms[Math.floor(sortedPsms.length / 2)] : null,
         median_lease_years_12m: sortedLeases.length > 0 ? sortedLeases[Math.floor(sortedLeases.length / 2)] : null,
         avg_floor_area_12m: avgArea,
@@ -669,6 +711,8 @@ export async function GET(request: NextRequest) {
         summary: summary ? {
           tx_12m: summary.tx_12m,
           median_price_12m: summary.median_price_12m,
+          p25_price_12m: summary.p25_price_12m,
+          p75_price_12m: summary.p75_price_12m,
           median_psm_12m: summary.median_psm_12m,
           median_lease_years_12m: summary.median_lease_years_12m,
           avg_floor_area_12m: flatType ? 
@@ -680,6 +724,8 @@ export async function GET(request: NextRequest) {
           flat_type: ft.flat_type,
           tx_12m: ft.tx_12m,
           median_price_12m: ft.median_price_12m,
+          p25_price_12m: ft.p25_price_12m,
+          p75_price_12m: ft.p75_price_12m,
           median_psm_12m: ft.median_psm_12m,
           median_lease_years_12m: ft.median_lease_years_12m,
           avg_floor_area_12m: ft.avg_floor_area_12m
