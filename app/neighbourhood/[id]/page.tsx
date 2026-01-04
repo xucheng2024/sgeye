@@ -16,6 +16,8 @@ import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { ProfileFitReasons } from '@/components/ProfileRecommendations'
 import { AnalyticsEvents } from '@/lib/analytics'
+import LivingDimensions from '@/components/LivingDimensions'
+import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 
 interface Neighbourhood {
   id: string
@@ -394,6 +396,7 @@ export default function NeighbourhoodDetailPage() {
 
   const signal = getMainSignal(neighbourhood)
   const comparisonPoints = getComparisonPoints(neighbourhood, nearbyNeighbourhoods)
+  const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -469,6 +472,7 @@ export default function NeighbourhoodDetailPage() {
                   <span>{neighbourhood.planning_area.name}</span>
                 </div>
               )}
+              {livingNotes && <LivingDimensions notes={livingNotes} className="mb-2" />}
             </div>
           </div>
         </div>

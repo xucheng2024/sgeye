@@ -16,6 +16,8 @@ import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Z
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
+import LivingDimensions from '@/components/LivingDimensions'
+import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -1357,6 +1359,7 @@ function NeighbourhoodsPageContent() {
                 const displayFlatType = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type
                 // Use unique key: neighbourhood_id + flat_type (for "All" mode) or just neighbourhood_id (for specific flat type)
                 const uniqueKey = displayFlatType ? `${neighbourhood.id}-${displayFlatType}` : neighbourhood.id
+                const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
                 
                 return (
                   <div
@@ -1412,6 +1415,8 @@ function NeighbourhoodsPageContent() {
                         <Plus className={`w-4 h-4 ${isSelected ? 'rotate-45' : ''} transition-transform`} />
                       </button>
                     </div>
+
+                    {livingNotes && <LivingDimensions notes={livingNotes} className="mb-4" />}
 
                     {/* Key metrics (condensed) - Fixed order: Price → Area → Lease → MRT */}
                     <div className="space-y-1.5 text-sm mb-4">
