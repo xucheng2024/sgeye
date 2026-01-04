@@ -12,7 +12,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info } from 'lucide-react'
+import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info, ChevronDown } from 'lucide-react'
 import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
@@ -170,12 +170,14 @@ function NeighbourhoodsPageContent() {
     // Convert price_max to price_tier if price_tier not provided
     if (urlPriceTier === 'all' && urlPriceMax) {
       const maxPrice = parseFloat(urlPriceMax)
-      if (maxPrice <= 500000) {
-        urlPriceTier = 'low'
-      } else if (maxPrice <= 1000000) {
-        urlPriceTier = 'medium'
-      } else {
-        urlPriceTier = 'high'
+      if (!isNaN(maxPrice)) {
+        if (maxPrice <= 500000) {
+          urlPriceTier = 'low'
+        } else if (maxPrice <= 1000000) {
+          urlPriceTier = 'medium'
+        } else {
+          urlPriceTier = 'high'
+        }
       }
     }
     
@@ -856,7 +858,7 @@ function NeighbourhoodsPageContent() {
             {/* Flat Type Filter */}
             <div>
               <label htmlFor="flat-type" className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Flat Type
+                Flat size
               </label>
               <select
                 id="flat-type"
@@ -864,16 +866,16 @@ function NeighbourhoodsPageContent() {
                 onChange={(e) => setSelectedFlatType(e.target.value)}
                 className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
               >
-                <option value="All">All Types</option>
-                <option value="3 ROOM">3 ROOM</option>
-                <option value="4 ROOM">4 ROOM</option>
-                <option value="5 ROOM">5 ROOM</option>
-                <option value="EXECUTIVE">EXECUTIVE</option>
+                <option value="All">Any size</option>
+                <option value="3 ROOM">3-room</option>
+                <option value="4 ROOM">4-room</option>
+                <option value="5 ROOM">5-room</option>
+                <option value="EXECUTIVE">Executive</option>
               </select>
             </div>
 
             {/* Planning Area Filter */}
-            <div className="flex-shrink-0" style={{ minWidth: '180px' }}>
+            <div className="shrink-0" style={{ minWidth: '180px' }}>
               <div className="flex items-center gap-1 mb-1.5">
                 <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700">
                   Planning Area
@@ -917,7 +919,7 @@ function NeighbourhoodsPageContent() {
             </div>
 
             {/* Region Filter */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Region
               </label>
@@ -972,168 +974,121 @@ function NeighbourhoodsPageContent() {
           {/* Second Row: Price Range, Remaining Lease, MRT Distance */}
           <div className="flex flex-wrap gap-4">
             {/* Price Range Filter */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Price Range
               </label>
               <div className="flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => setPriceTier('all')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  All
-                </button>
-                <button
                   onClick={() => setPriceTier('low')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     priceTier === 'low'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
                 >
-                  Low
+                  Lower-priced
                 </button>
                 <button
                   onClick={() => setPriceTier('medium')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     priceTier === 'medium'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
                 >
-                  Med
+                  Mid-range
                 </button>
                 <button
                   onClick={() => setPriceTier('high')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     priceTier === 'high'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
                 >
-                  High
+                  Higher-priced
                 </button>
               </div>
             </div>
 
-            {/* Lease Range Filter */}
-            <div className="flex-shrink-0">
-              <div className="flex items-center gap-1 mb-1.5">
-                <label className="block text-xs font-semibold text-gray-700">
-                  Remaining Lease
-                </label>
-                <div className="relative group">
-                  <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-                  <div className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <p className="mb-2">Why does lease matter?</p>
-                    <p className="mb-2 text-gray-300">Shorter remaining leases can limit resale value and future financing.</p>
-                    <Link
-                      href="/hdb/lease-price"
-                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Learn more about lease risks
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
+            {/* Remaining Lease Filter */}
+            <div className="shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Lease safety
+              </label>
               <div className="flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => setLeaseTier('all')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'all'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  All
-                </button>
-                <button
                   onClick={() => setLeaseTier('low')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     leaseTier === 'low'
                       ? 'bg-red-600 text-white border-red-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
                   }`}
-                  title="< 70 years remaining lease (High Risk)"
+                  title="< 70 years remaining lease"
                 >
-                  Low
+                  Short
                 </button>
                 <button
                   onClick={() => setLeaseTier('medium')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     leaseTier === 'medium'
                       ? 'bg-yellow-600 text-white border-yellow-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
                   }`}
-                  title="70-80 years remaining lease (Medium Risk)"
+                  title="70-80 years remaining lease"
                 >
-                  Med
+                  Typical
                 </button>
                 <button
                   onClick={() => setLeaseTier('high')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
                     leaseTier === 'high'
                       ? 'bg-green-600 text-white border-green-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
                   }`}
-                  title="≥ 80 years remaining lease (Low Risk)"
+                  title="≥ 80 years remaining lease"
                 >
-                  High
+                  Safe
                 </button>
               </div>
             </div>
 
             {/* MRT Distance Filter */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 MRT Distance
               </label>
               <div className="flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => setMrtTier('all')}
-                  className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    mrtTier === 'all'
+                  onClick={() => setMrtTier('close')}
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    mrtTier === 'close'
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                   }`}
                 >
-                  All
-                </button>
-                <button
-                  onClick={() => setMrtTier('close')}
-                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                  mrtTier === 'close'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                }`}
-              >
-                ≤500m
+                  ≤500m
                 </button>
                 <button
                   onClick={() => setMrtTier('medium')}
-                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                  mrtTier === 'medium'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                }`}
-              >
-                ≤1km
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    mrtTier === 'medium'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  ≤1km
                 </button>
                 <button
                   onClick={() => setMrtTier('far')}
-                className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                  mrtTier === 'far'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                }`}
-              >
-                ≤2km
+                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                    mrtTier === 'far'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                  }`}
+                >
+                  ≤2km
                 </button>
               </div>
             </div>

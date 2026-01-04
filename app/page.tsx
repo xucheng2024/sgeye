@@ -19,10 +19,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
           <div className="text-center">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">
-              Choose a neighbourhood with confidence.
+              Find the right neighbourhood for your HDB.
             </h1>
             <p className="text-base md:text-2xl text-blue-100 mb-7 max-w-3xl mx-auto">
-              Compare price, lease risk, schools, and convenience.
+              See prices, lease risks, MRT access, and schools — side by side.
             </p>
             <HomeCTAs />
             <div className="mt-10 pt-6 border-t border-white/10">

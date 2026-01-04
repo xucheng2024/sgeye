@@ -3,18 +3,47 @@
 import { useState, useEffect } from 'react'
 import { calculateAffordability } from '@/lib/hdb-data'
 import ChartCard from '@/components/ChartCard'
-import { Calculator, Home, ArrowRight, ChevronDown } from 'lucide-react'
+import { Calculator, Home, ArrowRight, ChevronDown, Info } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LONG_TERM_RISK_DEFINITION } from '@/lib/constants'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
-import DecisionPathCard from '@/components/DecisionPathCard'
 import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
 
+// Helper function to parse k unit input
+function parseKInput(value: string): number {
+  if (!value) return 0
+  const cleaned = value.trim().toLowerCase().replace(/\s+/g, '')
+  // Handle "8k", "8.5k", "8,000" etc.
+  if (cleaned.endsWith('k')) {
+    const num = parseFloat(cleaned.slice(0, -1))
+    return isNaN(num) ? 0 : num * 1000
+  }
+  // Handle regular numbers
+  const num = parseFloat(cleaned.replace(/,/g, ''))
+  return isNaN(num) ? 0 : num
+}
+
+// Helper function to format input value for display (with k suffix if appropriate)
+function formatInputValue(value: number, isIncome: boolean = false): string {
+  if (!value) return ''
+  // For income, show k format if >= 1000
+  if (isIncome && value >= 1000 && value % 1000 === 0) {
+    return (value / 1000).toString()
+  }
+  // For down payment, show k format if >= 1000
+  if (!isIncome && value >= 1000 && value % 1000 === 0) {
+    return (value / 1000).toString()
+  }
+  return value.toString()
+}
+
 export default function HDBAffordabilityPage() {
   const [monthlyIncome, setMonthlyIncome] = useState(8000)
+  const [monthlyIncomeInput, setMonthlyIncomeInput] = useState('8')
   const [downPayment, setDownPayment] = useState(100000)
+  const [downPaymentInput, setDownPaymentInput] = useState('100')
   const [loanYears, setLoanYears] = useState(25)
   const [interestRate, setInterestRate] = useState(2.6)
   const [otherDebts, setOtherDebts] = useState(0)
@@ -23,6 +52,7 @@ export default function HDBAffordabilityPage() {
   const [realityCheckData, setRealityCheckData] = useState<any>(null)
 
   const handleCalculate = async () => {
+    if (monthlyIncome <= 0 && downPayment <= 0) return
     setLoading(true)
     const calc = calculateAffordability(monthlyIncome, downPayment, loanYears, interestRate, otherDebts)
     setResults(calc)
@@ -36,6 +66,7 @@ export default function HDBAffordabilityPage() {
     handleCalculate()
     // Track affordability calculator usage
     recordBehaviorEvent({ type: 'affordability_calculator' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -88,30 +119,66 @@ export default function HDBAffordabilityPage() {
             icon={<Calculator className="w-6 h-6" />}
           >
             <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monthly Gross Income (S$)
-                </label>
-                <input
-                  type="number"
-                  value={monthlyIncome}
-                  onChange={(e) => setMonthlyIncome(Number(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-                  min="0"
-                />
+              {/* Reassurance text at top */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  <strong className="text-gray-900">This is a quick estimate to help you explore options.</strong> Final loan amounts depend on bank or HDB assessment.
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available Down Payment (S$)
+                  Monthly Household Income
                 </label>
-                <input
-                  type="number"
-                  value={downPayment}
-                  onChange={(e) => setDownPayment(Number(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-                  min="0"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={monthlyIncomeInput}
+                    onChange={(e) => {
+                      const input = e.target.value
+                      setMonthlyIncomeInput(input)
+                      const parsed = parseKInput(input)
+                      setMonthlyIncome(parsed)
+                    }}
+                    placeholder="e.g. 8k"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+                  />
+                  <span className="text-sm font-medium text-gray-600 whitespace-nowrap">k</span>
+                </div>
+                <p className="mt-1.5 text-xs text-gray-600">
+                  HDB and banks assess loans using gross income.
+                </p>
+                {monthlyIncome > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    ≈ {formatCurrency(monthlyIncome)} per month
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Down Payment
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={downPaymentInput}
+                    onChange={(e) => {
+                      const input = e.target.value
+                      setDownPaymentInput(input)
+                      const parsed = parseKInput(input)
+                      setDownPayment(parsed)
+                    }}
+                    placeholder="e.g. 100k"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
+                  />
+                  <span className="text-sm font-medium text-gray-600 whitespace-nowrap">k</span>
+                </div>
+                {downPayment > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    ≈ {formatCurrency(downPayment)}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -179,39 +246,9 @@ export default function HDBAffordabilityPage() {
                 )}
               </button>
               {results && (
-                <>
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    Based on recent HDB resale transactions (last 12–24 months)
-                  </p>
-                  
-                  {/* Reality Check - Compact Version */}
-                  {realityCheckData && (
-                    <div className="mt-6 bg-gray-50 rounded-lg border border-gray-200 p-4">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                        Reality check — what {formatCurrency(results.maxPropertyPrice)} really buys today
-                      </h4>
-                      <ul className="space-y-1 text-xs text-gray-700">
-                        {realityCheckData.lease?.p25 !== null && realityCheckData.lease?.p75 !== null && (
-                          <li><span className="font-medium">Remaining lease:</span> {realityCheckData.lease.p25}–{realityCheckData.lease.p75} years</li>
-                        )}
-                        {realityCheckData.size?.p25 !== null && realityCheckData.size?.p75 !== null && (
-                          <li><span className="font-medium">Flat size:</span> {realityCheckData.size.p25}–{realityCheckData.size.p75} sqm</li>
-                        )}
-                        {realityCheckData.mrtAccess && (
-                          <li>
-                            <span className="font-medium">MRT access:</span> {realityCheckData.mrtAccess.category === 'mrt-first' ? 'Often MRT-first' : realityCheckData.mrtAccess.category === 'mixed' ? 'Mixed (MRT and bus)' : 'Often bus-first'}
-                          </li>
-                        )}
-                        <li><span className="font-medium">School pressure:</span> Varies significantly by area</li>
-                        {realityCheckData.resaleActivity && (
-                          <li>
-                            <span className="font-medium">Resale activity:</span> {realityCheckData.resaleActivity.level === 'active' ? 'Active' : realityCheckData.resaleActivity.level === 'moderate' ? 'Moderate' : 'Moderate to thin'}
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Based on recent HDB resale transactions (last 12–24 months)
+                </p>
               )}
             </div>
           </ChartCard>
@@ -300,21 +337,40 @@ export default function HDBAffordabilityPage() {
                     </div>
                   </div>
                 </details>
+
+                {/* Next Step CTA */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="text-sm font-semibold text-gray-900 mb-2">Next step:</div>
+                  <p className="text-sm text-gray-700 mb-4">
+                    See which neighbourhoods and flat types fit this budget.
+                  </p>
+                  <Link
+                    href={(() => {
+                      // Determine price tier based on budget
+                      const budget = Math.round(results.maxPropertyPrice * 1.1)
+                      let priceTier = 'all'
+                      if (budget <= 500000) {
+                        priceTier = 'low'
+                      } else if (budget <= 1000000) {
+                        priceTier = 'medium'
+                      } else {
+                        priceTier = 'high'
+                      }
+                      return `/neighbourhoods?price_tier=${priceTier}&source=affordability`
+                    })()}
+                    onClick={() => AnalyticsEvents.affordabilityToExplore()}
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Explore neighbourhoods
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">Click "Calculate" to see results</div>
             )}
           </ChartCard>
         </div>
-
-        {/* Decision Path Card */}
-        {results && (
-          <DecisionPathCard
-            budget={results.maxPropertyPrice}
-            realityCheckData={realityCheckData || {}}
-            className="mt-6"
-          />
-        )}
 
         {/* Feedback Form */}
         {results && (

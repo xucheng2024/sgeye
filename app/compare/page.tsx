@@ -16,6 +16,7 @@ import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { ProfileRecommendationsForCompare } from '@/components/ProfileRecommendations'
 import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
+import LivingFitCompare from '@/components/LivingFitCompare'
 
 interface NeighbourhoodComparison {
   id: string
@@ -781,10 +782,10 @@ function ComparePageContent() {
                     })()}
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-700">Median Lease (years)</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-700">Lease safety</td>
                     {comparisons.map(c => (
                       <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)}` : 'N/A'}
+                        {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)} years` : 'N/A'}
                       </td>
                     ))}
                     {comparisons.length >= 2 && (() => {
@@ -1016,6 +1017,14 @@ function ComparePageContent() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Living Fit Comparison */}
+            {comparisons.length >= 2 && (
+              <LivingFitCompare
+                neighbourhoods={comparisons.map(c => ({ id: c.id, name: c.name }))}
+                className="mb-8"
+              />
             )}
 
             {/* Profile Recommendations */}
