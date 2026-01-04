@@ -1416,7 +1416,7 @@ function NeighbourhoodsPageContent() {
                       </button>
                     </div>
 
-                    {livingNotes && <LivingDimensions notes={livingNotes} className="mb-4" />}
+                    {livingNotes && <LivingDimensions notes={livingNotes} variant="compressed" className="mb-4" />}
 
                     {/* Key metrics (condensed) - Fixed order: Price → Area → Lease → MRT */}
                     <div className="space-y-1.5 text-sm mb-4">
