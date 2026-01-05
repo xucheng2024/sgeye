@@ -3,6 +3,7 @@
  */
 
 import type { NeighbourhoodResponse, FlatTypeSummary, NeighbourhoodQueryParams } from './types'
+import { matchesPriceRange, matchesLeaseRange, matchesMrtDistance } from '@/lib/utils/shared-filters'
 
 export function applyFilters(
   neighbourhoods: NeighbourhoodResponse[],
@@ -42,19 +43,13 @@ export function applyFilters(
       // Check if at least one flat type meets all filter criteria
       const hasMatchingFlatType = flatTypesForNeighbourhood.some(flatTypeSummary => {
         // Price filter
-        if (priceMin !== null || priceMax !== null) {
-          const price = flatTypeSummary.median_price_12m
-          if (price === null) return false
-          if (priceMin !== null && price < priceMin) return false
-          if (priceMax !== null && price > priceMax) return false
+        if (!matchesPriceRange(flatTypeSummary.median_price_12m, priceMin, priceMax)) {
+          return false
         }
         
         // Lease filter
-        if (leaseMin !== null || leaseMax !== null) {
-          const lease = flatTypeSummary.median_lease_years_12m
-          if (lease === null) return false
-          if (leaseMin !== null && lease < leaseMin) return false
-          if (leaseMax !== null && lease > leaseMax) return false
+        if (!matchesLeaseRange(flatTypeSummary.median_lease_years_12m, leaseMin, leaseMax)) {
+          return false
         }
         
         return true
@@ -78,19 +73,13 @@ export function applyFilters(
       // Check if at least one selected flat type meets all filter criteria
       const hasMatchingFlatType = matchingFlatTypes.some(flatTypeSummary => {
         // Price filter
-        if (priceMin !== null || priceMax !== null) {
-          const price = flatTypeSummary.median_price_12m
-          if (price === null) return false
-          if (priceMin !== null && price < priceMin) return false
-          if (priceMax !== null && price > priceMax) return false
+        if (!matchesPriceRange(flatTypeSummary.median_price_12m, priceMin, priceMax)) {
+          return false
         }
         
         // Lease filter
-        if (leaseMin !== null || leaseMax !== null) {
-          const lease = flatTypeSummary.median_lease_years_12m
-          if (lease === null) return false
-          if (leaseMin !== null && lease < leaseMin) return false
-          if (leaseMax !== null && lease > leaseMax) return false
+        if (!matchesLeaseRange(flatTypeSummary.median_lease_years_12m, leaseMin, leaseMax)) {
+          return false
         }
         
         return true
@@ -105,11 +94,10 @@ export function applyFilters(
     // MRT filter (applies to neighbourhood, not flat type)
     if (mrtDistanceMax !== null) {
       const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
-      if (distance === null || (distance > 0 && distance > mrtDistanceMax)) {
-        if (!n.access?.mrt_station_count || n.access.mrt_station_count === 0) {
-          filteredByMRT++
-          return false
-        }
+      const hasStation = n.access?.mrt_station_count && n.access.mrt_station_count > 0
+      if (!matchesMrtDistance(distance, mrtDistanceMax, hasStation)) {
+        filteredByMRT++
+        return false
       }
     }
     

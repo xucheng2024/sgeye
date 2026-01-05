@@ -3,48 +3,15 @@
  */
 
 import { Neighbourhood, NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
+import { 
+  FILTER_RANGES, 
+  matchesPriceTiers, 
+  matchesLeaseTiers, 
+  matchesMrtTiers 
+} from '@/lib/utils/shared-filters'
 
-interface FilterRanges {
-  priceRanges: Record<string, [number, number]>
-  leaseRanges: Record<string, [number, number]>
-  mrtDistances: Record<string, number>
-}
-
-export const FILTER_RANGES: FilterRanges = {
-  priceRanges: {
-    low: [0, 499999],
-    medium: [500000, 999999],
-    high: [1000000, 2000000]
-  },
-  leaseRanges: {
-    low: [30, 70],
-    medium: [70, 80],
-    high: [80, 99]
-  },
-  mrtDistances: {
-    close: 500,
-    medium: 1000,
-    far: 2000
-  }
-}
-
-export function matchesPriceTiers(price: number | null, priceTiers: Set<string>): boolean {
-  if (priceTiers.size === 0) return true
-  if (price == null || !Number.isFinite(price)) return false
-  return Array.from(priceTiers).some(tier => {
-    const range = FILTER_RANGES.priceRanges[tier]
-    return !!range && price >= range[0] && price <= range[1]
-  })
-}
-
-export function matchesLeaseTiers(lease: number | null, leaseTiers: Set<string>): boolean {
-  if (leaseTiers.size === 0) return true
-  if (lease == null || !Number.isFinite(lease)) return false
-  return Array.from(leaseTiers).some(tier => {
-    const range = FILTER_RANGES.leaseRanges[tier]
-    return !!range && lease >= range[0] && lease <= range[1]
-  })
-}
+// Re-export for backward compatibility
+export { FILTER_RANGES, matchesPriceTiers, matchesLeaseTiers }
 
 export function applyClientSideFilters(
   displayItems: NeighbourhoodWithFlatType[],
@@ -69,12 +36,12 @@ export function applyClientSideFilters(
       const hasMatchingFlatType = item.flat_type_details.some(ftDetail => {
         if (priceTiers.size > 1) {
           const price = ftDetail.median_price_12m ? Number(ftDetail.median_price_12m) : null
-          if (!matchesPriceTiers(price, priceTiers)) return false
+          if (!matchesPriceTiers(price, priceTiers as Set<string>)) return false
         }
         
         if (leaseTiers.size > 1) {
           const lease = ftDetail.median_lease_years_12m ? Number(ftDetail.median_lease_years_12m) : null
-          if (!matchesLeaseTiers(lease, leaseTiers)) return false
+          if (!matchesLeaseTiers(lease, leaseTiers as Set<string>)) return false
         }
         
         return true
@@ -85,12 +52,12 @@ export function applyClientSideFilters(
       // Specific flat type mode: check the item's summary
       if (priceTiers.size > 1) {
         const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-        if (!matchesPriceTiers(price, priceTiers)) return false
+        if (!matchesPriceTiers(price, priceTiers as Set<string>)) return false
       }
       
       if (leaseTiers.size > 1) {
         const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
-        if (!matchesLeaseTiers(lease, leaseTiers)) return false
+        if (!matchesLeaseTiers(lease, leaseTiers as Set<string>)) return false
       }
     }
     
@@ -99,15 +66,7 @@ export function applyClientSideFilters(
       const distance = item.access?.avg_distance_to_mrt ? Number(item.access.avg_distance_to_mrt) : null
       const hasStationInArea = item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0
       
-      if (hasStationInArea) return true
-      
-      if (distance === null || distance <= 0) return false
-      
-      const matchesMrtTier = Array.from(mrtTiers).some(tier => {
-        const maxDist = FILTER_RANGES.mrtDistances[tier]
-        return maxDist && distance <= maxDist
-      })
-      if (!matchesMrtTier) return false
+      if (!matchesMrtTiers(distance, mrtTiers, hasStationInArea)) return false
     }
     
     return true
@@ -139,7 +98,7 @@ export function expandNeighbourhoodsToFlatTypes(
         const candidates = details.filter(d => {
           const p = d.median_price_12m != null ? Number(d.median_price_12m) : null
           const l = d.median_lease_years_12m != null ? Number(d.median_lease_years_12m) : null
-          return matchesPriceTiers(p, priceTiers) && matchesLeaseTiers(l, leaseTiers)
+          return matchesPriceTiers(p, priceTiers as Set<string>) && matchesLeaseTiers(l, leaseTiers as Set<string>)
         })
         if (candidates.length === 0) return null
 
@@ -174,7 +133,7 @@ export function expandNeighbourhoodsToFlatTypes(
 
           const p = ftDetail.median_price_12m != null ? Number(ftDetail.median_price_12m) : null
           const l = ftDetail.median_lease_years_12m != null ? Number(ftDetail.median_lease_years_12m) : null
-          if (!matchesPriceTiers(p, priceTiers) || !matchesLeaseTiers(l, leaseTiers)) return
+          if (!matchesPriceTiers(p, priceTiers as Set<string>) || !matchesLeaseTiers(l, leaseTiers as Set<string>)) return
 
           displayItems.push({
             ...neighbourhood,
