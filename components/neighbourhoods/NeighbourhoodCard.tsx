@@ -112,9 +112,9 @@ function NeighbourhoodCardComponent({
         {/* Lease */}
         {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (() => {
           const leaseYears = Number(neighbourhood.summary.median_lease_years_12m)
-          const isShortLease = leaseYears < 70
-          const isTypicalLease = leaseYears >= 70 && leaseYears < 80
-          const isSafeLease = leaseYears >= 80
+          const isShortLease = leaseYears < 60
+          const isTypicalLease = leaseYears >= 60 && leaseYears < 70
+          const isSafeLease = leaseYears >= 70
           return (
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Lease:</span>

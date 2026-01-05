@@ -76,8 +76,8 @@ function calculateProfileScore(
         else if (leaseDiff > 0) score += 15
         else if (leaseDiff < -5) score -= 20
       } else if (lease) {
-        if (lease >= 80) score += 30
-        else if (lease >= 70) score += 15
+        if (lease >= 70) score += 30
+        else if (lease >= 60) score += 15
         else if (lease < 60) score -= 20
       }
       // Price tolerance up to 15% more
@@ -288,15 +288,15 @@ export function getProfileFitReasons(
       if (price && price < 600000) {
         reasons.push('Lower entry price than many similar areas')
       }
-      if (lease && lease >= 70) {
+      if (lease && lease >= 60) {
         reasons.push('Acceptable remaining lease for the price point')
       }
       break
 
     case 'long-term-stability':
-      if (lease && lease >= 80) {
+      if (lease && lease >= 70) {
         reasons.push('Longer remaining lease than similar-priced areas')
-      } else if (lease && lease >= 70) {
+      } else if (lease && lease >= 60) {
         reasons.push('Relatively healthy remaining lease')
       }
       if (price && price < 800000) {
@@ -311,7 +311,7 @@ export function getProfileFitReasons(
       if (nbhd.planning_area) {
         reasons.push('Planning area with multiple school options')
       }
-      if (lease && lease >= 70) {
+      if (lease && lease >= 60) {
         reasons.push('Sufficient lease for long-term planning')
       }
       break

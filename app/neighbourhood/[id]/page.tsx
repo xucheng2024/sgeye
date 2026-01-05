@@ -97,7 +97,7 @@ export default function NeighbourhoodDetailPage() {
     // Track lease-related interactions
     if (neighbourhood?.summary?.median_lease_years_12m) {
       const lease = Number(neighbourhood.summary.median_lease_years_12m)
-      if (lease < 70) {
+      if (lease < 60) {
         recordBehaviorEvent({ type: 'short_lease_warning', metadata: { lease } })
       }
       recordBehaviorEvent({ type: 'lease_view', metadata: { lease } })
@@ -229,8 +229,8 @@ export default function NeighbourhoodDetailPage() {
     const lease = neighbourhood?.summary?.median_lease_years_12m ? Number(neighbourhood.summary.median_lease_years_12m) : null
     if (!lease) return 'medium'
     
-    if (lease >= 80) return 'low'
-    if (lease >= 70) return 'medium'
+    if (lease >= 70) return 'low'
+    if (lease >= 60) return 'medium'
     return 'high'
   }
 
@@ -279,8 +279,8 @@ export default function NeighbourhoodDetailPage() {
 
   function getLeaseLabel(lease: number | null): string {
     if (!lease) return 'N/A'
-    if (lease >= 80) return 'Long (80+ years)'
-    if (lease >= 60) return 'Medium (60–80 years)'
+    if (lease >= 70) return 'Safe (≥70 years)'
+    if (lease >= 60) return 'Typical (60–69 years)'
     return 'Short (<60 years)'
   }
 

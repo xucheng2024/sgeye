@@ -11,9 +11,9 @@ interface LeaseSafetyFilterProps {
 }
 
 const LEASE_TIERS = [
-  { tier: 'low', label: 'Short', title: '< 70 years remaining lease', selectedColor: 'bg-red-600 text-white border-red-600', hoverColor: 'hover:border-red-400 hover:bg-red-50' },
-  { tier: 'medium', label: 'Typical', title: '70-80 years remaining lease', selectedColor: 'bg-yellow-600 text-white border-yellow-600', hoverColor: 'hover:border-yellow-400 hover:bg-yellow-50' },
-  { tier: 'high', label: 'Safe', title: '≥ 80 years remaining lease', selectedColor: 'bg-green-600 text-white border-green-600', hoverColor: 'hover:border-green-400 hover:bg-green-50' }
+  { tier: 'low', label: 'Short', title: '< 60 years remaining lease', selectedColor: 'bg-red-600 text-white border-red-600', hoverColor: 'hover:border-red-400 hover:bg-red-50' },
+  { tier: 'medium', label: 'Typical', title: '60-69 years remaining lease', selectedColor: 'bg-yellow-600 text-white border-yellow-600', hoverColor: 'hover:border-yellow-400 hover:bg-yellow-50' },
+  { tier: 'high', label: 'Safe', title: '≥ 70 years remaining lease', selectedColor: 'bg-green-600 text-white border-green-600', hoverColor: 'hover:border-green-400 hover:bg-green-50' }
 ] as const
 
 export function LeaseSafetyFilter({ leaseTiers, onLeaseTiersChange }: LeaseSafetyFilterProps) {

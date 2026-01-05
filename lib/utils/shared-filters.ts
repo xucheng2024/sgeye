@@ -16,9 +16,9 @@ export const FILTER_RANGES: FilterRanges = {
     high: [1000000, 2000000]
   },
   leaseRanges: {
-    low: [30, 70],
-    medium: [70, 80],
-    high: [80, 99]
+    low: [0, 59],
+    medium: [60, 69],
+    high: [70, 99]
   },
   mrtDistances: {
     close: 500,

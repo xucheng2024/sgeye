@@ -210,7 +210,7 @@ function PSLESchoolPageContent() {
     if (lease < 60) {
       summary += 'shorter (higher risk)'
     } else if (lease < 70) {
-      summary += 'moderate'
+      summary += 'typical'
     } else {
       summary += 'relatively healthy'
     }
