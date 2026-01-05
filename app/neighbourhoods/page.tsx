@@ -220,17 +220,11 @@ function NeighbourhoodsPageContent() {
     }
   }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
 
+  // Combined effect to load neighbourhoods when filters change (including showOnlyWithData)
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
-
-  useEffect(() => {
-    if (originalNeighbourhoods.length > 0) {
-      loadNeighbourhoods()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showOnlyWithData])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions, showOnlyWithData])
 
   async function loadPlanningAreas() {
     try {

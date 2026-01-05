@@ -157,3 +157,4 @@ serve(async (req) => {
 4. **Aggregation missing**: Run the aggregation SQL manually
 
 
+

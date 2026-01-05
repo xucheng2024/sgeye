@@ -4,6 +4,11 @@
 
 import { fetchMrtStationsInArea, fetchAllMrtStations, fetchNeighbourhoodsWithCenters } from './fetch'
 import { extractCenterFromBbox } from './centers'
+import { cache, getCacheKey } from '@/lib/utils/cache'
+
+// Cache all MRT stations (rarely changes, cache for 1 hour)
+const ALL_MRT_STATIONS_CACHE_KEY = 'mrt:all_stations'
+const ALL_MRT_STATIONS_CACHE_TTL = 60 * 60 * 1000
 
 export async function buildMrtStationsMap(
   neighbourhoodIds: string[]
@@ -40,7 +45,13 @@ export async function buildMrtStationsMap(
   
   if (neighbourhoodsWithoutStations.length > 0) {
     const neighbourhoodsWithCenters = await fetchNeighbourhoodsWithCenters(neighbourhoodsWithoutStations)
-    const allMrtStations = await fetchAllMrtStations()
+    
+    // Use cached all MRT stations (rarely changes)
+    let allMrtStations = cache.get<any[]>(ALL_MRT_STATIONS_CACHE_KEY)
+    if (!allMrtStations) {
+      allMrtStations = await fetchAllMrtStations()
+      cache.set(ALL_MRT_STATIONS_CACHE_KEY, allMrtStations, ALL_MRT_STATIONS_CACHE_TTL)
+    }
     
     if (neighbourhoodsWithCenters.length > 0 && allMrtStations.length > 0) {
       // For each neighbourhood, find nearest station using Haversine formula

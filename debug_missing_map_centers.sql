@@ -68,3 +68,4 @@ WHERE n.name IN ('SHANGRI-LA', 'KEBUN BAHRU', 'TAGORE')
   AND r.longitude IS NOT NULL
 LIMIT 20;
 
+

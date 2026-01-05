@@ -4,6 +4,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { paginateQuery } from '@/lib/utils/pagination'
+import { cache, getCacheKey } from '@/lib/utils/cache'
 import type {
   NeighbourhoodRawData,
   FlatTypeSummary,
@@ -99,6 +100,13 @@ export async function fetchAccessData(neighbourhoodIds: string[]): Promise<Acces
 export async function fetchPlanningAreas(planningAreaIds: string[]): Promise<PlanningAreaData[]> {
   if (planningAreaIds.length === 0) return []
 
+  // Cache planning areas (rarely changes, cache for 1 hour)
+  const cacheKey = getCacheKey('planning_areas', planningAreaIds.sort().join(','))
+  const cached = cache.get<PlanningAreaData[]>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const { data, error } = await supabase
     .from('planning_areas')
     .select('id, name, region')
@@ -109,11 +117,20 @@ export async function fetchPlanningAreas(planningAreaIds: string[]): Promise<Pla
     return []
   }
 
-  return (data || []) as PlanningAreaData[]
+  const result = (data || []) as PlanningAreaData[]
+  cache.set(cacheKey, result, 60 * 60 * 1000) // 1 hour cache
+  return result
 }
 
 export async function fetchSubzones(subzoneIds: string[]): Promise<SubzoneData[]> {
   if (subzoneIds.length === 0) return []
+
+  // Cache subzones (rarely changes, cache for 1 hour)
+  const cacheKey = getCacheKey('subzones', subzoneIds.sort().join(','))
+  const cached = cache.get<SubzoneData[]>(cacheKey)
+  if (cached) {
+    return cached
+  }
 
   const { data, error } = await supabase
     .from('subzones')
@@ -125,7 +142,9 @@ export async function fetchSubzones(subzoneIds: string[]): Promise<SubzoneData[]
     return []
   }
 
-  return (data || []) as SubzoneData[]
+  const result = (data || []) as SubzoneData[]
+  cache.set(cacheKey, result, 60 * 60 * 1000) // 1 hour cache
+  return result
 }
 
 export async function fetchLocationData(neighbourhoodIds: string[]): Promise<any[]> {

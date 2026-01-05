@@ -19,6 +19,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getNeighbourhoods, parseQueryParams } from '@/lib/neighbourhoods'
 
+export const revalidate = 300 // Revalidate every 5 minutes
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -26,7 +28,11 @@ export async function GET(request: NextRequest) {
     
     const result = await getNeighbourhoods(params)
     
-    return NextResponse.json(result)
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch (error: any) {
     console.error('Unexpected error:', error)
     return NextResponse.json(

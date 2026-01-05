@@ -1,0 +1,36 @@
+-- SQL script to manually insert living notes data
+-- This is a template - you'll need to extract the data from lib/neighbourhood-living-notes.ts
+-- and convert it to INSERT statements
+--
+-- Example format:
+-- INSERT INTO neighbourhood_living_notes (
+--   neighbourhood_name,
+--   noise_density_rating, noise_density_note,
+--   daily_convenience_rating, daily_convenience_note,
+--   green_outdoor_rating, green_outdoor_note,
+--   crowd_vibe_rating, crowd_vibe_note,
+--   long_term_comfort_rating, long_term_comfort_note
+-- ) VALUES (
+--   'ADMIRALTY',
+--   'mixed', 'North-side estate; quieter inside blocks but peak-hour traffic can show up near arterials.',
+--   'good', 'Town-style convenience near transport nodes; errands are generally straightforward.',
+--   'good', 'Easy access to north greenery and longer walking/cycling routes.',
+--   'good', 'Family-oriented, residential rhythm; calmer evenings than city-fringe belts.',
+--   'good', 'Comfortable if your commute pattern fits the north location.'
+-- )
+-- ON CONFLICT (neighbourhood_name) DO UPDATE SET
+--   noise_density_rating = EXCLUDED.noise_density_rating,
+--   noise_density_note = EXCLUDED.noise_density_note,
+--   daily_convenience_rating = EXCLUDED.daily_convenience_rating,
+--   daily_convenience_note = EXCLUDED.daily_convenience_note,
+--   green_outdoor_rating = EXCLUDED.green_outdoor_rating,
+--   green_outdoor_note = EXCLUDED.green_outdoor_note,
+--   crowd_vibe_rating = EXCLUDED.crowd_vibe_rating,
+--   crowd_vibe_note = EXCLUDED.crowd_vibe_note,
+--   long_term_comfort_rating = EXCLUDED.long_term_comfort_rating,
+--   long_term_comfort_note = EXCLUDED.long_term_comfort_note,
+--   updated_at = NOW();
+
+-- Note: Use the Node.js script (migrate-living-notes-to-db.js) for automated migration
+-- or manually extract and convert the data from lib/neighbourhood-living-notes.ts
+

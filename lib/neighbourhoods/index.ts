@@ -56,28 +56,28 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
   
   const neighbourhoodIds = neighbourhoodsData.map(n => n.id)
   
-  // Calculate center points
-  const centerPointsMap = await calculateCenterPoints(neighbourhoodsData, neighbourhoodIds)
-  
-  // Aggregate monthly data
-  const { flatTypeSummaries, neighbourhoodSummaries } = await aggregateMonthlyData(
-    neighbourhoodIds,
-    flatTypes
-  )
-  
-  // Fetch access data
-  const accessData = await fetchAccessData(neighbourhoodIds)
-  
-  // Build MRT stations map
-  const mrtStationsMap = await buildMrtStationsMap(neighbourhoodIds)
-  
-  // Fetch planning areas and subzones
+  // Extract IDs for planning areas and subzones
   const fetchedPlanningAreaIds = [...new Set(neighbourhoodsData.map(n => n.planning_area_id).filter((id): id is string => Boolean(id)))]
-  const planningAreasData = await fetchPlanningAreas(fetchedPlanningAreaIds)
-  const planningAreaMap = new Map(planningAreasData.map(pa => [pa.id, pa]))
-  
   const fetchedSubzoneIds = [...new Set(neighbourhoodsData.map(n => n.parent_subzone_id).filter((id): id is string => Boolean(id)))]
-  const subzonesData = await fetchSubzones(fetchedSubzoneIds)
+  
+  // Parallelize independent database queries
+  const [
+    centerPointsMap,
+    { flatTypeSummaries, neighbourhoodSummaries },
+    accessData,
+    mrtStationsMap,
+    planningAreasData,
+    subzonesData
+  ] = await Promise.all([
+    calculateCenterPoints(neighbourhoodsData, neighbourhoodIds),
+    aggregateMonthlyData(neighbourhoodIds, flatTypes),
+    fetchAccessData(neighbourhoodIds),
+    buildMrtStationsMap(neighbourhoodIds),
+    fetchPlanningAreas(fetchedPlanningAreaIds),
+    fetchSubzones(fetchedSubzoneIds)
+  ])
+  
+  const planningAreaMap = new Map(planningAreasData.map(pa => [pa.id, pa]))
   const subzoneMap = new Map(subzonesData.map(sz => [sz.id, sz]))
   
   // Create lookup maps

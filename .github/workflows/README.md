@@ -89,3 +89,4 @@ After the workflow runs and inserts new data, you need to run the aggregation SQ
 - Future: Can be automated with Supabase Edge Functions
 
 
+
