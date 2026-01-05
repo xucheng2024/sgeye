@@ -53,7 +53,7 @@ function NeighbourhoodsPageContent() {
   const flatTypeParam = searchParams.get('flat_type') || ''
   const priceTierParam = searchParams.get('price_tier') || ''
   const leaseTierParam = searchParams.get('lease_tier') || ''
-  const mrtTierParam = searchParams.get('mrt_tier') || ''
+  const mrtTierParam = searchParams.get('mrt_tier') || 'all'
   const regionParam = searchParams.get('region') || 'all'
   const majorRegionParam = searchParams.get('major_region') || ''
   const sourceParam = searchParams.get('source')
@@ -75,7 +75,7 @@ function NeighbourhoodsPageContent() {
   )
   const [priceTiers, setPriceTiers] = useState<Set<string>>(new Set(parseUrlArray(priceTierParam)))
   const [leaseTiers, setLeaseTiers] = useState<Set<string>>(new Set(parseUrlArray(leaseTierParam)))
-  const [mrtTiers, setMrtTiers] = useState<Set<string>>(new Set(parseUrlArray(mrtTierParam)))
+  const [mrtTier, setMrtTier] = useState<string>(mrtTierParam || 'all')
   const [region, setRegion] = useState<string>(regionParam)
   const [majorRegions, setMajorRegions] = useState<Set<string>>(new Set(parseUrlArray(majorRegionParam)))
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
@@ -98,10 +98,10 @@ function NeighbourhoodsPageContent() {
         }
       })
     }
-    if (mrtTiers.has('close')) {
+    if (mrtTier === 'close') {
       recordBehaviorEvent({ type: 'mrt_filter_close' })
     }
-  }, [priceTiers, leaseTiers, mrtTiers])
+  }, [priceTiers, leaseTiers, mrtTier])
 
   useEffect(() => {
     // Track clicks on low-priced neighbourhoods
@@ -121,7 +121,7 @@ function NeighbourhoodsPageContent() {
     const urlFlatTypes = parseUrlArray(searchParams.get('flat_type') || '')
     const urlPriceTiers = parseUrlArray(searchParams.get('price_tier') || '')
     const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
-    const urlMrtTiers = parseUrlArray(searchParams.get('mrt_tier') || '')
+    const urlMrtTier = searchParams.get('mrt_tier') || 'all'
     const urlRegion = searchParams.get('region') || 'all'
     const addToCompare = searchParams.get('add_to_compare')
     
@@ -143,8 +143,8 @@ function NeighbourhoodsPageContent() {
       setLeaseTiers(new Set(urlLeaseTiers))
     }
     
-    if (Array.from(mrtTiers).sort().join(',') !== Array.from(new Set(urlMrtTiers)).sort().join(',')) {
-      setMrtTiers(new Set(urlMrtTiers))
+    if (urlMrtTier !== mrtTier) {
+      setMrtTier(urlMrtTier)
     }
     
     if (urlRegion !== region) {
@@ -195,9 +195,8 @@ function NeighbourhoodsPageContent() {
       params.set('lease_tier', leaseTierArray.join(','))
     }
     
-    const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
-    if (mrtTierArray.length > 0) {
-      params.set('mrt_tier', mrtTierArray.join(','))
+    if (mrtTier && mrtTier !== 'all') {
+      params.set('mrt_tier', mrtTier)
     }
     
     if (region && region !== 'all') params.set('region', region)
@@ -218,13 +217,13 @@ function NeighbourhoodsPageContent() {
       const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions])
 
   // Combined effect to load neighbourhoods when filters change (including showOnlyWithData)
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions, showOnlyWithData])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, showOnlyWithData])
 
   async function loadPlanningAreas() {
     try {
@@ -271,9 +270,8 @@ function NeighbourhoodsPageContent() {
         }
       }
       
-      if (mrtTiers.size === 1) {
-        const tier = Array.from(mrtTiers)[0]
-        const distance = FILTER_RANGES.mrtDistances[tier]
+      if (mrtTier && mrtTier !== 'all') {
+        const distance = FILTER_RANGES.mrtDistances[mrtTier]
         if (distance) {
           params.set('mrt_distance_max', distance.toString())
         }
@@ -312,11 +310,12 @@ function NeighbourhoodsPageContent() {
       )
       
       // Apply client-side filters
+      const mrtTiersForFilter = mrtTier && mrtTier !== 'all' ? new Set([mrtTier]) : new Set<string>()
       displayItems = applyClientSideFilters(
         displayItems,
         priceTiers,
         leaseTiers,
-        mrtTiers,
+        mrtTiersForFilter,
         isAllFlatTypes
       )
       
@@ -389,8 +388,7 @@ function NeighbourhoodsPageContent() {
     if (priceTierArray.length > 0) params.set('price_tier', priceTierArray.join(','))
     const leaseTierArray = Array.from(leaseTiers).filter(Boolean)
     if (leaseTierArray.length > 0) params.set('lease_tier', leaseTierArray.join(','))
-    const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
-    if (mrtTierArray.length > 0) params.set('mrt_tier', mrtTierArray.join(','))
+    if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
     return params.toString()
   })()
 
@@ -463,8 +461,8 @@ function NeighbourhoodsPageContent() {
               onLeaseTiersChange={setLeaseTiers}
             />
             <MRTDistanceFilter 
-              mrtTiers={mrtTiers}
-              onMrtTiersChange={setMrtTiers}
+              mrtTier={mrtTier}
+              onMrtTierChange={setMrtTier}
             />
           </div>
         </div>
@@ -568,9 +566,9 @@ function NeighbourhoodsPageContent() {
                       Clear Lease Filter
                     </button>
                   )}
-                  {mrtTiers.size > 0 && (
+                  {mrtTier && mrtTier !== 'all' && (
                     <button
-                      onClick={() => setMrtTiers(new Set())}
+                      onClick={() => setMrtTier('all')}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear MRT Filter

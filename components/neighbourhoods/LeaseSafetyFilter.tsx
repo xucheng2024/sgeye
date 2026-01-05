@@ -17,6 +17,7 @@ const LEASE_TIERS = [
 ] as const
 
 export function LeaseSafetyFilter({ leaseTiers, onLeaseTiersChange }: LeaseSafetyFilterProps) {
+  const hasSelection = leaseTiers.size > 0
   return (
     <div className="shrink-0">
       <div className="flex items-center gap-1 mb-1.5">
@@ -40,6 +41,18 @@ export function LeaseSafetyFilter({ leaseTiers, onLeaseTiersChange }: LeaseSafet
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => {
+            onLeaseTiersChange(new Set())
+          }}
+          className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+            !hasSelection
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+          }`}
+        >
+          All
+        </button>
         {LEASE_TIERS.map(({ tier, label, title, selectedColor, hoverColor }) => {
           const isSelected = leaseTiers.has(tier)
           return (
