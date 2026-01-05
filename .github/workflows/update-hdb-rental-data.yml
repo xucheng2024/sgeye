@@ -1,44 +1,16 @@
-name: Update HDB Rental Data
+name: Update HDB Rental Data (Disabled)
 
 on:
-  schedule:
-    # Run daily at 2:30 AM UTC (10:30 AM Singapore time)
-    # Runs 30 minutes after resale data update to avoid conflicts
-    - cron: '30 2 * * *'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch: # Rental tables were removed; keep manual only (no schedule)
 
 jobs:
   update-rental-data:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
+      - name: Disabled
         run: |
-          npm install @supabase/supabase-js
-
-      - name: Check for New Data
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          # Check if there's new rental data available
-          node scripts/check-new-rental-data.js || echo "No new data or check failed, continuing..."
-
-      - name: Update HDB Rental Data
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: node scripts/import-hdb-rental-data.js
+          echo "This workflow is intentionally disabled."
+          echo "Rental tables were removed at the database layer (see supabase/migrations/drop_rental_tables.sql)."
+          echo "No action taken."
 

@@ -31,16 +31,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          # Option 1: If you have a CSV/JSON file in the repo
-          # node scripts/import-school-data.js --file data/schools.csv
-          
-          # Option 2: If data.gov.sg has a resource (update resource_id)
-          # node scripts/import-school-data.js --source datagovsg --resource-id <resource_id>
-          
-          # Option 3: Manual import (comment out if not using)
-          echo "School data import requires manual CSV/JSON file or data.gov.sg resource_id"
-          echo "To import manually, run:"
-          echo "  node scripts/import-school-data.js --file path/to/schools.csv"
+          # Import from a stable, repo-tracked dataset (already includes latitude/longitude)
+          node scripts/import-school-data.js --file data/schools-final.csv
 
       - name: Populate School Neighbourhood IDs
         if: success()

@@ -1,0 +1,93 @@
+name: Initial Full Import HDB Resale Data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  initial-import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install @supabase/supabase-js dotenv
+
+      - name: Initial Full Import (raw_resale_2017)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/initial-import-hdb-data.js
+
+      - name: Geocode New Records (limited per run)
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/geocode-new-records.js --limit=500 || echo "Geocoding completed or skipped"
+
+      - name: Populate Neighbourhood IDs
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node -e "
+            require('dotenv').config();
+            const {createClient} = require('@supabase/supabase-js');
+            const supabase = createClient(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+            (async()=>{
+              console.log('Populating neighbourhood_ids for new records...');
+              let totalUpdated = 0;
+              let iterations = 0;
+              const maxIterations = 10;
+              while(iterations < maxIterations) {
+                iterations++;
+                const {data: updated, error} = await supabase.rpc('populate_neighbourhood_ids_batch', {
+                  p_table_name: 'raw_resale_2017',
+                  p_batch_size: 1000
+                });
+                if(error) {
+                  console.warn('Warning:', error.message);
+                  break;
+                }
+                const batchUpdated = updated || 0;
+                totalUpdated += batchUpdated;
+                if(batchUpdated > 0) {
+                  console.log(\`  Batch \${iterations}: \${batchUpdated} records updated (Total: \${totalUpdated})\`);
+                }
+                if(batchUpdated === 0) break;
+                await new Promise(r => setTimeout(r, 200));
+              }
+              if(totalUpdated > 0) {
+                console.log(\`✓ raw_resale_2017: \${totalUpdated} records updated\`);
+              }
+              console.log('✓ Neighbourhood IDs population completed');
+            })();
+          "
+
+      - name: Run Aggregation (Neighbourhood-based)
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          node scripts/run-aggregation.js || echo "Aggregation completed or skipped"
+
+
