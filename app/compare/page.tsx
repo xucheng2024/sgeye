@@ -11,12 +11,11 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
-import { ProfileRecommendationsForCompare } from '@/components/ProfileRecommendations'
 import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
-import LivingFitCompare from '@/components/LivingFitCompare'
+import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
+import type { LivingRating } from '@/lib/neighbourhood-living-notes'
 
 interface NeighbourhoodComparison {
   id: string
@@ -36,6 +35,7 @@ interface NeighbourhoodComparison {
     mrt_station_count: number
     mrt_access_type: string
     avg_distance_to_mrt: number | null
+    mrt_station_names?: string[]
   } | null
   trends: any[]
 }
@@ -128,6 +128,55 @@ function ComparePageContent() {
     if (!meters) return 'N/A'
     if (meters < 1000) return `${Math.round(meters)}m`
     return `${(meters / 1000).toFixed(1)}km`
+  }
+
+  // Get MRT access label matching the card format
+  function getMRTAccessLabelForCard(c: NeighbourhoodComparison): { text: string; isInArea: boolean } {
+    const stationCount = Number(c.access?.mrt_station_count) || 0
+    const distance = c.access?.avg_distance_to_mrt ? Number(c.access.avg_distance_to_mrt) : null
+    const stationNames = c.access?.mrt_station_names || []
+    
+    // If there are stations within the neighbourhood (in area)
+    if (stationCount > 0) {
+      if (stationNames.length > 0) {
+        // Show station names: "MRT1, MRT2 in area"
+        const stationNamesText = stationNames.slice(0, 3).join(', ') + (stationNames.length > 3 ? ` +${stationNames.length - 3} more` : '')
+        return {
+          text: `${stationNamesText} in area`,
+          isInArea: true
+        }
+      } else {
+        // Fallback to count if names not available
+        return {
+          text: `${stationCount} station${stationCount > 1 ? 's' : ''} in area`,
+          isInArea: true
+        }
+      }
+    }
+    
+    // If no stations in area but distance data available (outside area)
+    if (distance !== null && distance > 0) {
+      if (stationNames.length > 0) {
+        // Show nearest station name: "MRT 461m outside area"
+        const nearestStation = stationNames[0]
+        return {
+          text: `${nearestStation} ${formatDistance(distance)} outside area`,
+          isInArea: false
+        }
+      } else {
+        // Fallback to distance only if names not available
+        return {
+          text: `${formatDistance(distance)} outside area`,
+          isInArea: false
+        }
+      }
+    }
+    
+    // No MRT access
+    return {
+      text: 'None',
+      isInArea: false
+    }
   }
 
   function getMRTAccessLabel(type: string | null | undefined): string {
@@ -496,117 +545,6 @@ function ComparePageContent() {
     }
   }
 
-  // Generate Quick Verdict - returns human-readable conclusion + supporting facts
-  function generateQuickVerdict(): { conclusion: string; facts: string[] } | null {
-    if (comparisons.length < 2) return null
-    
-    const c1 = comparisons[0]
-    const c2 = comparisons[1]
-    
-    const price1 = c1.summary?.median_price_12m
-    const price2 = c2.summary?.median_price_12m
-    const psm1 = c1.summary?.median_psm_12m
-    const psm2 = c2.summary?.median_psm_12m
-    const lease1 = c1.summary?.median_lease_years_12m
-    const lease2 = c2.summary?.median_lease_years_12m
-    const mrtStations1 = c1.access?.mrt_station_count || 0
-    const mrtStations2 = c2.access?.mrt_station_count || 0
-    
-    const facts: string[] = []
-    let conclusion = ''
-    
-    // Determine primary trade-off
-    if (price1 && price2 && lease1 && lease2) {
-      const priceDiff = ((price1 - price2) / price2) * 100
-      const leaseDiff = lease1 - lease2
-      
-      // Budget + long-term value focus (c1 cheaper and longer lease)
-      if (priceDiff < -15 && leaseDiff > 5) {
-        conclusion = `If budget and long-term value matter more, ${toTitleCase(c1.name)} is the safer choice.`
-        const tx1 = c1.summary?.tx_12m || 0
-        const tx2 = c2.summary?.tx_12m || 0
-        const txDiff = tx1 - tx2
-        if (txDiff > 20) {
-          facts.push(`Lower median price with more active resale market`)
-        } else {
-          facts.push(`Lower median price`)
-        }
-        facts.push(`Longer remaining lease offers greater long-term flexibility`)
-      }
-      // Budget + long-term value focus (c2 cheaper and longer lease)
-      else if (priceDiff > 15 && leaseDiff < -5) {
-        conclusion = `If budget and long-term value matter more, ${toTitleCase(c2.name)} is the safer choice.`
-        const tx1 = c1.summary?.tx_12m || 0
-        const tx2 = c2.summary?.tx_12m || 0
-        const txDiff = tx2 - tx1
-        if (txDiff > 20) {
-          facts.push(`Lower median price with more active resale market`)
-        } else {
-          facts.push(`Lower median price`)
-        }
-        facts.push(`Longer remaining lease offers greater long-term flexibility`)
-      }
-      // Location + price premium (c1 more expensive but better location)
-      else if (priceDiff > 15 && mrtStations1 > mrtStations2) {
-        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${toTitleCase(c1.name)} may suit you better.`
-        facts.push(`${toTitleCase(c1.name)} offers better MRT access`)
-        if (psm1 && psm2 && psm1 > psm2) facts.push(`Higher price per sqm reflects location premium`)
-      }
-      // Location + price premium (c2 more expensive but better location)
-      else if (priceDiff < -15 && mrtStations2 > mrtStations1) {
-        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${toTitleCase(c2.name)} may suit you better.`
-        facts.push(`${toTitleCase(c2.name)} offers better MRT access`)
-        if (psm2 && psm1 && psm2 > psm1) facts.push(`Higher price per sqm reflects location premium`)
-      }
-      // Balanced comparison
-      else {
-        if (priceDiff < -15) {
-          conclusion = `${toTitleCase(c1.name)} offers better value, while ${toTitleCase(c2.name)} may have other advantages.`
-          facts.push(`${toTitleCase(c1.name)} has lower price`)
-        } else if (priceDiff > 15) {
-          conclusion = `${toTitleCase(c2.name)} offers better value, while ${toTitleCase(c1.name)} may have other advantages.`
-          facts.push(`${toTitleCase(c2.name)} has lower price`)
-        } else {
-          conclusion = `Both neighbourhoods are similar in price, with different trade-offs to consider.`
-        }
-      }
-    } else if (price1 && price2) {
-      // Only price data available
-      const priceDiff = ((price1 - price2) / price2) * 100
-      if (priceDiff < -15) {
-        conclusion = `${toTitleCase(c1.name)} offers better value, while ${toTitleCase(c2.name)} may have other advantages.`
-        facts.push(`${toTitleCase(c1.name)} has lower price`)
-      } else if (priceDiff > 15) {
-        conclusion = `${toTitleCase(c2.name)} offers better value, while ${toTitleCase(c1.name)} may have other advantages.`
-        facts.push(`${toTitleCase(c2.name)} has lower price`)
-      } else {
-        conclusion = `Both neighbourhoods are similar in price, with different trade-offs to consider.`
-      }
-    }
-    
-    // Add supporting facts
-    if (lease1 && lease2) {
-      const leaseDiff = lease1 - lease2
-      if (Math.abs(leaseDiff) > 5) {
-        if (leaseDiff > 0) {
-          facts.push(`${toTitleCase(c1.name)} has ${leaseDiff.toFixed(0)} more years of remaining lease`)
-        } else {
-          facts.push(`${toTitleCase(c2.name)} has ${Math.abs(leaseDiff).toFixed(0)} more years of remaining lease`)
-        }
-      }
-    }
-    
-    if (mrtStations1 !== mrtStations2) {
-      if (mrtStations1 > mrtStations2) {
-        facts.push(`${toTitleCase(c1.name)} has better MRT coverage`)
-      } else {
-        facts.push(`${toTitleCase(c2.name)} has better MRT coverage`)
-      }
-    }
-    
-    return conclusion ? { conclusion, facts } : null
-  }
-
   const whoIsThisFor = generateWhoIsThisFor()
 
   if (ids.length === 0) {
@@ -686,36 +624,6 @@ function ComparePageContent() {
         {/* Comparison Table */}
         {!loading && !error && comparisons.length > 0 && (
           <>
-            {/* Decision Profile */}
-            {comparisons.length >= 2 && <DecisionProfileDisplay variant="compare" />}
-
-            {/* Quick Verdict */}
-            {comparisons.length >= 2 && (() => {
-              const verdict = generateQuickVerdict()
-              if (!verdict) return null
-              
-              return (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    Quick verdict ({flatType}, {months}m)
-                  </h2>
-                  <p className="text-base font-medium text-gray-900 mb-4">
-                    {verdict.conclusion}
-                  </p>
-                  {verdict.facts.length > 0 && (
-                    <div className="space-y-1.5">
-                      {verdict.facts.map((fact, idx) => (
-                        <div key={idx} className="text-sm text-gray-700 flex items-start gap-2">
-                          <span className="text-gray-400 mt-0.5">•</span>
-                          <span>{fact}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary Comparison</h2>
               <table className="responsive-table w-full divide-y divide-gray-200">
@@ -882,11 +790,11 @@ function ComparePageContent() {
               </table>
             </div>
 
-            {/* Transport Accessibility (Structural) */}
+            {/* Transport Accessibility */}
             {comparisons.length >= 2 && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Transport accessibility (structural)
+                  Transport accessibility
                 </h2>
                 <table className="responsive-table w-full divide-y divide-gray-200">
                   <thead>
@@ -897,95 +805,130 @@ function ComparePageContent() {
                           {toTitleCase(c.name)}
                         </th>
                       ))}
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conclusion</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     <tr>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">MRT coverage</td>
-                      {comparisons.map(c => (
-                        <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                          {getMRTCoverage(c)}
-                        </td>
-                      ))}
-                      {(() => {
-                        const coverages = comparisons.map(c => getMRTCoverage(c))
-                        if (coverages[0] === coverages[1]) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">Similar</td>
-                        }
-                        const multiLineIdx = coverages.findIndex(c => c === 'Multi-line')
-                        const singleLineIdx = coverages.findIndex(c => c === 'Single-line')
-                        if (multiLineIdx >= 0 && coverages[1 - multiLineIdx] !== 'Multi-line') {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[multiLineIdx].name)} has broader access</td>
-                        } else if (singleLineIdx >= 0 && coverages[1 - singleLineIdx] === 'None') {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[singleLineIdx].name)} has MRT access</td>
-                        }
-                        return <td className="px-4 py-3 text-sm text-gray-600">Different coverage</td>
-                      })()}
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Walkability to MRT</td>
-                      {comparisons.map(c => (
-                        <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                          {getWalkability(c)}
-                        </td>
-                      ))}
-                      {(() => {
-                        const walkabilities = comparisons.map(c => getWalkability(c))
-                        if (walkabilities[0] === walkabilities[1]) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">Similar</td>
-                        }
-                        const betterIdx = walkabilities.findIndex(w => w === '≤500m')
-                        if (betterIdx >= 0) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[betterIdx].name)} more walkable</td>
-                        }
-                        return <td className="px-4 py-3 text-sm text-gray-600">Different walkability</td>
-                      })()}
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Transport tier</td>
-                      {comparisons.map(c => (
-                        <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                          {getTransportTier(c)}
-                        </td>
-                      ))}
-                      {(() => {
-                        const tiers = comparisons.map(c => getTransportTier(c))
-                        if (tiers[0] === tiers[1]) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">Similar tier</td>
-                        }
-                        const railIdx = tiers.findIndex(t => t === 'Rail-accessible')
-                        if (railIdx >= 0) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[railIdx].name)} more rail-accessible</td>
-                        }
-                        return <td className="px-4 py-3 text-sm text-gray-600">Different experience</td>
-                      })()}
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">MRT</td>
+                      {comparisons.map(c => {
+                        const mrtInfo = getMRTAccessLabelForCard(c)
+                        const hasAccess = mrtInfo.text !== 'None'
+                        
+                        return (
+                          <td key={c.id} className="px-4 py-3 text-sm">
+                            {mrtInfo.isInArea ? (
+                              <span className="font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                                ✓ {mrtInfo.text}
+                              </span>
+                            ) : hasAccess ? (
+                              <span className="font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                                {mrtInfo.text}
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-gray-500">
+                                {mrtInfo.text}
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
                     </tr>
                   </tbody>
                 </table>
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">
-                    {(() => {
-                      const tier1 = getTransportTier(comparisons[0])
-                      const tier2 = getTransportTier(comparisons[1])
-                      const coverage1 = getMRTCoverage(comparisons[0])
-                      const coverage2 = getMRTCoverage(comparisons[1])
-                      
-                      if (tier1 === tier2 && coverage1 === coverage2) {
-                        return `Both areas have similar transport accessibility. This means daily commutes may rely more on buses and transfers over time.`
-                      } else {
-                        const getDesc = (tier: string, name: string) => {
-                          if (tier === 'Bus-first') return `${name}: Mostly bus-dependent, limited MRT access`
-                          if (tier === 'Feeder-dependent') return `${name}: Feeder-dependent, single MRT line`
-                          return `${name}: Rail-accessible, multiple lines nearby`
-                        }
-                        return `${getDesc(tier1, toTitleCase(comparisons[0].name))}. ${getDesc(tier2, toTitleCase(comparisons[1].name))}. This means daily commutes may rely more on buses and transfers over time.`
-                      }
-                    })()}
-                  </p>
-                </div>
               </div>
             )}
+
+            {/* Living Check */}
+            {comparisons.length >= 2 && (() => {
+              const livingNotesArray = comparisons.map(c => getLivingNotesForNeighbourhood(c.name))
+              const hasAnyNotes = livingNotesArray.some(notes => notes !== null)
+              
+              if (!hasAnyNotes) return null
+              
+              function getRatingMeta(rating: LivingRating): { label: string; className: string } {
+                if (rating === 'good') {
+                  return {
+                    label: 'Good',
+                    className: 'border-green-200 bg-green-50 text-green-800',
+                  }
+                }
+                if (rating === 'bad') {
+                  return {
+                    label: 'Bad',
+                    className: 'border-red-200 bg-red-50 text-red-800',
+                  }
+                }
+                return {
+                  label: 'Mixed',
+                  className: 'border-amber-200 bg-amber-50 text-amber-800',
+                }
+              }
+              
+              const dimensions = [
+                { key: 'noiseDensity', label: 'Noise & density' },
+                { key: 'dailyConvenience', label: 'Daily convenience' },
+                { key: 'greenOutdoor', label: 'Green & outdoors' },
+                { key: 'crowdVibe', label: 'Crowd & vibe' },
+                { key: 'longTermComfort', label: 'Long-term comfort' },
+              ] as const
+              
+              return (
+                <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-1">Living check</h2>
+                    <p className="text-xs text-gray-500">5 dimensions of daily living quality</p>
+                  </div>
+                  <table className="responsive-table w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dimension</th>
+                        {comparisons.map((c, i) => (
+                          <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            {toTitleCase(c.name)}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {dimensions.map(dim => (
+                        <tr key={dim.key}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-700">{dim.label}</td>
+                          {comparisons.map((c, idx) => {
+                            const notes = livingNotesArray[idx]
+                            const dimension = notes?.[dim.key]
+                            
+                            if (!dimension) {
+                              return (
+                                <td key={c.id} className="px-4 py-3 text-sm text-gray-400">
+                                  —
+                                </td>
+                              )
+                            }
+                            
+                            const ratingMeta = getRatingMeta(dimension.rating)
+                            
+                            return (
+                              <td key={c.id} className="px-4 py-3 text-sm">
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${ratingMeta.className}`}>
+                                      {ratingMeta.label}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-600 leading-relaxed">
+                                    {dimension.note}
+                                  </div>
+                                </div>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })()}
 
             {/* Who is this neighbourhood for */}
             {whoIsThisFor.length > 0 && (
@@ -1026,28 +969,6 @@ function ComparePageContent() {
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Living Fit Comparison */}
-            {comparisons.length >= 2 && (
-              <LivingFitCompare
-                neighbourhoods={comparisons.map(c => ({ id: c.id, name: c.name }))}
-                className="mb-8"
-              />
-            )}
-
-            {/* Profile Recommendations */}
-            {comparisons.length >= 2 && (
-              <ProfileRecommendationsForCompare 
-                currentNeighbourhoods={comparisons.map(c => ({
-                  id: c.id,
-                  name: c.name,
-                  summary: c.summary,
-                  access: c.access,
-                  planning_area: c.planning_area,
-                }))}
-                className="mb-8"
-              />
             )}
 
             {/* Next dimension: School considerations */}

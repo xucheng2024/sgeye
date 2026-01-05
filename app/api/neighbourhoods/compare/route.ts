@@ -53,6 +53,12 @@ export async function POST(request: NextRequest) {
           mrt_access_type,
           avg_distance_to_mrt,
           updated_at
+        ),
+        mrt_stations(
+          station_code,
+          station_name,
+          latitude,
+          longitude
         )
       `)
       .in('id', neighbourhoodIds)
@@ -162,6 +168,98 @@ export async function POST(request: NextRequest) {
 
     const summaryResults = await Promise.all(summaryPromises)
 
+    // Fetch MRT stations for neighbourhoods
+    const mrtStationsMap = new Map<string, string[]>()
+    
+    // Get stations in area
+    const { data: mrtStationsInArea } = await supabase
+      .from('mrt_stations')
+      .select('neighbourhood_id, station_code, station_name')
+      .in('neighbourhood_id', neighbourhoodIds)
+      .not('station_code', 'is', null)
+    
+    if (mrtStationsInArea) {
+      mrtStationsInArea.forEach(station => {
+        if (station.neighbourhood_id && station.station_code) {
+          if (!mrtStationsMap.has(station.neighbourhood_id)) {
+            mrtStationsMap.set(station.neighbourhood_id, [])
+          }
+          mrtStationsMap.get(station.neighbourhood_id)!.push(station.station_code)
+        }
+      })
+    }
+    
+    // For neighbourhoods without stations in area, find nearest station
+    const neighbourhoodsWithoutStations = neighbourhoodIds.filter(id => {
+      return !mrtStationsMap.has(id) || mrtStationsMap.get(id)!.length === 0
+    })
+    
+    if (neighbourhoodsWithoutStations.length > 0) {
+      const { data: neighbourhoodsWithCenters } = await supabase
+        .from('neighbourhoods')
+        .select('id, center, bbox')
+        .in('id', neighbourhoodsWithoutStations)
+      
+      const { data: allMrtStations } = await supabase
+        .from('mrt_stations')
+        .select('station_code, latitude, longitude')
+        .not('station_code', 'is', null)
+      
+      if (neighbourhoodsWithCenters && allMrtStations && allMrtStations.length > 0) {
+        for (const n of neighbourhoodsWithCenters) {
+          let lat: number | null = null
+          let lng: number | null = null
+          
+          if (n.center) {
+            const center = typeof n.center === 'string' ? JSON.parse(n.center) : n.center
+            if (center?.lat && center?.lng) {
+              lat = center.lat
+              lng = center.lng
+            }
+          }
+          
+          if ((lat === null || lng === null) && n.bbox) {
+            const bbox = typeof n.bbox === 'string' ? JSON.parse(n.bbox) : n.bbox
+            if (bbox && Array.isArray(bbox) && bbox.length === 4) {
+              lat = (bbox[1] + bbox[3]) / 2
+              lng = (bbox[0] + bbox[2]) / 2
+            }
+          }
+          
+          if (lat === null || lng === null) continue
+          
+          let nearestStation: { name: string; distance: number } | null = null
+          
+          for (const station of allMrtStations) {
+            if (!station.latitude || !station.longitude) continue
+            
+            const R = 6371000
+            const lat1 = lat * Math.PI / 180
+            const lat2 = Number(station.latitude) * Math.PI / 180
+            const deltaLat = (Number(station.latitude) - lat) * Math.PI / 180
+            const deltaLng = (Number(station.longitude) - lng) * Math.PI / 180
+            
+            const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                     Math.cos(lat1) * Math.cos(lat2) *
+                     Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+            const distance = R * c
+            
+            if (!nearestStation || distance < nearestStation.distance) {
+              nearestStation = { name: station.station_code, distance }
+            }
+          }
+          
+          if (nearestStation) {
+            if (!mrtStationsMap.has(n.id)) {
+              mrtStationsMap.set(n.id, [])
+            }
+            mrtStationsMap.get(n.id)!.push(nearestStation.name)
+          }
+        }
+      }
+    }
+
     // Combine data
     const comparison = neighbourhoodIds.map((id: string) => {
       const neighbourhood = neighbourhoods?.find((n: any) => n.id === id)
@@ -193,6 +291,7 @@ export async function POST(request: NextRequest) {
           mrt_station_count: access.mrt_station_count,
           mrt_access_type: access.mrt_access_type,
           avg_distance_to_mrt: access.avg_distance_to_mrt,
+          mrt_station_names: mrtStationsMap.get(id) || [],
           updated_at: access.updated_at
         } : null,
         trends: trendsData?.trends || []
