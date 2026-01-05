@@ -1232,7 +1232,11 @@ function NeighbourhoodsPageContent() {
               <div className="flex flex-wrap gap-1.5">
                 {(['low', 'medium', 'high'] as const).map((tier) => {
                   const isSelected = priceTiers.has(tier)
-                  const labels = { low: 'Lower-priced', medium: 'Mid-range', high: 'Higher-priced' }
+                  const labels = { 
+                    low: '<$500k', 
+                    medium: '$500k-$1M', 
+                    high: '$1M-$2M' 
+                  }
                   return (
                     <button
                       key={tier}
@@ -1652,7 +1656,8 @@ function NeighbourhoodsPageContent() {
                       {neighbourhood.summary?.median_lease_years_12m != null && Number(neighbourhood.summary.median_lease_years_12m) > 0 && (() => {
                         const leaseYears = Number(neighbourhood.summary.median_lease_years_12m)
                         const isShortLease = leaseYears < 70
-                        const isLongLease = leaseYears >= 80
+                        const isTypicalLease = leaseYears >= 70 && leaseYears < 80
+                        const isSafeLease = leaseYears >= 80
                         return (
                           <div className="flex items-center justify-between">
                             <span className="text-gray-600">Lease:</span>
@@ -1661,7 +1666,7 @@ function NeighbourhoodsPageContent() {
                               {isShortLease && (
                                 <div className="relative group">
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 cursor-help">
-                                    ⚠ Short lease
+                                    ⚠ Short
                                   </span>
                                   <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                     <p className="mb-2">Flats with shorter leases may face resale and financing constraints.</p>
@@ -1676,10 +1681,28 @@ function NeighbourhoodsPageContent() {
                                   </div>
                                 </div>
                               )}
-                              {isLongLease && (
+                              {isTypicalLease && (
+                                <div className="relative group">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 cursor-help">
+                                    Typical
+                                  </span>
+                                  <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                    <p className="mb-2">Typical remaining lease length with moderate resale and financing flexibility.</p>
+                                    <Link
+                                      href="/hdb/lease-price"
+                                      className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      See how lease length affects long-term value
+                                      <ArrowRight className="w-3 h-3" />
+                                    </Link>
+                                  </div>
+                                </div>
+                              )}
+                              {isSafeLease && (
                                 <div className="relative group">
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 cursor-help">
-                                    ✓ Long lease
+                                    ✓ Safe
                                   </span>
                                   <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                     <p className="mb-2">Longer remaining leases provide more flexibility for resale and financing.</p>
