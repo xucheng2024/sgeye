@@ -18,11 +18,27 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { paginateQuery } from '@/lib/utils/pagination'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 const supabase = createClient(supabaseUrl, supabaseKey)
+
+function normalizeFlatType(value: string): string {
+  const raw = (value || '').trim()
+  if (!raw) return ''
+  const lower = raw.toLowerCase().replace(/\s+/g, ' ').trim()
+
+  if (lower === 'all' || lower === 'any' || lower === 'any size' || lower === 'any-size') return 'All'
+  if (lower === 'executive' || lower === 'exec') return 'EXECUTIVE'
+
+  // Accept "3 ROOM", "3-room", "3 room"
+  const roomMatch = lower.match(/^(\d+)\s*[- ]?\s*room$/)
+  if (roomMatch?.[1]) return `${roomMatch[1]} ROOM`
+
+  return raw
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +48,12 @@ export async function GET(request: NextRequest) {
     const planningAreaIdParam = searchParams.get('planning_area_id')
     const flatTypeParam = searchParams.get('flat_type')
     const planningAreaIds = planningAreaIdParam ? planningAreaIdParam.split(',').filter(id => id.trim() !== '') : []
-    const flatTypes = flatTypeParam ? flatTypeParam.split(',').filter(ft => ft.trim() !== '') : []
+    const flatTypes = flatTypeParam
+      ? flatTypeParam
+          .split(',')
+          .map(ft => normalizeFlatType(ft))
+          .filter(ft => ft.trim() !== '' && ft !== 'All')
+      : []
     
     const region = searchParams.get('region')
     const priceMin = searchParams.get('price_min') ? parseFloat(searchParams.get('price_min')!) : null
@@ -350,6 +371,10 @@ export async function GET(request: NextRequest) {
       .in('neighbourhood_id', neighbourhoodIds)
       .gte('month', startDate.toISOString().split('T')[0])
       .lte('month', endDate.toISOString().split('T')[0])
+      // Ensure stable pagination order
+      .order('neighbourhood_id', { ascending: true })
+      .order('flat_type', { ascending: true })
+      .order('month', { ascending: true })
     
     // Filter by flat_type(s) if specified (multi-select support)
     if (flatTypes.length > 0) {
@@ -360,7 +385,7 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    const { data: monthlyData } = await monthlyQuery
+    const monthlyData = await paginateQuery<any>(monthlyQuery, 1000)
     
     console.log('API: Monthly data from agg_neighbourhood_monthly:', {
       flatTypes: flatTypes.length > 0 ? flatTypes : ['All'],

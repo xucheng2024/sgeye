@@ -88,13 +88,11 @@ function toTitleCase(str: string): string {
     .join(' ')
 }
 
-// Format flat type to lowercase with hyphen (e.g., "4 ROOM" -> "4-room")
 function formatFlatType(flatType: string): string {
-  if (flatType === 'All' || flatType === 'EXECUTIVE') {
-    return flatType === 'All' ? 'Any size' : 'Executive'
-  }
-  // Convert "3 ROOM" -> "3-room", "4 ROOM" -> "4-room", etc.
-  return flatType.toLowerCase().replace(/\s+/g, '-')
+  if (flatType === 'All') return 'Any size'
+  if (flatType === 'EXECUTIVE') return 'Executive'
+  // Convert "3 ROOM" -> "3 Room", "4 ROOM" -> "4 Room", etc.
+  return toTitleCase(flatType)
 }
 
 function NeighbourhoodsPageContent() {
@@ -112,10 +110,28 @@ function NeighbourhoodsPageContent() {
   const leaseMinParam = searchParams.get('lease_min')
   const sourceParam = searchParams.get('source')
   
+  function normalizeFlatType(value: string): string {
+    const raw = (value || '').trim()
+    if (!raw) return ''
+    const lower = raw.toLowerCase().replace(/\s+/g, ' ').trim()
+
+    if (lower === 'all' || lower === 'any' || lower === 'any size' || lower === 'any-size') return 'All'
+    if (lower === 'executive' || lower === 'exec') return 'EXECUTIVE'
+
+    // Accept "3 ROOM", "3-room", "3 room"
+    const roomMatch = lower.match(/^(\d+)\s*[- ]?\s*room$/)
+    if (roomMatch?.[1]) return `${roomMatch[1]} ROOM`
+
+    return raw
+  }
+
   // Parse comma-separated values from URL
   const parseUrlArray = (value: string): string[] => {
     if (!value) return []
-    return value.split(',').filter(v => v.trim() !== '')
+    return value
+      .split(',')
+      .map(v => normalizeFlatType(v))
+      .filter(v => v.trim() !== '')
   }
   
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
@@ -444,6 +460,35 @@ function NeighbourhoodsPageContent() {
       // Calculate if showing all flat types
       const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
       const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+
+      const priceRanges = {
+        low: [0, 499999],
+        medium: [500000, 999999],
+        high: [1000000, 2000000]
+      } as const
+      const leaseRanges = {
+        low: [30, 70],      // < 70 years (high risk)
+        medium: [70, 80],   // 70-80 years (medium risk)
+        high: [80, 99]      // >= 80 years (low risk)
+      } as const
+
+      const matchesPriceTiers = (price: number | null): boolean => {
+        if (priceTiers.size === 0) return true
+        if (price == null || !Number.isFinite(price)) return false
+        return Array.from(priceTiers).some(tier => {
+          const range = priceRanges[tier as keyof typeof priceRanges]
+          return !!range && price >= range[0] && price <= range[1]
+        })
+      }
+
+      const matchesLeaseTiers = (lease: number | null): boolean => {
+        if (leaseTiers.size === 0) return true
+        if (lease == null || !Number.isFinite(lease)) return false
+        return Array.from(leaseTiers).some(tier => {
+          const range = leaseRanges[tier as keyof typeof leaseRanges]
+          return !!range && lease >= range[0] && lease <= range[1]
+        })
+      }
       
       console.log('Loaded neighbourhoods:', {
         count: loaded.length,
@@ -464,8 +509,8 @@ function NeighbourhoodsPageContent() {
       let displayItems: Array<Neighbourhood & { display_flat_type?: string }> = []
       
       if (isAllFlatTypes) {
-        // Show one card per neighbourhood with aggregated summary data
-        // Don't expand by flat type, use the existing summary
+        // Any size mode: if price/lease filters are active, show the matching flat type
+        // (so displayed price/lease aligns with filters)
         console.log('Any size mode - using aggregated summary:', {
           loadedCount: loaded.length,
           sampleNeighbourhood: loaded[0] ? {
@@ -475,17 +520,61 @@ function NeighbourhoodsPageContent() {
             flatTypeDetailsCount: loaded[0].flat_type_details?.length || 0
           } : null
         })
-        displayItems = loaded.map(neighbourhood => ({
-          ...neighbourhood,
-          display_flat_type: undefined // No specific flat type when showing "All"
-        }))
+        displayItems = loaded
+          .map(neighbourhood => {
+            const details = neighbourhood.flat_type_details || []
+
+            // No price/lease restriction: keep aggregated view (one card per neighbourhood)
+            if (priceTiers.size === 0 && leaseTiers.size === 0) {
+              return {
+                ...neighbourhood,
+                display_flat_type: undefined
+              }
+            }
+
+            const candidates = details.filter(d => {
+              const p = d.median_price_12m != null ? Number(d.median_price_12m) : null
+              const l = d.median_lease_years_12m != null ? Number(d.median_lease_years_12m) : null
+              return matchesPriceTiers(p) && matchesLeaseTiers(l)
+            })
+            if (candidates.length === 0) return null
+
+            // Prefer lowest price when price filter is active; otherwise prefer highest lease.
+            const best = [...candidates].sort((a, b) => {
+              const priceA = a.median_price_12m != null ? Number(a.median_price_12m) : Infinity
+              const priceB = b.median_price_12m != null ? Number(b.median_price_12m) : Infinity
+              const leaseA = a.median_lease_years_12m != null ? Number(a.median_lease_years_12m) : -Infinity
+              const leaseB = b.median_lease_years_12m != null ? Number(b.median_lease_years_12m) : -Infinity
+
+              if (priceTiers.size > 0 && priceA !== priceB) return priceA - priceB
+              return leaseB - leaseA
+            })[0]
+
+            return {
+              ...neighbourhood,
+              display_flat_type: best.flat_type,
+              summary: {
+                tx_12m: best.tx_12m,
+                median_price_12m: best.median_price_12m,
+                median_psm_12m: best.median_psm_12m,
+                median_lease_years_12m: best.median_lease_years_12m,
+                avg_floor_area_12m: best.avg_floor_area_12m
+              }
+            }
+          })
+          .filter((n): n is NonNullable<typeof n> => n !== null)
       } else {
         // Specific flat types selected: filter to only show neighbourhoods that have these flat types
-        // Expand to show one card per selected flat type
+        // Expand to show one card per selected flat type, but only if it meets price/lease filters
         loaded.forEach((neighbourhood: Neighbourhood) => {
           if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
             neighbourhood.flat_type_details.forEach(ftDetail => {
-              if (selectedFlatTypesArray.includes(ftDetail.flat_type)) {
+              if (!selectedFlatTypesArray.includes(ftDetail.flat_type)) return
+
+              const p = ftDetail.median_price_12m != null ? Number(ftDetail.median_price_12m) : null
+              const l = ftDetail.median_lease_years_12m != null ? Number(ftDetail.median_lease_years_12m) : null
+              if (!matchesPriceTiers(p) || !matchesLeaseTiers(l)) return
+
                 displayItems.push({
                   ...neighbourhood,
                   display_flat_type: ftDetail.flat_type,
@@ -497,7 +586,6 @@ function NeighbourhoodsPageContent() {
                     avg_floor_area_12m: ftDetail.avg_floor_area_12m
                   }
                 })
-              }
             })
           }
         })
@@ -1091,9 +1179,9 @@ function NeighbourhoodsPageContent() {
               <div className="flex flex-wrap gap-1.5">
                 {(['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE'] as const).map((ft) => {
                   const isAll = ft === 'All'
-                  const isSelected = selectedFlatTypes.has(ft)
                   const showAll = isAll && (selectedFlatTypes.size === 0 || selectedFlatTypes.has('All'))
-                  const displayLabel = isAll ? 'Any size' : formatFlatType(ft)
+                  const isSelected = isAll ? showAll : selectedFlatTypes.has(ft)
+                  const displayLabel = formatFlatType(ft)
                   
                   return (
                     <button
