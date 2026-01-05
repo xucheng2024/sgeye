@@ -102,10 +102,10 @@ export default function HDBAffordabilityPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Can I Afford It?</h1>
-          <p className="text-lg text-gray-600 mb-2">Calculate your affordability and find suitable HDB flats</p>
-          <p className="text-sm text-gray-500 italic">
-            This tool helps you narrow down suitable towns and understand trade-offs. Final unit selection depends on specific flat attributes such as block, floor, and proximity.
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Start with a comfortable range</h1>
+          <p className="text-lg text-gray-600 mb-2">We'll begin by understanding what's realistic for your household.</p>
+          <p className="text-sm text-gray-500">
+            This helps narrow things down, so you don't have to consider everything at once.
           </p>
         </div>
       </header>
@@ -114,17 +114,11 @@ export default function HDBAffordabilityPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Form */}
           <ChartCard
-            title="Your Financial Profile"
-            description="Enter your financial details to calculate affordability"
+            title="About your household"
+            description="Tell us a bit about your household"
             icon={<Calculator className="w-6 h-6" />}
           >
             <div className="space-y-5">
-              {/* Reassurance text at top */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  <strong className="text-gray-900">This is a quick estimate to help you explore options.</strong> Final loan amounts depend on bank or HDB assessment.
-                </p>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -146,7 +140,7 @@ export default function HDBAffordabilityPage() {
                   <span className="text-sm font-medium text-gray-600 whitespace-nowrap">k</span>
                 </div>
                 <p className="mt-1.5 text-xs text-gray-600">
-                  HDB and banks assess loans using gross income.
+                  Used only to estimate a comfortable range. No pass or fail.
                 </p>
                 {monthlyIncome > 0 && (
                   <p className="mt-1 text-xs text-gray-500">
@@ -255,15 +249,15 @@ export default function HDBAffordabilityPage() {
 
           {/* Results */}
           <ChartCard
-            title="Your Affordability Results"
-            description="Based on MSR, TDSR, and LTV regulations"
+            title="A comfortable price range"
+            description="Based on current HDB and bank guidelines."
             icon={<Home className="w-6 h-6" />}
           >
             {/* Section 1: Summary Box */}
             {results && (
               <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
                 <h3 className="text-base font-bold text-gray-900 mb-2">
-                  What {formatCurrency(results.maxPropertyPrice)} means in reality
+                  What families often consider at this range
                 </h3>
                 <p className="text-sm text-gray-800 leading-relaxed mb-2">
                   With this budget, most families are choosing between:
@@ -283,7 +277,7 @@ export default function HDBAffordabilityPage() {
               <div className="space-y-4">
                 {/* Budget - As emphasis only */}
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-300 shadow-lg">
-                  <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Your Budget Cap</div>
+                  <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">A comfortable price range</div>
                   <div className="text-4xl font-bold text-purple-600 mb-2">
                     {formatCurrency(results.maxPropertyPrice)}
                   </div>

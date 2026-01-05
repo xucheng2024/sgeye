@@ -33,7 +33,7 @@ export default function Home() {
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <HomeIcon className="w-5 h-5 text-blue-200/80" />
-                  Not a listing site
+                  No agents, no listings
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Users className="w-5 h-5 text-blue-200/80" />
@@ -57,9 +57,9 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">1</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Find what fits your budget
+                    Start with a comfortable range
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">Income, loan limits, and lease comfort.</p>
+                  <p className="text-sm text-gray-600 mb-3">Based on income, loan rules, and lease comfort.</p>
                   <Link
                     href="/hdb/affordability"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
@@ -75,9 +75,9 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">2</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Understand school pressure
+                    Understand school demand
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">See how competition varies by area.</p>
+                  <p className="text-sm text-gray-600 mb-3">See how demand varies by area.</p>
                   <Link
                     href="/family/psle-school"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
@@ -93,14 +93,14 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">3</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Compare neighbourhoods side-by-side
+                    Compare neighbourhoods side by side
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">Price, lease, schools, and transport—together.</p>
+                  <p className="text-sm text-gray-600 mb-3">Price, lease safety, schools, and transport — together.</p>
                   <Link
-                    href="/compare"
+                    href="/neighbourhoods"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                   >
-                    Compare
+                    Compare neighbourhoods
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

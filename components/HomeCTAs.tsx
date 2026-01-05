@@ -12,7 +12,7 @@ export default function HomeCTAs() {
         onClick={() => AnalyticsEvents.ctaStartGuided()}
         className="inline-flex items-center justify-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg w-full sm:w-auto sm:min-w-[280px]"
       >
-        Check what I can afford
+        See what fits my family
         <ArrowRight className="w-5 h-5" />
       </Link>
       <Link
