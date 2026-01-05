@@ -101,21 +101,27 @@ function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  // Read filter states from URL params
-  const planningAreaId = searchParams.get('planning_area_id') || ''
-  const flatTypeParam = searchParams.get('flat_type') || 'All'
-  const priceTierParam = searchParams.get('price_tier') || 'all'
-  const leaseTierParam = searchParams.get('lease_tier') || 'all'
-  const mrtTierParam = searchParams.get('mrt_tier') || 'all'
+  // Read filter states from URL params - support comma-separated values for multi-select
+  const planningAreaIdParam = searchParams.get('planning_area_id') || ''
+  const flatTypeParam = searchParams.get('flat_type') || ''
+  const priceTierParam = searchParams.get('price_tier') || ''
+  const leaseTierParam = searchParams.get('lease_tier') || ''
+  const mrtTierParam = searchParams.get('mrt_tier') || ''
   const regionParam = searchParams.get('region') || 'all'
   const priceMaxParam = searchParams.get('price_max')
   const leaseMinParam = searchParams.get('lease_min')
   const sourceParam = searchParams.get('source')
   
+  // Parse comma-separated values from URL
+  const parseUrlArray = (value: string): string[] => {
+    if (!value) return []
+    return value.split(',').filter(v => v.trim() !== '')
+  }
+  
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
   const [originalNeighbourhoods, setOriginalNeighbourhoods] = useState<Neighbourhood[]>([]) // Store original for map view
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
-  const [selectedPlanningArea, setSelectedPlanningArea] = useState<string>(planningAreaId)
+  const [selectedPlanningAreas, setSelectedPlanningAreas] = useState<Set<string>>(new Set(parseUrlArray(planningAreaIdParam)))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
@@ -123,12 +129,15 @@ function NeighbourhoodsPageContent() {
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
+  const [isPlanningAreaExpanded, setIsPlanningAreaExpanded] = useState(false)
   
-  // Filter states - initialize from URL params
-  const [selectedFlatType, setSelectedFlatType] = useState<string>(flatTypeParam)
-  const [priceTier, setPriceTier] = useState<string>(priceTierParam)
-  const [leaseTier, setLeaseTier] = useState<string>(leaseTierParam)
-  const [mrtTier, setMrtTier] = useState<string>(mrtTierParam)
+  // Filter states - initialize from URL params (multi-select)
+  const [selectedFlatTypes, setSelectedFlatTypes] = useState<Set<string>>(
+    new Set(parseUrlArray(flatTypeParam).length > 0 ? parseUrlArray(flatTypeParam) : ['All'])
+  )
+  const [priceTiers, setPriceTiers] = useState<Set<string>>(new Set(parseUrlArray(priceTierParam)))
+  const [leaseTiers, setLeaseTiers] = useState<Set<string>>(new Set(parseUrlArray(leaseTierParam)))
+  const [mrtTiers, setMrtTiers] = useState<Set<string>>(new Set(parseUrlArray(mrtTierParam)))
   const [region, setRegion] = useState<string>(regionParam)
   
   useEffect(() => {
@@ -139,19 +148,21 @@ function NeighbourhoodsPageContent() {
 
   useEffect(() => {
     // Track filter usage
-    if (priceTier === 'low') {
+    if (priceTiers.has('low')) {
       recordBehaviorEvent({ type: 'price_filter', metadata: { tier: 'low' } })
     }
-    if (leaseTier !== 'all') {
-      recordBehaviorEvent({ type: 'lease_filter', metadata: { tier: leaseTier } })
-      if (leaseTier === 'low' || leaseTier === 'medium') {
-        recordBehaviorEvent({ type: 'short_lease_warning' })
-      }
+    if (leaseTiers.size > 0) {
+      Array.from(leaseTiers).forEach(tier => {
+        recordBehaviorEvent({ type: 'lease_filter', metadata: { tier } })
+        if (tier === 'low' || tier === 'medium') {
+          recordBehaviorEvent({ type: 'short_lease_warning' })
+        }
+      })
     }
-    if (mrtTier === 'close') {
+    if (mrtTiers.has('close')) {
       recordBehaviorEvent({ type: 'mrt_filter_close' })
     }
-  }, [priceTier, leaseTier, mrtTier])
+  }, [priceTiers, leaseTiers, mrtTiers])
 
   useEffect(() => {
     // Track clicks on low-priced neighbourhoods
@@ -162,7 +173,7 @@ function NeighbourhoodsPageContent() {
     }
     // This will be called when user clicks on a neighbourhood card
     // For now, we'll track when viewing filtered results with low price tier
-    if (priceTier === 'low' && neighbourhoods.length > 0) {
+    if (priceTiers.has('low') && neighbourhoods.length > 0) {
       // Implicit signal that user is browsing low-price options
       const lowPriceCount = neighbourhoods.filter(n => 
         n.summary?.median_price_12m && Number(n.summary.median_price_12m) < priceThresholds.p25
@@ -171,61 +182,76 @@ function NeighbourhoodsPageContent() {
         recordBehaviorEvent({ type: 'low_price_click', metadata: { count: lowPriceCount } })
       }
     }
-  }, [neighbourhoods, priceTier, priceThresholds])
+  }, [neighbourhoods, priceTiers, priceThresholds])
 
   // Sync filters from URL params when they change (e.g., when returning from detail page)
   useEffect(() => {
-    const urlPlanningArea = searchParams.get('planning_area_id') || ''
-    const urlFlatType = searchParams.get('flat_type') || 'All'
-    let urlPriceTier = searchParams.get('price_tier') || 'all'
-    let urlLeaseTier = searchParams.get('lease_tier') || 'all'
-    const urlMrtTier = searchParams.get('mrt_tier') || 'all'
+    const urlPlanningAreas = parseUrlArray(searchParams.get('planning_area_id') || '')
+    const urlFlatTypes = parseUrlArray(searchParams.get('flat_type') || '')
+    const urlPriceTiers = parseUrlArray(searchParams.get('price_tier') || '')
+    const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
+    const urlMrtTiers = parseUrlArray(searchParams.get('mrt_tier') || '')
     const urlRegion = searchParams.get('region') || 'all'
     const urlPriceMax = searchParams.get('price_max')
     const urlLeaseMin = searchParams.get('lease_min')
     const addToCompare = searchParams.get('add_to_compare')
     
-    // Convert price_max to price_tier if price_tier not provided
-    if (urlPriceTier === 'all' && urlPriceMax) {
+    // Convert price_max to price_tier if price_tier not provided (backward compatibility)
+    let finalPriceTiers = new Set(urlPriceTiers)
+    if (finalPriceTiers.size === 0 && urlPriceMax) {
       const maxPrice = parseFloat(urlPriceMax)
       if (!isNaN(maxPrice)) {
         if (maxPrice <= 500000) {
-          urlPriceTier = 'low'
+          finalPriceTiers = new Set(['low'])
         } else if (maxPrice <= 1000000) {
-          urlPriceTier = 'medium'
+          finalPriceTiers = new Set(['medium'])
         } else {
-          urlPriceTier = 'high'
+          finalPriceTiers = new Set(['high'])
         }
       }
     }
     
-    // Convert lease_min to lease_tier if lease_tier not provided (unified terminology)
-    if (urlLeaseTier === 'all' && urlLeaseMin) {
+    // Convert lease_min to lease_tier if lease_tier not provided (backward compatibility)
+    let finalLeaseTiers = new Set(urlLeaseTiers)
+    if (finalLeaseTiers.size === 0 && urlLeaseMin) {
       const minLease = parseFloat(urlLeaseMin)
       if (minLease >= 80) {
-        urlLeaseTier = 'high'
+        finalLeaseTiers = new Set(['high'])
       } else if (minLease >= 70) {
-        urlLeaseTier = 'medium'
+        finalLeaseTiers = new Set(['medium'])
       } else {
-        urlLeaseTier = 'low'
+        finalLeaseTiers = new Set(['low'])
       }
     }
     
-    if (urlPlanningArea !== selectedPlanningArea) {
-      setSelectedPlanningArea(urlPlanningArea)
+    // Compare sets for planning areas
+    const urlPlanningAreaSet = new Set(urlPlanningAreas)
+    if (Array.from(selectedPlanningAreas).sort().join(',') !== Array.from(urlPlanningAreaSet).sort().join(',')) {
+      setSelectedPlanningAreas(urlPlanningAreaSet)
     }
-    if (urlFlatType !== selectedFlatType) {
-      setSelectedFlatType(urlFlatType)
+    
+    // Compare sets for flat types (default to 'All' if empty)
+    const urlFlatTypeSet = new Set(urlFlatTypes.length > 0 ? urlFlatTypes : ['All'])
+    if (Array.from(selectedFlatTypes).sort().join(',') !== Array.from(urlFlatTypeSet).sort().join(',')) {
+      setSelectedFlatTypes(urlFlatTypeSet)
     }
-    if (urlPriceTier !== priceTier) {
-      setPriceTier(urlPriceTier)
+    
+    // Compare sets for price tiers
+    if (Array.from(priceTiers).sort().join(',') !== Array.from(finalPriceTiers).sort().join(',')) {
+      setPriceTiers(finalPriceTiers)
     }
-    if (urlLeaseTier !== leaseTier) {
-      setLeaseTier(urlLeaseTier)
+    
+    // Compare sets for lease tiers
+    if (Array.from(leaseTiers).sort().join(',') !== Array.from(finalLeaseTiers).sort().join(',')) {
+      setLeaseTiers(finalLeaseTiers)
     }
-    if (urlMrtTier !== mrtTier) {
-      setMrtTier(urlMrtTier)
+    
+    // Compare sets for MRT tiers
+    const urlMrtTierSet = new Set(urlMrtTiers)
+    if (Array.from(mrtTiers).sort().join(',') !== Array.from(urlMrtTierSet).sort().join(',')) {
+      setMrtTiers(urlMrtTierSet)
     }
+    
     if (urlRegion !== region) {
       setRegion(urlRegion)
     }
@@ -255,11 +281,37 @@ function NeighbourhoodsPageContent() {
   // Update URL when filters change (but skip if values match URL to avoid loops)
   useEffect(() => {
     const params = new URLSearchParams()
-    if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-    if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
-    if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
-    if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
-    if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+    
+    // Handle multiple planning areas (comma-separated)
+    const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+    if (planningAreaArray.length > 0) {
+      params.set('planning_area_id', planningAreaArray.join(','))
+    }
+    
+    // Handle multiple flat types (comma-separated, exclude 'All' if others selected)
+    const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+    if (flatTypeArray.length > 0) {
+      params.set('flat_type', flatTypeArray.join(','))
+    }
+    
+    // Handle multiple price tiers
+    const priceTierArray = Array.from(priceTiers).filter(Boolean)
+    if (priceTierArray.length > 0) {
+      params.set('price_tier', priceTierArray.join(','))
+    }
+    
+    // Handle multiple lease tiers
+    const leaseTierArray = Array.from(leaseTiers).filter(Boolean)
+    if (leaseTierArray.length > 0) {
+      params.set('lease_tier', leaseTierArray.join(','))
+    }
+    
+    // Handle multiple MRT tiers
+    const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
+    if (mrtTierArray.length > 0) {
+      params.set('mrt_tier', mrtTierArray.join(','))
+    }
+    
     if (region && region !== 'all') params.set('region', region)
     
     const currentParams = new URLSearchParams(window.location.search)
@@ -274,12 +326,12 @@ function NeighbourhoodsPageContent() {
       const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier, region])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region])
 
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningArea, selectedFlatType, priceTier, leaseTier, mrtTier, region])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region])
 
   async function loadPlanningAreas() {
     try {
@@ -296,31 +348,48 @@ function NeighbourhoodsPageContent() {
     setError(null)
     try {
       const params = new URLSearchParams()
-      if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-      if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
       
-      // Set price range based on tier
-      if (priceTier !== 'all') {
+      // Handle multiple planning areas
+      const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+      if (planningAreaArray.length > 0) {
+        params.set('planning_area_id', planningAreaArray.join(','))
+      }
+      
+      // Handle multiple flat types (exclude 'All' if others selected)
+      const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+      if (flatTypeArray.length > 0) {
+        params.set('flat_type', flatTypeArray.join(','))
+      }
+      
+      // For price and lease, we'll do client-side filtering for multiple tiers
+      // because the API only supports single ranges, and we need to check if values
+      // fall within ANY of the selected tier ranges (not the union which would include gaps)
+      // So we don't set price_min/max or lease_min/max here when multiple tiers are selected
+      // Instead, we'll filter on the client side after receiving data
+      
+      // Only set API filters if exactly one tier is selected
+      if (priceTiers.size === 1) {
         const priceRanges = {
           low: [0, 499999],
           medium: [500000, 999999],
           high: [1000000, 2000000]
         }
-        const range = priceRanges[priceTier as keyof typeof priceRanges]
+        const tier = Array.from(priceTiers)[0]
+        const range = priceRanges[tier as keyof typeof priceRanges]
         if (range) {
           params.set('price_min', range[0].toString())
           params.set('price_max', range[1].toString())
         }
       }
       
-      // Set lease range based on tier (unified with lease_risk: low/medium/high)
-      if (leaseTier !== 'all') {
+      if (leaseTiers.size === 1) {
         const leaseRanges = {
           low: [30, 70],      // < 70 years (high risk)
           medium: [70, 80],   // 70-80 years (medium risk)
           high: [80, 99]      // >= 80 years (low risk)
         }
-        const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
+        const tier = Array.from(leaseTiers)[0]
+        const range = leaseRanges[tier as keyof typeof leaseRanges]
         if (range) {
           params.set('lease_min', range[0].toString())
           params.set('lease_max', range[1].toString())
@@ -328,23 +397,28 @@ function NeighbourhoodsPageContent() {
       }
       
       console.log('Loading neighbourhoods with filters:', {
-        priceTier,
-        leaseTier,
-        selectedFlatType,
-        selectedPlanningArea,
-        mrtTier,
+        priceTiers: Array.from(priceTiers),
+        leaseTiers: Array.from(leaseTiers),
+        selectedFlatTypes: Array.from(selectedFlatTypes),
+        selectedPlanningAreas: Array.from(selectedPlanningAreas),
+        mrtTiers: Array.from(mrtTiers),
         params: params.toString(),
         url: `/api/neighbourhoods?${params.toString()}`
       })
       
-      // Set MRT distance based on tier
-      if (mrtTier !== 'all') {
+      // Set MRT distance based on selected tiers (use the closest distance if multiple selected)
+      if (mrtTiers.size > 0) {
         const mrtDistances = {
           close: 500,
           medium: 1000,
           far: 2000
         }
-        params.set('mrt_distance_max', mrtDistances[mrtTier as keyof typeof mrtDistances].toString())
+        // Use the maximum distance (most permissive) when multiple tiers selected
+        const selectedDistances = Array.from(mrtTiers).map(tier => mrtDistances[tier as keyof typeof mrtDistances]).filter(d => d !== undefined)
+        if (selectedDistances.length > 0) {
+          const maxDistance = Math.max(...selectedDistances)
+          params.set('mrt_distance_max', maxDistance.toString())
+        }
       }
       
       // Set region filter
@@ -367,9 +441,13 @@ function NeighbourhoodsPageContent() {
       // Store original data for map view (before expansion)
       setOriginalNeighbourhoods(loaded)
       
+      // Calculate if showing all flat types
+      const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
+      const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+      
       console.log('Loaded neighbourhoods:', {
         count: loaded.length,
-        flatType: selectedFlatType,
+        flatTypes: isAllFlatTypes ? 'All' : selectedFlatTypesArray,
         sample: loaded.slice(0, 5).map((n: Neighbourhood) => ({
           name: n.name,
           hasSummary: !!n.summary,
@@ -384,7 +462,7 @@ function NeighbourhoodsPageContent() {
       // When "All" is selected, expand each neighbourhood into multiple cards (one per flat type)
       let displayItems: Array<Neighbourhood & { display_flat_type?: string }> = []
       
-      if (selectedFlatType === 'All') {
+      if (isAllFlatTypes) {
         // Expand: create one card per flat type
         loaded.forEach((neighbourhood: Neighbourhood) => {
           if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
@@ -408,21 +486,34 @@ function NeighbourhoodsPageContent() {
           }
         })
       } else {
-        // Specific flat type selected: filter to only show neighbourhoods that have this flat type
-        displayItems = loaded.filter((neighbourhood: Neighbourhood) => {
-          // Check if this neighbourhood has data for the selected flat type
+        // Specific flat types selected: filter to only show neighbourhoods that have these flat types
+        // Expand to show one card per selected flat type
+        loaded.forEach((neighbourhood: Neighbourhood) => {
           if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
-            return neighbourhood.flat_type_details.some(ft => ft.flat_type === selectedFlatType)
+            neighbourhood.flat_type_details.forEach(ftDetail => {
+              if (selectedFlatTypesArray.includes(ftDetail.flat_type)) {
+                displayItems.push({
+                  ...neighbourhood,
+                  display_flat_type: ftDetail.flat_type,
+                  summary: {
+                    tx_12m: ftDetail.tx_12m,
+                    median_price_12m: ftDetail.median_price_12m,
+                    median_psm_12m: ftDetail.median_psm_12m,
+                    median_lease_years_12m: ftDetail.median_lease_years_12m,
+                    avg_floor_area_12m: ftDetail.avg_floor_area_12m
+                  }
+                })
+              }
+            })
           }
-          // If no flat_type_details, check if summary exists (API might have filtered already)
-          // But to be safe, if there's no flat_type_details, we should exclude it
-          return false
         })
       }
       
-      // Apply client-side price and lease filters when "All" is selected
-      // (API filters at neighbourhood level, but we need to filter expanded items)
-      if (selectedFlatType === 'All' && (priceTier !== 'all' || leaseTier !== 'all')) {
+      // Apply client-side price and lease filters for multiple tiers
+      // When multiple tiers are selected, we need to check if values fall within
+      // ANY of the selected tier ranges (not the union which would include gaps)
+      // Single tier is already filtered by API, so we only need client-side filtering for multiple tiers
+      if (priceTiers.size > 1 || leaseTiers.size > 1) {
         const priceRanges = {
           low: [0, 499999],
           medium: [500000, 999999],
@@ -435,26 +526,26 @@ function NeighbourhoodsPageContent() {
         }
         
         displayItems = displayItems.filter(item => {
-          // Price filter
-          if (priceTier !== 'all') {
-            const range = priceRanges[priceTier as keyof typeof priceRanges]
-            if (range) {
-              const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-              if (price === null || price < range[0] || price > range[1]) {
-                return false
-              }
-            }
+          // Price filter - check if item matches any selected price tier (only if multiple selected)
+          if (priceTiers.size > 1) {
+            const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
+            if (price === null) return false
+            const matchesPriceTier = Array.from(priceTiers).some(tier => {
+              const range = priceRanges[tier as keyof typeof priceRanges]
+              return range && price >= range[0] && price <= range[1]
+            })
+            if (!matchesPriceTier) return false
           }
           
-          // Lease filter
-          if (leaseTier !== 'all') {
-            const range = leaseRanges[leaseTier as keyof typeof leaseRanges]
-            if (range) {
-              const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
-              if (lease === null || lease < range[0] || lease > range[1]) {
-                return false
-              }
-            }
+          // Lease filter - check if item matches any selected lease tier (only if multiple selected)
+          if (leaseTiers.size > 1) {
+            const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
+            if (lease === null) return false
+            const matchesLeaseTier = Array.from(leaseTiers).some(tier => {
+              const range = leaseRanges[tier as keyof typeof leaseRanges]
+              return range && lease >= range[0] && lease <= range[1]
+            })
+            if (!matchesLeaseTier) return false
           }
           
           return true
@@ -465,7 +556,7 @@ function NeighbourhoodsPageContent() {
         count: displayItems.length,
         sample: displayItems.slice(0, 5).map(n => ({
           name: n.name,
-          flatType: n.display_flat_type || selectedFlatType,
+          flatType: (n as Neighbourhood & { display_flat_type?: string }).display_flat_type || (isAllFlatTypes ? 'All' : selectedFlatTypesArray[0]),
           price: n.summary?.median_price_12m
         }))
       })
@@ -873,29 +964,65 @@ function NeighbourhoodsPageContent() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           {/* First Row: Flat Type, Planning Area, Region */}
           <div className="flex flex-wrap gap-4 mb-4">
-            {/* Flat Type Filter */}
-            <div>
-              <label htmlFor="flat-type" className="block text-xs font-semibold text-gray-700 mb-1.5">
+            {/* Flat Type Filter - Multi-select */}
+            <div className="min-w-[200px]">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Flat size
               </label>
-              <select
-                id="flat-type"
-                value={selectedFlatType}
-                onChange={(e) => setSelectedFlatType(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
-              >
-                <option value="All">Any size</option>
-                <option value="3 ROOM">3-room</option>
-                <option value="4 ROOM">4-room</option>
-                <option value="5 ROOM">5-room</option>
-                <option value="EXECUTIVE">Executive</option>
-              </select>
+              <div className="flex flex-wrap gap-1.5">
+                {(['All', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE'] as const).map((ft) => {
+                  const isAll = ft === 'All'
+                  const isSelected = selectedFlatTypes.has(ft)
+                  const showAll = isAll && (selectedFlatTypes.size === 0 || selectedFlatTypes.has('All'))
+                  const displayLabel = isAll ? 'Any size' : formatFlatType(ft)
+                  
+                  return (
+                    <button
+                      key={ft}
+                      onClick={() => {
+                        const newSet = new Set(selectedFlatTypes)
+                        if (isAll) {
+                          // Toggle "All" - if selected, clear all; if not, select only "All"
+                          if (isSelected) {
+                            newSet.clear()
+                          } else {
+                            newSet.clear()
+                            newSet.add('All')
+                          }
+                        } else {
+                          // Toggle specific flat type
+                          if (newSet.has('All')) {
+                            newSet.delete('All')
+                          }
+                          if (isSelected) {
+                            newSet.delete(ft)
+                            // If nothing left, select "All"
+                            if (newSet.size === 0) {
+                              newSet.add('All')
+                            }
+                          } else {
+                            newSet.add(ft)
+                          }
+                        }
+                        setSelectedFlatTypes(newSet)
+                      }}
+                      className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      {displayLabel}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            {/* Planning Area Filter */}
-            <div className="shrink-0" style={{ minWidth: '180px' }}>
+            {/* Planning Area Filter - Multi-select */}
+            <div>
               <div className="flex items-center gap-1 mb-1.5">
-                <label htmlFor="planning-area" className="block text-xs font-semibold text-gray-700">
+                <label className="block text-xs font-semibold text-gray-700">
                   Planning Area
                 </label>
                 <div className="relative group">
@@ -913,27 +1040,66 @@ function NeighbourhoodsPageContent() {
                     </Link>
                   </div>
                 </div>
+                {selectedPlanningAreas.size > 0 && (
+                  <button
+                    onClick={() => setSelectedPlanningAreas(new Set())}
+                    className="ml-auto text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear ({selectedPlanningAreas.size})
+                  </button>
+                )}
               </div>
-              <select
-                id="planning-area"
-                value={selectedPlanningArea}
-                onChange={(e) => {
-                  setSelectedPlanningArea(e.target.value)
-                  const url = new URL(window.location.href)
-                  if (e.target.value) {
-                    url.searchParams.set('planning_area_id', e.target.value)
-                  } else {
-                    url.searchParams.delete('planning_area_id')
-                  }
-                  window.history.pushState({}, '', url.toString())
-                }}
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white"
+              <button
+                onClick={() => setIsPlanningAreaExpanded(!isPlanningAreaExpanded)}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 text-sm rounded-md border border-gray-300 shadow-sm bg-white hover:bg-gray-50 text-left"
               >
-                <option value="">All Planning Areas</option>
-                {planningAreas.map(pa => (
-                  <option key={pa.id} value={pa.id}>{toTitleCase(pa.name)}</option>
-                ))}
-              </select>
+                <span className="text-xs text-gray-700">
+                  {selectedPlanningAreas.size === 0 
+                    ? 'All Planning Areas' 
+                    : selectedPlanningAreas.size === 1
+                      ? planningAreas.find(pa => selectedPlanningAreas.has(pa.id))?.name 
+                          ? toTitleCase(planningAreas.find(pa => selectedPlanningAreas.has(pa.id))!.name)
+                          : '1 selected'
+                      : `${selectedPlanningAreas.size} selected`
+                  }
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isPlanningAreaExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {isPlanningAreaExpanded && (
+                <div className="mt-1 max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2 bg-white">
+                  {planningAreas.length === 0 ? (
+                    <div className="text-xs text-gray-500 py-1">Loading...</div>
+                  ) : (
+                    <div className="space-y-1">
+                      {planningAreas.map(pa => {
+                        const isSelected = selectedPlanningAreas.has(pa.id)
+                        return (
+                          <label
+                            key={pa.id}
+                            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedPlanningAreas)
+                                if (e.target.checked) {
+                                  newSet.add(pa.id)
+                                } else {
+                                  newSet.delete(pa.id)
+                                }
+                                setSelectedPlanningAreas(newSet)
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-xs text-gray-700">{toTitleCase(pa.name)}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Region Filter */}
@@ -991,123 +1157,121 @@ function NeighbourhoodsPageContent() {
 
           {/* Second Row: Price Range, Remaining Lease, MRT Distance */}
           <div className="flex flex-wrap gap-4">
-            {/* Price Range Filter */}
+            {/* Price Range Filter - Multi-select */}
             <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Price Range
               </label>
               <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setPriceTier('low')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'low'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  Lower-priced
-                </button>
-                <button
-                  onClick={() => setPriceTier('medium')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'medium'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  Mid-range
-                </button>
-                <button
-                  onClick={() => setPriceTier('high')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    priceTier === 'high'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  Higher-priced
-                </button>
+                {(['low', 'medium', 'high'] as const).map((tier) => {
+                  const isSelected = priceTiers.has(tier)
+                  const labels = { low: 'Lower-priced', medium: 'Mid-range', high: 'Higher-priced' }
+                  return (
+                    <button
+                      key={tier}
+                      onClick={() => {
+                        const newSet = new Set(priceTiers)
+                        if (isSelected) {
+                          newSet.delete(tier)
+                        } else {
+                          newSet.add(tier)
+                        }
+                        setPriceTiers(newSet)
+                      }}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      {labels[tier]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* Remaining Lease Filter */}
+            {/* Remaining Lease Filter - Multi-select */}
             <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 Lease safety
               </label>
               <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setLeaseTier('low')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'low'
-                      ? 'bg-red-600 text-white border-red-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-red-400 hover:bg-red-50'
-                  }`}
-                  title="< 70 years remaining lease"
-                >
-                  Short
-                </button>
-                <button
-                  onClick={() => setLeaseTier('medium')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'medium'
-                      ? 'bg-yellow-600 text-white border-yellow-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
-                  }`}
-                  title="70-80 years remaining lease"
-                >
-                  Typical
-                </button>
-                <button
-                  onClick={() => setLeaseTier('high')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    leaseTier === 'high'
-                      ? 'bg-green-600 text-white border-green-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
-                  }`}
-                  title="≥ 80 years remaining lease"
-                >
-                  Safe
-                </button>
+                {(['low', 'medium', 'high'] as const).map((tier) => {
+                  const isSelected = leaseTiers.has(tier)
+                  const labels = { low: 'Short', medium: 'Typical', high: 'Safe' }
+                  const titles = { 
+                    low: '< 70 years remaining lease', 
+                    medium: '70-80 years remaining lease', 
+                    high: '≥ 80 years remaining lease' 
+                  }
+                  const selectedColors = {
+                    low: 'bg-red-600 text-white border-red-600',
+                    medium: 'bg-yellow-600 text-white border-yellow-600',
+                    high: 'bg-green-600 text-white border-green-600'
+                  }
+                  const hoverColors = {
+                    low: 'hover:border-red-400 hover:bg-red-50',
+                    medium: 'hover:border-yellow-400 hover:bg-yellow-50',
+                    high: 'hover:border-green-400 hover:bg-green-50'
+                  }
+                  return (
+                    <button
+                      key={tier}
+                      onClick={() => {
+                        const newSet = new Set(leaseTiers)
+                        if (isSelected) {
+                          newSet.delete(tier)
+                        } else {
+                          newSet.add(tier)
+                        }
+                        setLeaseTiers(newSet)
+                      }}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        isSelected
+                          ? selectedColors[tier]
+                          : `bg-white text-gray-700 border-gray-300 ${hoverColors[tier]}`
+                      }`}
+                      title={titles[tier]}
+                    >
+                      {labels[tier]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* MRT Distance Filter */}
+            {/* MRT Distance Filter - Multi-select */}
             <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                 MRT Distance
               </label>
               <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setMrtTier('close')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    mrtTier === 'close'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  ≤500m
-                </button>
-                <button
-                  onClick={() => setMrtTier('medium')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    mrtTier === 'medium'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  ≤1km
-                </button>
-                <button
-                  onClick={() => setMrtTier('far')}
-                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
-                    mrtTier === 'far'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                  }`}
-                >
-                  ≤2km
-                </button>
+                {(['close', 'medium', 'far'] as const).map((tier) => {
+                  const isSelected = mrtTiers.has(tier)
+                  const labels = { close: '≤500m', medium: '≤1km', far: '≤2km' }
+                  return (
+                    <button
+                      key={tier}
+                      onClick={() => {
+                        const newSet = new Set(mrtTiers)
+                        if (isSelected) {
+                          newSet.delete(tier)
+                        } else {
+                          newSet.add(tier)
+                        }
+                        setMrtTiers(newSet)
+                      }}
+                      className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                    >
+                      {labels[tier]}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -1197,25 +1361,25 @@ function NeighbourhoodsPageContent() {
                   Try adjusting your filters - remove price, lease, or MRT restrictions to see more options.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {priceTier !== 'all' && (
+                  {priceTiers.size > 0 && (
                     <button
-                      onClick={() => setPriceTier('all')}
+                      onClick={() => setPriceTiers(new Set())}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear Price Filter
                     </button>
                   )}
-                  {leaseTier !== 'all' && (
+                  {leaseTiers.size > 0 && (
                     <button
-                      onClick={() => setLeaseTier('all')}
+                      onClick={() => setLeaseTiers(new Set())}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear Lease Filter
                     </button>
                   )}
-                  {mrtTier !== 'all' && (
+                  {mrtTiers.size > 0 && (
                     <button
-                      onClick={() => setMrtTier('all')}
+                      onClick={() => setMrtTiers(new Set())}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear MRT Filter
@@ -1309,27 +1473,32 @@ function NeighbourhoodsPageContent() {
                 </div>
                 {viewMode === 'map' ? (
                   <div className="mb-6">
-                    {typeof window !== 'undefined' && (
-                      <NeighbourhoodMap 
-                        neighbourhoods={(() => {
-                          // Deduplicate neighbourhoods for map view (remove duplicate IDs from expanded "All" view)
-                          const uniqueMap = new Map<string, typeof originalNeighbourhoods[0]>()
-                          neighbourhoods.forEach(n => {
-                            if (!uniqueMap.has(n.id)) {
-                              uniqueMap.set(n.id, n)
-                            }
-                          })
-                          return Array.from(uniqueMap.values())
-                        })()} 
-                        selectedFlatType={selectedFlatType}
-                      />
-                    )}
+                    {typeof window !== 'undefined' && (() => {
+                      const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
+                      const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+                      return (
+                        <NeighbourhoodMap 
+                          neighbourhoods={(() => {
+                            // Deduplicate neighbourhoods for map view (remove duplicate IDs from expanded "All" view)
+                            const uniqueMap = new Map<string, typeof originalNeighbourhoods[0]>()
+                            neighbourhoods.forEach(n => {
+                              if (!uniqueMap.has(n.id)) {
+                                uniqueMap.set(n.id, n)
+                              }
+                            })
+                            return Array.from(uniqueMap.values())
+                          })()} 
+                          selectedFlatType={isAllFlatTypes ? 'All' : selectedFlatTypesArray.join(',')}
+                        />
+                      )
+                    })()}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {neighbourhoods.map(neighbourhood => {
                 const isSelected = selectedForCompare.has(neighbourhood.id)
                 const displayFlatType = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type
+                const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
                 // Use unique key: neighbourhood_id + flat_type (for "All" mode) or just neighbourhood_id (for specific flat type)
                 const uniqueKey = displayFlatType ? `${neighbourhood.id}-${displayFlatType}` : neighbourhood.id
                 const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
@@ -1368,10 +1537,10 @@ function NeighbourhoodsPageContent() {
                               {formatFlatType((neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type)}
                             </span>
                           )}
-                          {/* Show flat type when specific type is selected */}
-                          {selectedFlatType !== 'All' && (
+                          {/* Show flat type when specific type(s) are selected (not "All") */}
+                          {!isAllFlatTypes && displayFlatType && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
-                              {formatFlatType(selectedFlatType)}
+                              {formatFlatType(displayFlatType)}
                             </span>
                           )}
                         </div>
@@ -1510,11 +1679,26 @@ function NeighbourhoodsPageContent() {
                       <Link
                         href={(() => {
                           const params = new URLSearchParams()
-                          if (selectedPlanningArea) params.set('planning_area_id', selectedPlanningArea)
-                          if (selectedFlatType && selectedFlatType !== 'All') params.set('flat_type', selectedFlatType)
-                          if (priceTier && priceTier !== 'all') params.set('price_tier', priceTier)
-                          if (leaseTier && leaseTier !== 'all') params.set('lease_tier', leaseTier)
-                          if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+                          const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+                          if (planningAreaArray.length > 0) {
+                            params.set('planning_area_id', planningAreaArray.join(','))
+                          }
+                          const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+                          if (flatTypeArray.length > 0) {
+                            params.set('flat_type', flatTypeArray.join(','))
+                          }
+                          const priceTierArray = Array.from(priceTiers).filter(Boolean)
+                          if (priceTierArray.length > 0) {
+                            params.set('price_tier', priceTierArray.join(','))
+                          }
+                          const leaseTierArray = Array.from(leaseTiers).filter(Boolean)
+                          if (leaseTierArray.length > 0) {
+                            params.set('lease_tier', leaseTierArray.join(','))
+                          }
+                          const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
+                          if (mrtTierArray.length > 0) {
+                            params.set('mrt_tier', mrtTierArray.join(','))
+                          }
                           const returnParams = params.toString()
                           return `/neighbourhood/${neighbourhood.id}${returnParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + returnParams)}` : ''}`
                         })()}

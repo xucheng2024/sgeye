@@ -27,8 +27,13 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const planningAreaId = searchParams.get('planning_area_id')
-    const flatType = searchParams.get('flat_type')
+    
+    // Support comma-separated values for multi-select
+    const planningAreaIdParam = searchParams.get('planning_area_id')
+    const flatTypeParam = searchParams.get('flat_type')
+    const planningAreaIds = planningAreaIdParam ? planningAreaIdParam.split(',').filter(id => id.trim() !== '') : []
+    const flatTypes = flatTypeParam ? flatTypeParam.split(',').filter(ft => ft.trim() !== '') : []
+    
     const region = searchParams.get('region')
     const priceMin = searchParams.get('price_min') ? parseFloat(searchParams.get('price_min')!) : null
     const priceMax = searchParams.get('price_max') ? parseFloat(searchParams.get('price_max')!) : null
@@ -59,17 +64,21 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true })
       .range(offset, offset + limit - 1)
 
-    // Filter by planning area if provided
-    if (planningAreaId) {
-      neighbourhoodsQuery = neighbourhoodsQuery.eq('planning_area_id', planningAreaId)
+    // Filter by planning area(s) if provided (multi-select support)
+    if (planningAreaIds.length > 0) {
+      if (planningAreaIds.length === 1) {
+        neighbourhoodsQuery = neighbourhoodsQuery.eq('planning_area_id', planningAreaIds[0])
+      } else {
+        neighbourhoodsQuery = neighbourhoodsQuery.in('planning_area_id', planningAreaIds)
+      }
     }
 
     const { data: neighbourhoodsData, error } = await neighbourhoodsQuery
 
     console.log('API: Fetched neighbourhoods from DB:', {
-      flatType: flatType || 'All',
+      flatTypes: flatTypes.length > 0 ? flatTypes : ['All'],
       count: neighbourhoodsData?.length || 0,
-      planningAreaId
+      planningAreaIds: planningAreaIds.length > 0 ? planningAreaIds : 'All'
     })
     
     // Debug: Check if region is being returned in planning_areas
@@ -342,15 +351,19 @@ export async function GET(request: NextRequest) {
       .gte('month', startDate.toISOString().split('T')[0])
       .lte('month', endDate.toISOString().split('T')[0])
     
-    // Filter by flat_type if specified
-    if (flatType) {
-      monthlyQuery = monthlyQuery.eq('flat_type', flatType)
+    // Filter by flat_type(s) if specified (multi-select support)
+    if (flatTypes.length > 0) {
+      if (flatTypes.length === 1) {
+        monthlyQuery = monthlyQuery.eq('flat_type', flatTypes[0])
+      } else {
+        monthlyQuery = monthlyQuery.in('flat_type', flatTypes)
+      }
     }
     
     const { data: monthlyData } = await monthlyQuery
     
     console.log('API: Monthly data from agg_neighbourhood_monthly:', {
-      flatType: flatType || 'All',
+      flatTypes: flatTypes.length > 0 ? flatTypes : ['All'],
       monthlyDataCount: monthlyData?.length || 0,
       uniqueNeighbourhoods: monthlyData ? [...new Set(monthlyData.map(m => m.neighbourhood_id))].length : 0,
       flatTypesInData: monthlyData ? [...new Set(monthlyData.map(m => m.flat_type))].sort() : []
@@ -470,7 +483,7 @@ export async function GET(request: NextRequest) {
     })
     
     console.log('API: After aggregation:', {
-      flatType: flatType || 'All Types',
+      flatTypes: flatTypes.length > 0 ? flatTypes : ['All Types'],
       neighbourhoodIdsQueried: neighbourhoodIds.length,
       flatTypeSummariesCount: flatTypeSummaries.length,
       neighbourhoodSummariesCount: neighbourhoodSummaries.size,
@@ -600,11 +613,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch planning areas with region data separately to ensure region is included
-    const planningAreaIds = [...new Set(neighbourhoodsData.map(n => n.planning_area_id).filter(Boolean))]
+    const fetchedPlanningAreaIds = [...new Set(neighbourhoodsData.map(n => n.planning_area_id).filter(Boolean))]
     const { data: planningAreasData } = await supabase
       .from('planning_areas')
       .select('id, name, region')
-      .in('id', planningAreaIds)
+      .in('id', fetchedPlanningAreaIds)
     
     // Create planning area lookup map
     const planningAreaMap = new Map()
@@ -671,8 +684,8 @@ export async function GET(request: NextRequest) {
           median_price_12m: summary.median_price_12m,
           median_psm_12m: summary.median_psm_12m,
           median_lease_years_12m: summary.median_lease_years_12m,
-          avg_floor_area_12m: flatType ? 
-            (flatTypeData.find(ft => ft.flat_type === flatType)?.avg_floor_area_12m ?? summary.avg_floor_area_12m) :
+          avg_floor_area_12m: flatTypes.length > 0 && flatTypes.length === 1 ? 
+            (flatTypeData.find(ft => ft.flat_type === flatTypes[0])?.avg_floor_area_12m ?? summary.avg_floor_area_12m) :
             summary.avg_floor_area_12m,
           updated_at: summary.updated_at
         } : null,
@@ -697,7 +710,7 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
-    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatType, region })
+    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatTypes: flatTypes.length > 0 ? flatTypes : ['All'], region })
     
     // Debug: Log centre point statistics
     const withCenter = neighbourhoods.filter(n => n.center !== null).length
@@ -731,11 +744,14 @@ export async function GET(request: NextRequest) {
       let filteredByLease = 0
       let filteredByMRT = 0
       
+      // Determine if we're filtering by specific flat types or showing all
+      const isFilteringByFlatType = flatTypes.length > 0
+      
       neighbourhoods = neighbourhoods.filter(n => {
         // When flat_type is NOT specified ("All"), check if ANY flat type meets criteria
-        // When flat_type IS specified, check that specific flat type's data
+        // When flat_type(s) IS specified, check that those specific flat type's data
         
-        if (!flatType) {
+        if (!isFilteringByFlatType) {
           // "All" mode: Check each flat type separately
           // A neighbourhood passes if ANY of its flat types meet the criteria
           const flatTypesForNeighbourhood = flatTypeSummaries.filter(
@@ -797,43 +813,45 @@ export async function GET(request: NextRequest) {
           return true
           
         } else {
-          // Specific flat type mode: Use the aggregated summary data
+          // Specific flat type(s) mode: Check if any of the selected flat types meet criteria
+          // First check if this neighbourhood has data for any of the selected flat types
+          const matchingFlatTypes = flatTypeSummaries.filter(
+            s => s.neighbourhood_id === n.id && flatTypes.includes(s.flat_type)
+          )
           
-          // Price filter
-          if (priceMin !== null || priceMax !== null) {
-            const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-            if (price === null) {
-              filteredByPrice++
-              return false
-            }
-            if (priceMin !== null && price < priceMin) {
-              filteredByPrice++
-              return false
-            }
-            if (priceMax !== null && price > priceMax) {
-              filteredByPrice++
-              return false
-            }
+          if (matchingFlatTypes.length === 0) {
+            // No data for any selected flat type
+            filteredByPrice++
+            return false
           }
           
-          // Lease filter
-          if (leaseMin !== null || leaseMax !== null) {
-            const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-            if (lease === null) {
-              filteredByLease++
-              return false
+          // Check if at least one selected flat type meets all filter criteria
+          const hasMatchingFlatType = matchingFlatTypes.some(flatTypeSummary => {
+            // Price filter
+            if (priceMin !== null || priceMax !== null) {
+              const price = flatTypeSummary.median_price_12m
+              if (price === null) return false
+              if (priceMin !== null && price < priceMin) return false
+              if (priceMax !== null && price > priceMax) return false
             }
-            if (leaseMin !== null && lease < leaseMin) {
-              filteredByLease++
-              return false
+            
+            // Lease filter
+            if (leaseMin !== null || leaseMax !== null) {
+              const lease = flatTypeSummary.median_lease_years_12m
+              if (lease === null) return false
+              if (leaseMin !== null && lease < leaseMin) return false
+              if (leaseMax !== null && lease > leaseMax) return false
             }
-            if (leaseMax !== null && lease > leaseMax) {
-              filteredByLease++
-              return false
-            }
+            
+            return true
+          })
+          
+          if (!hasMatchingFlatType) {
+            filteredByPrice++
+            return false
           }
           
-          // MRT distance filter
+          // MRT filter (applies to neighbourhood, not flat type)
           if (mrtDistanceMax !== null) {
             const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
             if (distance === null || (distance > 0 && distance > mrtDistanceMax)) {
@@ -844,10 +862,9 @@ export async function GET(request: NextRequest) {
             }
           }
           
-          // Region filter (CCR/RCR/OCR)
+          // Region filter (CCR/RCR/OCR) - applies to neighbourhood
           if (region && region !== 'all') {
             const neighbourhoodRegion = n.planning_area?.region
-            // Case-insensitive comparison
             if (!neighbourhoodRegion || neighbourhoodRegion.toUpperCase() !== region.toUpperCase()) {
               return false
             }
