@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
       : []
     
     const region = searchParams.get('region')
+    const majorRegionParam = searchParams.get('major_region')
+    const majorRegions = majorRegionParam ? majorRegionParam.split(',').filter(r => r.trim() !== '') : []
     const priceMin = searchParams.get('price_min') ? parseFloat(searchParams.get('price_min')!) : null
     const priceMax = searchParams.get('price_max') ? parseFloat(searchParams.get('price_max')!) : null
     const leaseMin = searchParams.get('lease_min') ? parseFloat(searchParams.get('lease_min')!) : null
@@ -80,7 +82,8 @@ export async function GET(request: NextRequest) {
         center,
         created_at,
         updated_at,
-        planning_areas(id, name, region)
+        planning_areas(id, name, region),
+        parent_subzone_id
       `)
       .order('name', { ascending: true })
       .range(offset, offset + limit - 1)
@@ -644,11 +647,26 @@ export async function GET(request: NextRequest) {
       .select('id, name, region')
       .in('id', fetchedPlanningAreaIds)
     
+    // Fetch subzones with region data separately
+    const fetchedSubzoneIds = [...new Set(neighbourhoodsData.map(n => n.parent_subzone_id).filter(Boolean))]
+    const { data: subzonesData } = await supabase
+      .from('subzones')
+      .select('id, name, region')
+      .in('id', fetchedSubzoneIds)
+    
     // Create planning area lookup map
     const planningAreaMap = new Map()
     if (planningAreasData) {
       planningAreasData.forEach(pa => {
         planningAreaMap.set(pa.id, pa)
+      })
+    }
+    
+    // Create subzone lookup map
+    const subzoneMap = new Map()
+    if (subzonesData) {
+      subzonesData.forEach(sz => {
+        subzoneMap.set(sz.id, sz)
       })
     }
 
@@ -686,6 +704,15 @@ export async function GET(request: NextRequest) {
         }
       }
       
+      // Get subzone region (5 major regions) from lookup map
+      let subzoneRegion = null
+      if (n.parent_subzone_id) {
+        const subzone = subzoneMap.get(n.parent_subzone_id)
+        if (subzone) {
+          subzoneRegion = subzone.region || null
+        }
+      }
+      
       const summary = summaryMap.get(n.id) || null
       const access = accessMap.get(n.id) || null
       
@@ -701,6 +728,7 @@ export async function GET(request: NextRequest) {
           name: planningArea.name,
           region: planningArea.region || null
         } : null,
+        subzone_region: subzoneRegion,
         type: n.type,
         bbox: n.bbox,
         center: centerPointsMap.get(n.id) || null,
@@ -735,7 +763,7 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
-    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatTypes: flatTypes.length > 0 ? flatTypes : ['All'], region })
+    console.log('API: Filter params:', { priceMin, priceMax, leaseMin, leaseMax, mrtDistanceMax, flatTypes: flatTypes.length > 0 ? flatTypes : ['All'], region, majorRegions })
     
     // Debug: Log centre point statistics
     const withCenter = neighbourhoods.filter(n => n.center !== null).length
@@ -835,6 +863,14 @@ export async function GET(request: NextRequest) {
             }
           }
           
+          // Major region filter (5 major regions) - applies to neighbourhood
+          if (majorRegions.length > 0) {
+            const neighbourhoodMajorRegion = n.subzone_region
+            if (!neighbourhoodMajorRegion || !majorRegions.includes(neighbourhoodMajorRegion)) {
+              return false
+            }
+          }
+          
           return true
           
         } else {
@@ -891,6 +927,14 @@ export async function GET(request: NextRequest) {
           if (region && region !== 'all') {
             const neighbourhoodRegion = n.planning_area?.region
             if (!neighbourhoodRegion || neighbourhoodRegion.toUpperCase() !== region.toUpperCase()) {
+              return false
+            }
+          }
+          
+          // Major region filter (5 major regions) - applies to neighbourhood
+          if (majorRegions.length > 0) {
+            const neighbourhoodMajorRegion = n.subzone_region
+            if (!neighbourhoodMajorRegion || !majorRegions.includes(neighbourhoodMajorRegion)) {
               return false
             }
           }

@@ -13,7 +13,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { MapPin, TrendingUp, Home, Train, Plus, ArrowRight, DollarSign, Clock, Zap, Map as MapIcon, List, Info, ChevronDown, ChevronRight } from 'lucide-react'
-import { REGIONS, getRegionInfo, type RegionType } from '@/lib/region-mapping'
+import { REGIONS, getRegionInfo, getMajorRegionInfo, type RegionType } from '@/lib/region-mapping'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 import LivingDimensions from '@/components/LivingDimensions'
@@ -34,6 +34,7 @@ interface Neighbourhood {
     name: string
     region?: 'CCR' | 'RCR' | 'OCR' | null
   } | null
+  subzone_region?: 'Central' | 'East' | 'North' | 'North-East' | 'West' | null
   summary: {
     tx_12m: number
     median_price_12m: number | null
@@ -106,6 +107,7 @@ function NeighbourhoodsPageContent() {
   const leaseTierParam = searchParams.get('lease_tier') || ''
   const mrtTierParam = searchParams.get('mrt_tier') || ''
   const regionParam = searchParams.get('region') || 'all'
+  const majorRegionParam = searchParams.get('major_region') || ''
   const priceMaxParam = searchParams.get('price_max')
   const leaseMinParam = searchParams.get('lease_min')
   const sourceParam = searchParams.get('source')
@@ -155,6 +157,7 @@ function NeighbourhoodsPageContent() {
   const [leaseTiers, setLeaseTiers] = useState<Set<string>>(new Set(parseUrlArray(leaseTierParam)))
   const [mrtTiers, setMrtTiers] = useState<Set<string>>(new Set(parseUrlArray(mrtTierParam)))
   const [region, setRegion] = useState<string>(regionParam)
+  const [majorRegions, setMajorRegions] = useState<Set<string>>(new Set(parseUrlArray(majorRegionParam)))
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true) // Default: only show neighbourhoods with 12-month data
   
   useEffect(() => {
@@ -331,10 +334,15 @@ function NeighbourhoodsPageContent() {
     
     if (region && region !== 'all') params.set('region', region)
     
+    if (majorRegions.size > 0) {
+      const majorRegionArray = Array.from(majorRegions)
+      params.set('major_region', majorRegionArray.join(','))
+    }
+    
     const currentParams = new URLSearchParams(window.location.search)
     const newParamsString = params.toString()
     const currentParamsString = Array.from(currentParams.entries())
-      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier', 'region'].includes(key))
+      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier', 'region', 'major_region'].includes(key))
       .map(([key, value]) => `${key}=${value}`)
       .join('&')
     
@@ -343,12 +351,12 @@ function NeighbourhoodsPageContent() {
       const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
 
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region])
+  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
 
   // Re-apply 12-month data filter when showOnlyWithData changes
   useEffect(() => {
@@ -450,6 +458,12 @@ function NeighbourhoodsPageContent() {
       // Set region filter
       if (region && region !== 'all') {
         params.set('region', region)
+      }
+      
+      // Set major region filter (5 major regions)
+      if (majorRegions.size > 0) {
+        const majorRegionArray = Array.from(majorRegions)
+        params.set('major_region', majorRegionArray.join(','))
       }
       
       params.set('limit', '500')
@@ -1207,7 +1221,7 @@ function NeighbourhoodsPageContent() {
             </label>
           </div>
           
-          {/* First Row: Flat Type, Planning Area, Region */}
+          {/* First Row: Flat Type, Planning Area, Market Tier, Planning Region */}
           <div className="flex flex-wrap gap-4 mb-4">
             {/* Flat Type Filter - Multi-select */}
             <div className="min-w-[200px]">
@@ -1347,10 +1361,10 @@ function NeighbourhoodsPageContent() {
               )}
             </div>
 
-            {/* Region Filter */}
+            {/* Market Tier Filter */}
             <div className="shrink-0">
               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Region
+                Market Tier
               </label>
               <div className="flex flex-wrap gap-1.5">
                 <button
@@ -1396,6 +1410,43 @@ function NeighbourhoodsPageContent() {
                 >
                   OCR
                 </button>
+              </div>
+            </div>
+
+            {/* Planning Region Filter (5 Major Regions) - Multi-select */}
+            <div className="shrink-0">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Planning Region
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {(['Central', 'East', 'North', 'North-East', 'West'] as const).map((majorRegion) => {
+                  const isSelected = majorRegions.has(majorRegion)
+                  const majorRegionInfo = getMajorRegionInfo(majorRegion)
+                  return (
+                    <button
+                      key={majorRegion}
+                      onClick={() => {
+                        const newSet = new Set(majorRegions)
+                        if (isSelected) {
+                          newSet.delete(majorRegion)
+                        } else {
+                          newSet.add(majorRegion)
+                        }
+                        setMajorRegions(newSet)
+                      }}
+                      className={`px-2.5 py-1.5 rounded-md border text-xs font-medium transition-all ${
+                        isSelected
+                          ? majorRegionInfo 
+                            ? `${majorRegionInfo.bgColor} ${majorRegionInfo.color} ${majorRegionInfo.borderColor} border-2`
+                            : 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                      }`}
+                      title={majorRegionInfo?.name || majorRegion}
+                    >
+                      {majorRegion}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -1656,7 +1707,15 @@ function NeighbourhoodsPageContent() {
                       onClick={() => setRegion('all')}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
-                      Clear Region Filter
+                      Clear Market Tier Filter
+                    </button>
+                  )}
+                  {majorRegions.size > 0 && (
+                    <button
+                      onClick={() => setMajorRegions(new Set())}
+                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
+                    >
+                      Clear Planning Region Filter
                     </button>
                   )}
                 </div>
@@ -1797,6 +1856,15 @@ function NeighbourhoodsPageContent() {
                               })()}
                             </>
                           )}
+                          {neighbourhood.subzone_region && (() => {
+                            const majorRegionInfo = getMajorRegionInfo(neighbourhood.subzone_region)
+                            if (!majorRegionInfo) return null
+                            return (
+                              <span className={`text-xs px-2 py-1 rounded border font-medium ${majorRegionInfo.bgColor} ${majorRegionInfo.color} ${majorRegionInfo.borderColor}`} title={majorRegionInfo.name}>
+                                {majorRegionInfo.code}
+                              </span>
+                            )
+                          })()}
                           {/* Show flat type badge when a specific flat type is displayed */}
                           {displayFlatType && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">

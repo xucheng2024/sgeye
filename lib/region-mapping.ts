@@ -50,6 +50,60 @@ export function getRegionInfo(region: RegionType | null | undefined): RegionInfo
   return REGIONS[region]
 }
 
+// 5 Major Regions (Central, East, North, North-East, West)
+export type MajorRegionType = 'Central' | 'East' | 'North' | 'North-East' | 'West'
+
+export interface MajorRegionInfo {
+  code: MajorRegionType
+  name: string
+  color: string
+  bgColor: string
+  borderColor: string
+}
+
+export const MAJOR_REGIONS: Record<MajorRegionType, MajorRegionInfo> = {
+  'Central': {
+    code: 'Central',
+    name: 'Central Region',
+    color: 'text-purple-700',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-300'
+  },
+  'East': {
+    code: 'East',
+    name: 'East Region',
+    color: 'text-blue-700',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-300'
+  },
+  'North': {
+    code: 'North',
+    name: 'North Region',
+    color: 'text-green-700',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-300'
+  },
+  'North-East': {
+    code: 'North-East',
+    name: 'North-East Region',
+    color: 'text-orange-700',
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-300'
+  },
+  'West': {
+    code: 'West',
+    name: 'West Region',
+    color: 'text-red-700',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-300'
+  }
+}
+
+export function getMajorRegionInfo(region: MajorRegionType | null | undefined): MajorRegionInfo | null {
+  if (!region || !MAJOR_REGIONS[region]) return null
+  return MAJOR_REGIONS[region]
+}
+
 // Common planning areas mapping (reference only; source of truth should come from DB)
 export const PLANNING_AREA_REGIONS: Record<string, RegionType> = {
   // CCR
