@@ -459,32 +459,26 @@ function NeighbourhoodsPageContent() {
         allNames: loaded.map((n: Neighbourhood) => n.name).sort()
       })
       
-      // When "All" is selected, expand each neighbourhood into multiple cards (one per flat type)
+      // When "All" is selected, show aggregated data (one card per neighbourhood)
+      // When specific types selected, expand to show one card per flat type
       let displayItems: Array<Neighbourhood & { display_flat_type?: string }> = []
       
       if (isAllFlatTypes) {
-        // Expand: create one card per flat type
-        loaded.forEach((neighbourhood: Neighbourhood) => {
-          if (neighbourhood.flat_type_details && neighbourhood.flat_type_details.length > 0) {
-            // Create a card for each flat type
-            neighbourhood.flat_type_details.forEach(ftDetail => {
-              displayItems.push({
-                ...neighbourhood,
-                display_flat_type: ftDetail.flat_type,
-                summary: {
-                  tx_12m: ftDetail.tx_12m,
-                  median_price_12m: ftDetail.median_price_12m,
-                  median_psm_12m: ftDetail.median_psm_12m,
-                  median_lease_years_12m: ftDetail.median_lease_years_12m,
-                  avg_floor_area_12m: ftDetail.avg_floor_area_12m
-                }
-              })
-            })
-          } else {
-            // No flat type details, show as is
-            displayItems.push(neighbourhood)
-          }
+        // Show one card per neighbourhood with aggregated summary data
+        // Don't expand by flat type, use the existing summary
+        console.log('Any size mode - using aggregated summary:', {
+          loadedCount: loaded.length,
+          sampleNeighbourhood: loaded[0] ? {
+            name: loaded[0].name,
+            hasSummary: !!loaded[0].summary,
+            summaryData: loaded[0].summary,
+            flatTypeDetailsCount: loaded[0].flat_type_details?.length || 0
+          } : null
         })
+        displayItems = loaded.map(neighbourhood => ({
+          ...neighbourhood,
+          display_flat_type: undefined // No specific flat type when showing "All"
+        }))
       } else {
         // Specific flat types selected: filter to only show neighbourhoods that have these flat types
         // Expand to show one card per selected flat type
@@ -509,15 +503,34 @@ function NeighbourhoodsPageContent() {
         })
       }
       
+      console.log('After expansion, before client-side filters:', {
+        isAllFlatTypes,
+        displayItemsCount: displayItems.length,
+        sampleItems: displayItems.slice(0, 3).map(item => ({
+          name: item.name,
+          display_flat_type: (item as Neighbourhood & { display_flat_type?: string }).display_flat_type,
+          hasSummary: !!item.summary,
+          price: item.summary?.median_price_12m,
+          lease: item.summary?.median_lease_years_12m
+        }))
+      })
+      
       // Apply client-side filters for price, lease, and MRT when any filters are active
-      // When multiple tiers are selected, we need to check if values fall within
-      // ANY of the selected tier ranges (OR logic, not AND)
-      if (priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0) {
+      // BUT only for cases where we didn't already pass them to the API
+      // (API handles single-tier selections, client handles multi-tier selections)
+      const needsClientSideFiltering = (
+        (priceTiers.size > 1) || // Multiple price tiers need client-side OR logic
+        (leaseTiers.size > 1) || // Multiple lease tiers need client-side OR logic
+        (mrtTiers.size > 1)      // Multiple MRT tiers need client-side OR logic
+      )
+      
+      if (needsClientSideFiltering) {
         console.log('Applying client-side filters:', {
           priceTiers: Array.from(priceTiers),
           leaseTiers: Array.from(leaseTiers),
           mrtTiers: Array.from(mrtTiers),
-          itemsBeforeFilter: displayItems.length
+          itemsBeforeFilter: displayItems.length,
+          note: 'Only applying multi-tier filters (API already handled single-tier filters)'
         })
         
         const priceRanges = {
@@ -541,37 +554,76 @@ function NeighbourhoodsPageContent() {
         let mrtFiltered = 0
         
         displayItems = displayItems.filter(item => {
-          // Price filter - check if item matches any selected price tier
-          if (priceTiers.size > 0) {
-            const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-            if (price === null) {
-              priceFiltered++
-              return false
-            }
-            const matchesPriceTier = Array.from(priceTiers).some(tier => {
-              const range = priceRanges[tier as keyof typeof priceRanges]
-              return range && price >= range[0] && price <= range[1]
-            })
-            if (!matchesPriceTier) {
-              priceFiltered++
-              return false
-            }
-          }
+          const itemWithFlatType = item as Neighbourhood & { display_flat_type?: string }
           
-          // Lease filter - check if item matches any selected lease tier
-          if (leaseTiers.size > 0) {
-            const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
-            if (lease === null) {
-              leaseFiltered++
+          // For "Any size" mode, check if ANY flat type meets criteria
+          // For specific flat type mode, check the displayed flat type
+          if (isAllFlatTypes && item.flat_type_details && item.flat_type_details.length > 0) {
+            // "Any size" mode: check if ANY flat type passes all filters
+            const hasMatchingFlatType = item.flat_type_details.some(ftDetail => {
+              // Price filter (only if multiple tiers - single tier already handled by API)
+              if (priceTiers.size > 1) {
+                const price = ftDetail.median_price_12m ? Number(ftDetail.median_price_12m) : null
+                if (price === null) return false
+                const matchesPriceTier = Array.from(priceTiers).some(tier => {
+                  const range = priceRanges[tier as keyof typeof priceRanges]
+                  return range && price >= range[0] && price <= range[1]
+                })
+                if (!matchesPriceTier) return false
+              }
+              
+              // Lease filter (only if multiple tiers - single tier already handled by API)
+              if (leaseTiers.size > 1) {
+                const lease = ftDetail.median_lease_years_12m ? Number(ftDetail.median_lease_years_12m) : null
+                if (lease === null) return false
+                const matchesLeaseTier = Array.from(leaseTiers).some(tier => {
+                  const range = leaseRanges[tier as keyof typeof leaseRanges]
+                  return range && lease >= range[0] && lease <= range[1]
+                })
+                if (!matchesLeaseTier) return false
+              }
+              
+              return true
+            })
+            
+            if (!hasMatchingFlatType) {
+              priceFiltered++
               return false
             }
-            const matchesLeaseTier = Array.from(leaseTiers).some(tier => {
-              const range = leaseRanges[tier as keyof typeof leaseRanges]
-              return range && lease >= range[0] && lease <= range[1]
-            })
-            if (!matchesLeaseTier) {
-              leaseFiltered++
-              return false
+          } else {
+            // Specific flat type mode: check the item's summary (already filtered by flat type)
+            // Price filter - only if multiple tiers (single tier already handled by API)
+            if (priceTiers.size > 1) {
+              const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
+              if (price === null) {
+                priceFiltered++
+                return false
+              }
+              const matchesPriceTier = Array.from(priceTiers).some(tier => {
+                const range = priceRanges[tier as keyof typeof priceRanges]
+                return range && price >= range[0] && price <= range[1]
+              })
+              if (!matchesPriceTier) {
+                priceFiltered++
+                return false
+              }
+            }
+            
+            // Lease filter - only if multiple tiers (single tier already handled by API)
+            if (leaseTiers.size > 1) {
+              const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
+              if (lease === null) {
+                leaseFiltered++
+                return false
+              }
+              const matchesLeaseTier = Array.from(leaseTiers).some(tier => {
+                const range = leaseRanges[tier as keyof typeof leaseRanges]
+                return range && lease >= range[0] && lease <= range[1]
+              })
+              if (!matchesLeaseTier) {
+                leaseFiltered++
+                return false
+              }
             }
           }
           
@@ -1602,17 +1654,8 @@ function NeighbourhoodsPageContent() {
                               })()}
                             </>
                           )}
-                          {/* Show the specific flat type when "All" is selected and expanded */}
-                          {(() => {
-                            const displayFlatTypeValue = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type;
-                            return displayFlatTypeValue && (
-                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
-                                {formatFlatType(displayFlatTypeValue)}
-                              </span>
-                            );
-                          })()}
-                          {/* Show flat type when specific type(s) are selected (not "All") */}
-                          {!isAllFlatTypes && displayFlatType && (
+                          {/* Show flat type badge when a specific flat type is displayed */}
+                          {displayFlatType && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
                               {formatFlatType(displayFlatType)}
                             </span>
