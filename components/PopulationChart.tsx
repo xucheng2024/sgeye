@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getPopulationData } from '@/lib/data'
 
-export default function PopulationChart() {
+function PopulationChartComponent() {
   const [data, setData] = useState<Array<{ year: string; citizens: number; permanent: number; nonResident: number }>>([])
 
   useEffect(() => {
@@ -37,4 +37,6 @@ export default function PopulationChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(PopulationChartComponent)
 

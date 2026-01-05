@@ -2,7 +2,7 @@
  * Neighbourhood Card Component
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, ArrowRight } from 'lucide-react'
 import { NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
@@ -18,7 +18,7 @@ interface NeighbourhoodCardProps {
   filterParams: string
 }
 
-export function NeighbourhoodCard({ 
+function NeighbourhoodCardComponent({ 
   neighbourhood, 
   isSelected, 
   onToggleCompare, 
@@ -231,4 +231,17 @@ export function NeighbourhoodCard({
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const NeighbourhoodCard = memo(NeighbourhoodCardComponent, (prevProps, nextProps) => {
+  // Custom comparison function for better memoization
+  return (
+    prevProps.neighbourhood.id === nextProps.neighbourhood.id &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.filterParams === nextProps.filterParams &&
+    prevProps.neighbourhood.summary?.median_price_12m === nextProps.neighbourhood.summary?.median_price_12m &&
+    prevProps.neighbourhood.summary?.median_lease_years_12m === nextProps.neighbourhood.summary?.median_lease_years_12m &&
+    prevProps.neighbourhood.access?.mrt_station_count === nextProps.neighbourhood.access?.mrt_station_count
+  )
+})
 

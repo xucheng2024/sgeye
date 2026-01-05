@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ArrowRight, List, Map as MapIcon } from 'lucide-react'
@@ -352,7 +352,7 @@ function NeighbourhoodsPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortPreset])
 
-  function toggleCompare(neighbourhoodId: string, e: React.MouseEvent) {
+  const toggleCompare = useCallback((neighbourhoodId: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     const newSet = new Set(selectedForCompare)
@@ -367,7 +367,7 @@ function NeighbourhoodsPageContent() {
       AnalyticsEvents.addToCompare({ neighbourhoodId })
     }
     setSelectedForCompare(newSet)
-  }
+  }, [selectedForCompare])
 
   function handleCompareSelected() {
     if (selectedForCompare.size === 0) {

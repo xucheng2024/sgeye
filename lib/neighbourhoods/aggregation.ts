@@ -63,9 +63,10 @@ export async function aggregateMonthlyData(
   
   // Calculate medians for each neighbourhood + flat_type combination
   const flatTypeSummaries = Array.from(tempSummaryMap.values()).map(entry => {
-    const sortedPrices = entry.prices.sort((a, b) => a - b)
-    const sortedPsms = entry.psms.sort((a, b) => a - b)
-    const sortedLeases = entry.leases.sort((a, b) => a - b)
+    // Only sort if array has elements, and create copies to avoid mutating original arrays
+    const sortedPrices = entry.prices.length > 0 ? [...entry.prices].sort((a, b) => a - b) : []
+    const sortedPsms = entry.psms.length > 0 ? [...entry.psms].sort((a, b) => a - b) : []
+    const sortedLeases = entry.leases.length > 0 ? [...entry.leases].sort((a, b) => a - b) : []
     
     // Calculate average area (use average of monthly averages, not median)
     const avgArea = entry.areas.length > 0 
@@ -114,9 +115,10 @@ export async function aggregateMonthlyData(
   
   // Final aggregation: median of flat_type medians
   const summaryData = Array.from(neighbourhoodSummaries.entries()).map(([nbhdId, data]) => {
-    const sortedPrices = data.prices.sort((a, b) => a - b)
-    const sortedPsms = data.psms.sort((a, b) => a - b)
-    const sortedLeases = data.leases.sort((a, b) => a - b)
+    // Only sort if array has elements, and create copies to avoid mutating original arrays
+    const sortedPrices = data.prices.length > 0 ? [...data.prices].sort((a, b) => a - b) : []
+    const sortedPsms = data.psms.length > 0 ? [...data.psms].sort((a, b) => a - b) : []
+    const sortedLeases = data.leases.length > 0 ? [...data.leases].sort((a, b) => a - b) : []
     
     // Calculate average area (average of flat_type averages)
     const avgArea = data.areas.length > 0 
