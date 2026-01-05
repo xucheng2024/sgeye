@@ -13,6 +13,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+export const revalidate = 300 // Revalidate every 5 minutes
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -67,6 +69,10 @@ export async function GET(
         type: n.type
       })),
       count: (neighbourhoods || []).length
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
     })
   } catch (error: any) {
     console.error('Unexpected error:', error)

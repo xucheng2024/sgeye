@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getIncomeData } from '@/lib/data'
 
-export default function IncomeChart() {
+function IncomeChartComponent() {
   const [data, setData] = useState<Array<{ year: string; median: number; mean: number }>>([])
 
   useEffect(() => {
@@ -35,4 +35,6 @@ export default function IncomeChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(IncomeChartComponent)
 

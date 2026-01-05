@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getEmploymentData } from '@/lib/data'
 
-export default function EmploymentChart() {
+function EmploymentChartComponent() {
   const [data, setData] = useState<Array<{ year: string; unemployment: number; employment: number }>>([])
 
   useEffect(() => {
@@ -35,4 +35,6 @@ export default function EmploymentChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(EmploymentChartComponent)
 

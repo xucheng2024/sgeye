@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getEducationData } from '@/lib/data'
 
-export default function EducationChart() {
+function EducationChartComponent() {
   const [data, setData] = useState<Array<{ level: string; enrollment: number }>>([])
 
   useEffect(() => {
@@ -33,4 +33,6 @@ export default function EducationChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(EducationChartComponent)
 

@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { getHealthcareData } from '@/lib/data'
 
 const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
 
-export default function HealthcareChart() {
+function HealthcareChartComponent() {
   const [data, setData] = useState<Array<{ name: string; value: number; color: string }>>([])
 
   useEffect(() => {
@@ -46,4 +46,6 @@ export default function HealthcareChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(HealthcareChartComponent)
 

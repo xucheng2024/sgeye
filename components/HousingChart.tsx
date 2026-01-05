@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getHousingData } from '@/lib/data'
 
-export default function HousingChart() {
+function HousingChartComponent() {
   const [data, setData] = useState<Array<{ year: string; hdb: number; private: number }>>([])
 
   useEffect(() => {
@@ -35,4 +35,6 @@ export default function HousingChart() {
     </ResponsiveContainer>
   )
 }
+
+export default memo(HousingChartComponent)
 

@@ -13,6 +13,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+export const revalidate = 3600 // Revalidate every hour (planning areas rarely change)
+
 export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
@@ -31,6 +33,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       planning_areas: data || [],
       count: (data || []).length
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+      },
     })
   } catch (error: any) {
     console.error('Unexpected error:', error)
