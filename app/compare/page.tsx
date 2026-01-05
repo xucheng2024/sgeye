@@ -40,6 +40,15 @@ interface NeighbourhoodComparison {
   trends: any[]
 }
 
+// Convert string to Title Case (first letter uppercase, rest lowercase, handle multi-word)
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 function ComparePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -406,7 +415,7 @@ function ComparePageContent() {
         if (maxTx === minTx) return { display: 'Similar activity', tooltip: 'Both have similar transaction volume' }
         const maxTxIdx = numericValues.indexOf(maxTx)
         const txDiffPercent = ((maxTx - minTx) / minTx) * 100
-        const neighbourhoodName = comparisons[maxTxIdx]?.name || 'The former'
+        const neighbourhoodName = comparisons[maxTxIdx]?.name ? toTitleCase(comparisons[maxTxIdx].name) : 'The former'
         if (txDiffPercent > 50) {
           return { display: `${neighbourhoodName} is more active`, tooltip: `${neighbourhoodName} has clearly more active resale market` }
         } else if (txDiffPercent > 20) {
@@ -421,7 +430,7 @@ function ComparePageContent() {
         const diffPercent = ((maxPrice - minPrice) / minPrice) * 100
         if (diffPercent < 5) return { display: 'Similar prices', tooltip: 'Both have similar median prices' }
         const maxPriceIdx = numericValues.indexOf(maxPrice)
-        const neighbourhoodNamePrice = comparisons[maxPriceIdx]?.name || 'The former'
+        const neighbourhoodNamePrice = comparisons[maxPriceIdx]?.name ? toTitleCase(comparisons[maxPriceIdx].name) : 'The former'
         if (diffPercent > 30) {
           return { display: `${neighbourhoodNamePrice} is more expensive`, tooltip: `${neighbourhoodNamePrice} is substantially higher` }
         } else if (diffPercent > 15) {
@@ -435,7 +444,7 @@ function ComparePageContent() {
         const psmDiffPercent = ((maxPsm - minPsm) / minPsm) * 100
         if (psmDiffPercent < 5) return { display: 'Similar unit prices', tooltip: 'Both have similar price per sqm' }
         const maxPsmIdx = numericValues.indexOf(maxPsm)
-        const neighbourhoodNamePsm = comparisons[maxPsmIdx]?.name || 'The former'
+        const neighbourhoodNamePsm = comparisons[maxPsmIdx]?.name ? toTitleCase(comparisons[maxPsmIdx].name) : 'The former'
         if (psmDiffPercent > 30) {
           return { display: `${neighbourhoodNamePsm} has higher unit prices`, tooltip: `${neighbourhoodNamePsm} has substantially higher price per sqm` }
         } else if (psmDiffPercent > 15) {
@@ -450,7 +459,7 @@ function ComparePageContent() {
         const leaseDiff = maxLease - minLease
         if (leaseDiff < 2) return { display: 'Similar remaining lease', tooltip: 'Both have similar remaining lease' }
         const maxLeaseIdx = numericValues.indexOf(maxLease)
-        const neighbourhoodNameLease = comparisons[maxLeaseIdx]?.name || 'The former'
+        const neighbourhoodNameLease = comparisons[maxLeaseIdx]?.name ? toTitleCase(comparisons[maxLeaseIdx].name) : 'The former'
         if (leaseDiff > 10) {
           return { display: `${neighbourhoodNameLease} has a longer remaining lease`, tooltip: `${neighbourhoodNameLease} has substantially longer lease` }
         } else if (leaseDiff > 5) {
@@ -464,7 +473,7 @@ function ComparePageContent() {
         const minStations = Math.min(...numericValues)
         if (maxStations === minStations) return { display: 'Similar MRT coverage', tooltip: 'Both have same number of MRT stations' }
         const maxStationsIdx = numericValues.indexOf(maxStations)
-        const neighbourhoodNameStations = comparisons[maxStationsIdx]?.name || 'The former'
+        const neighbourhoodNameStations = comparisons[maxStationsIdx]?.name ? toTitleCase(comparisons[maxStationsIdx].name) : 'The former'
         return { display: `${neighbourhoodNameStations} has more MRT stations`, tooltip: `${neighbourhoodNameStations} has better MRT coverage` }
       
       case 'Distance to MRT':
@@ -472,7 +481,7 @@ function ComparePageContent() {
         const maxDist = Math.max(...numericValues)
         if (Math.abs(maxDist - minDist) < 100) return { display: 'Similar distance to MRT', tooltip: 'Both have similar distance to nearest MRT' }
         const minDistIdx = numericValues.indexOf(minDist)
-        const neighbourhoodNameDist = comparisons[minDistIdx]?.name || 'The former'
+        const neighbourhoodNameDist = comparisons[minDistIdx]?.name ? toTitleCase(comparisons[minDistIdx].name) : 'The former'
         const distDiffPercent = ((maxDist - minDist) / minDist) * 100
         if (distDiffPercent > 50) {
           return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is substantially closer to nearest MRT` }
@@ -513,7 +522,7 @@ function ComparePageContent() {
       
       // Budget + long-term value focus (c1 cheaper and longer lease)
       if (priceDiff < -15 && leaseDiff > 5) {
-        conclusion = `If budget and long-term value matter more, ${c1.name.toUpperCase()} is the safer choice.`
+        conclusion = `If budget and long-term value matter more, ${toTitleCase(c1.name)} is the safer choice.`
         const tx1 = c1.summary?.tx_12m || 0
         const tx2 = c2.summary?.tx_12m || 0
         const txDiff = tx1 - tx2
@@ -526,7 +535,7 @@ function ComparePageContent() {
       }
       // Budget + long-term value focus (c2 cheaper and longer lease)
       else if (priceDiff > 15 && leaseDiff < -5) {
-        conclusion = `If budget and long-term value matter more, ${c2.name.toUpperCase()} is the safer choice.`
+        conclusion = `If budget and long-term value matter more, ${toTitleCase(c2.name)} is the safer choice.`
         const tx1 = c1.summary?.tx_12m || 0
         const tx2 = c2.summary?.tx_12m || 0
         const txDiff = tx2 - tx1
@@ -539,24 +548,24 @@ function ComparePageContent() {
       }
       // Location + price premium (c1 more expensive but better location)
       else if (priceDiff > 15 && mrtStations1 > mrtStations2) {
-        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${c1.name.toUpperCase()} may suit you better.`
-        facts.push(`${c1.name} offers better MRT access`)
+        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${toTitleCase(c1.name)} may suit you better.`
+        facts.push(`${toTitleCase(c1.name)} offers better MRT access`)
         if (psm1 && psm2 && psm1 > psm2) facts.push(`Higher price per sqm reflects location premium`)
       }
       // Location + price premium (c2 more expensive but better location)
       else if (priceDiff < -15 && mrtStations2 > mrtStations1) {
-        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${c2.name.toUpperCase()} may suit you better.`
-        facts.push(`${c2.name} offers better MRT access`)
+        conclusion = `If you prioritise location and are comfortable paying more per sqm, ${toTitleCase(c2.name)} may suit you better.`
+        facts.push(`${toTitleCase(c2.name)} offers better MRT access`)
         if (psm2 && psm1 && psm2 > psm1) facts.push(`Higher price per sqm reflects location premium`)
       }
       // Balanced comparison
       else {
         if (priceDiff < -15) {
-          conclusion = `${c1.name.toUpperCase()} offers better value, while ${c2.name.toUpperCase()} may have other advantages.`
-          facts.push(`${c1.name} has lower price`)
+          conclusion = `${toTitleCase(c1.name)} offers better value, while ${toTitleCase(c2.name)} may have other advantages.`
+          facts.push(`${toTitleCase(c1.name)} has lower price`)
         } else if (priceDiff > 15) {
-          conclusion = `${c2.name.toUpperCase()} offers better value, while ${c1.name.toUpperCase()} may have other advantages.`
-          facts.push(`${c2.name} has lower price`)
+          conclusion = `${toTitleCase(c2.name)} offers better value, while ${toTitleCase(c1.name)} may have other advantages.`
+          facts.push(`${toTitleCase(c2.name)} has lower price`)
         } else {
           conclusion = `Both neighbourhoods are similar in price, with different trade-offs to consider.`
         }
@@ -565,11 +574,11 @@ function ComparePageContent() {
       // Only price data available
       const priceDiff = ((price1 - price2) / price2) * 100
       if (priceDiff < -15) {
-        conclusion = `${c1.name.toUpperCase()} offers better value, while ${c2.name.toUpperCase()} may have other advantages.`
-        facts.push(`${c1.name} has lower price`)
+        conclusion = `${toTitleCase(c1.name)} offers better value, while ${toTitleCase(c2.name)} may have other advantages.`
+        facts.push(`${toTitleCase(c1.name)} has lower price`)
       } else if (priceDiff > 15) {
-        conclusion = `${c2.name.toUpperCase()} offers better value, while ${c1.name.toUpperCase()} may have other advantages.`
-        facts.push(`${c2.name} has lower price`)
+        conclusion = `${toTitleCase(c2.name)} offers better value, while ${toTitleCase(c1.name)} may have other advantages.`
+        facts.push(`${toTitleCase(c2.name)} has lower price`)
       } else {
         conclusion = `Both neighbourhoods are similar in price, with different trade-offs to consider.`
       }
@@ -580,18 +589,18 @@ function ComparePageContent() {
       const leaseDiff = lease1 - lease2
       if (Math.abs(leaseDiff) > 5) {
         if (leaseDiff > 0) {
-          facts.push(`${c1.name} has ${leaseDiff.toFixed(0)} more years of remaining lease`)
+          facts.push(`${toTitleCase(c1.name)} has ${leaseDiff.toFixed(0)} more years of remaining lease`)
         } else {
-          facts.push(`${c2.name} has ${Math.abs(leaseDiff).toFixed(0)} more years of remaining lease`)
+          facts.push(`${toTitleCase(c2.name)} has ${Math.abs(leaseDiff).toFixed(0)} more years of remaining lease`)
         }
       }
     }
     
     if (mrtStations1 !== mrtStations2) {
       if (mrtStations1 > mrtStations2) {
-        facts.push(`${c1.name} has better MRT coverage`)
+        facts.push(`${toTitleCase(c1.name)} has better MRT coverage`)
       } else {
-        facts.push(`${c2.name} has better MRT coverage`)
+        facts.push(`${toTitleCase(c2.name)} has better MRT coverage`)
       }
     }
     
@@ -715,9 +724,9 @@ function ComparePageContent() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
                     {comparisons.map((c, i) => (
                       <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        {c.name}
+                        {toTitleCase(c.name)}
                         {c.planning_area && (
-                          <div className="text-xs text-gray-400 mt-1">{c.planning_area.name}</div>
+                          <div className="text-xs text-gray-400 mt-1">{toTitleCase(c.planning_area.name)}</div>
                         )}
                       </th>
                     ))}
@@ -885,7 +894,7 @@ function ComparePageContent() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
                       {comparisons.map((c, i) => (
                         <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          {c.name}
+                          {toTitleCase(c.name)}
                         </th>
                       ))}
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conclusion</th>
@@ -907,9 +916,9 @@ function ComparePageContent() {
                         const multiLineIdx = coverages.findIndex(c => c === 'Multi-line')
                         const singleLineIdx = coverages.findIndex(c => c === 'Single-line')
                         if (multiLineIdx >= 0 && coverages[1 - multiLineIdx] !== 'Multi-line') {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{comparisons[multiLineIdx].name} has broader access</td>
+                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[multiLineIdx].name)} has broader access</td>
                         } else if (singleLineIdx >= 0 && coverages[1 - singleLineIdx] === 'None') {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{comparisons[singleLineIdx].name} has MRT access</td>
+                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[singleLineIdx].name)} has MRT access</td>
                         }
                         return <td className="px-4 py-3 text-sm text-gray-600">Different coverage</td>
                       })()}
@@ -928,7 +937,7 @@ function ComparePageContent() {
                         }
                         const betterIdx = walkabilities.findIndex(w => w === '≤500m')
                         if (betterIdx >= 0) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{comparisons[betterIdx].name} more walkable</td>
+                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[betterIdx].name)} more walkable</td>
                         }
                         return <td className="px-4 py-3 text-sm text-gray-600">Different walkability</td>
                       })()}
@@ -947,7 +956,7 @@ function ComparePageContent() {
                         }
                         const railIdx = tiers.findIndex(t => t === 'Rail-accessible')
                         if (railIdx >= 0) {
-                          return <td className="px-4 py-3 text-sm text-gray-600">{comparisons[railIdx].name} more rail-accessible</td>
+                          return <td className="px-4 py-3 text-sm text-gray-600">{toTitleCase(comparisons[railIdx].name)} more rail-accessible</td>
                         }
                         return <td className="px-4 py-3 text-sm text-gray-600">Different experience</td>
                       })()}
@@ -970,7 +979,7 @@ function ComparePageContent() {
                           if (tier === 'Feeder-dependent') return `${name}: Feeder-dependent, single MRT line`
                           return `${name}: Rail-accessible, multiple lines nearby`
                         }
-                        return `${getDesc(tier1, comparisons[0].name)}. ${getDesc(tier2, comparisons[1].name)}. This means daily commutes may rely more on buses and transfers over time.`
+                        return `${getDesc(tier1, toTitleCase(comparisons[0].name))}. ${getDesc(tier2, toTitleCase(comparisons[1].name))}. This means daily commutes may rely more on buses and transfers over time.`
                       }
                     })()}
                   </p>

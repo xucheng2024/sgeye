@@ -49,6 +49,15 @@ interface Trend {
   median_lease_years: number | null
 }
 
+// Convert string to Title Case (first letter uppercase, rest lowercase, handle multi-word)
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export default function NeighbourhoodDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
@@ -322,9 +331,9 @@ export default function NeighbourhoodDetailPage() {
       })
       
       if (lowerPrice.length > 0 && lowerPrice.length <= 2) {
-        points.push(`Lower price than ${lowerPrice.map(n => n.name).join(' and ')}`)
+        points.push(`Lower price than ${lowerPrice.map(n => toTitleCase(n.name)).join(' and ')}`)
       } else if (higherPrice.length > 0 && higherPrice.length <= 2) {
-        points.push(`Higher price than ${higherPrice.map(n => n.name).join(' and ')}`)
+        points.push(`Higher price than ${higherPrice.map(n => toTitleCase(n.name)).join(' and ')}`)
       } else if (nearbyWithData.length > 0) {
         points.push(`Similar price range to nearby neighbourhoods`)
       }
@@ -341,9 +350,9 @@ export default function NeighbourhoodDetailPage() {
       })
       
       if (higherLease.length > 0 && higherLease.length <= 2) {
-        points.push(`Higher remaining lease than ${higherLease.map(n => n.name).join(' and ')}`)
+        points.push(`Higher remaining lease than ${higherLease.map(n => toTitleCase(n.name)).join(' and ')}`)
       } else if (lowerLease.length > 0 && lowerLease.length <= 2) {
-        points.push(`Lower remaining lease than ${lowerLease.map(n => n.name).join(' and ')}`)
+        points.push(`Lower remaining lease than ${lowerLease.map(n => toTitleCase(n.name)).join(' and ')}`)
       }
     }
     
@@ -352,9 +361,9 @@ export default function NeighbourhoodDetailPage() {
       const fewerMRT = nearbyWithData.filter(n => (n.access?.mrt_station_count || 0) < currentMRT)
       
       if (fewerMRT.length > 0 && fewerMRT.length <= 2) {
-        points.push(`More MRT options than ${fewerMRT.map(n => n.name).join(' and ')}`)
+        points.push(`More MRT options than ${fewerMRT.map(n => toTitleCase(n.name)).join(' and ')}`)
       } else if (moreMRT.length > 0 && moreMRT.length <= 2) {
-        points.push(`Fewer MRT options than ${moreMRT.map(n => n.name).join(' and ')}`)
+        points.push(`Fewer MRT options than ${moreMRT.map(n => toTitleCase(n.name)).join(' and ')}`)
       }
     }
     
@@ -430,7 +439,7 @@ export default function NeighbourhoodDetailPage() {
 
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{neighbourhood.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{toTitleCase(neighbourhood.name)}</h1>
               {(() => {
                 const price = neighbourhood.summary?.median_price_12m ? Number(neighbourhood.summary.median_price_12m) : null
                 const lease = neighbourhood.summary?.median_lease_years_12m ? Number(neighbourhood.summary.median_lease_years_12m) : null
@@ -469,7 +478,7 @@ export default function NeighbourhoodDetailPage() {
               {neighbourhood.planning_area && (
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
                   <MapPin className="w-4 h-4" />
-                  <span>{neighbourhood.planning_area.name}</span>
+                  <span>{toTitleCase(neighbourhood.planning_area.name)}</span>
                 </div>
               )}
               {livingNotes && <LivingDimensions notes={livingNotes} className="mb-2" />}
@@ -482,7 +491,7 @@ export default function NeighbourhoodDetailPage() {
           {signal.strengths.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Why {neighbourhood.name} works well
+                Why {toTitleCase(neighbourhood.name)} works well
               </h2>
               <ul className="space-y-3">
                 {signal.strengths.map((strength, idx) => (
@@ -498,7 +507,7 @@ export default function NeighbourhoodDetailPage() {
           {signal.watchOuts.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                When {neighbourhood.name} may not fit
+                When {toTitleCase(neighbourhood.name)} may not fit
               </h2>
               <ul className="space-y-3">
                 {signal.watchOuts.map((watchOut, idx) => (
@@ -563,9 +572,9 @@ export default function NeighbourhoodDetailPage() {
                   </h3>
                   <p className="text-sm text-gray-700 mb-3">
                     {leaseRange ? (
-                      <>Most resale flats in {neighbourhood.name} have remaining leases between {leaseRange.min}–{leaseRange.max} years.</>
+                      <>Most resale flats in {toTitleCase(neighbourhood.name)} have remaining leases between {leaseRange.min}–{leaseRange.max} years.</>
                     ) : (
-                      <>Most resale flats in {neighbourhood.name} have remaining leases around {lease.toFixed(0)} years.</>
+                      <>Most resale flats in {toTitleCase(neighbourhood.name)} have remaining leases around {lease.toFixed(0)} years.</>
                     )}
                     {riskLevel === 'high' ? (
                       <> This may affect long-term resale value and financing options.</>
@@ -604,7 +613,7 @@ export default function NeighbourhoodDetailPage() {
                 ))}
               </ul>
             ) : nearbyNeighbourhoods.length > 0 ? (
-              <p className="text-gray-500 text-sm">Similar characteristics to nearby neighbourhoods in {neighbourhood.planning_area.name}</p>
+              <p className="text-gray-500 text-sm">Similar characteristics to nearby neighbourhoods in {toTitleCase(neighbourhood.planning_area.name)}</p>
             ) : (
               <p className="text-gray-500 text-sm">Loading comparison data...</p>
             )}
@@ -680,13 +689,13 @@ export default function NeighbourhoodDetailPage() {
                 <p className="text-sm text-gray-700 mb-3">
                   School competition is assessed at the planning area level.
                   <br />
-                  <strong>{neighbourhood.name}</strong> belongs to the <strong>{neighbourhood.planning_area.name}</strong> planning area.
+                  <strong>{toTitleCase(neighbourhood.name)}</strong> belongs to the <strong>{toTitleCase(neighbourhood.planning_area.name)}</strong> planning area.
                 </p>
                 <Link
                   href={`/family/psle-school?planning_area_id=${neighbourhood.planning_area.id}`}
                   className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
                 >
-                  View school pressure in {neighbourhood.planning_area.name}
+                  View school pressure in {toTitleCase(neighbourhood.planning_area.name)}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -699,7 +708,7 @@ export default function NeighbourhoodDetailPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Compare {neighbourhood.name} with another neighbourhood
+                Compare {toTitleCase(neighbourhood.name)} with another neighbourhood
               </h3>
               <p className="text-sm text-gray-600">
                 See side-by-side trade-offs in price, lease, transport, and school pressure.

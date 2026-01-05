@@ -79,6 +79,24 @@ interface PlanningArea {
 
 type SortPreset = 'affordable' | 'lease' | 'mrt' | 'activity' | 'price' | 'area' | 'psm' | 'default'
 
+// Convert string to Title Case (first letter uppercase, rest lowercase, handle multi-word)
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+// Format flat type to lowercase with hyphen (e.g., "4 ROOM" -> "4-room")
+function formatFlatType(flatType: string): string {
+  if (flatType === 'All' || flatType === 'EXECUTIVE') {
+    return flatType === 'All' ? 'Any size' : 'Executive'
+  }
+  // Convert "3 ROOM" -> "3-room", "4 ROOM" -> "4-room", etc.
+  return flatType.toLowerCase().replace(/\s+/g, '-')
+}
+
 function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -913,7 +931,7 @@ function NeighbourhoodsPageContent() {
               >
                 <option value="">All Planning Areas</option>
                 {planningAreas.map(pa => (
-                  <option key={pa.id} value={pa.id}>{pa.name}</option>
+                  <option key={pa.id} value={pa.id}>{toTitleCase(pa.name)}</option>
                 ))}
               </select>
             </div>
@@ -1326,12 +1344,12 @@ function NeighbourhoodsPageContent() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{neighbourhood.name}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{toTitleCase(neighbourhood.name)}</h3>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {neighbourhood.planning_area && (
                             <>
                               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded inline-block">
-                                {neighbourhood.planning_area.name}
+                                {toTitleCase(neighbourhood.planning_area.name)}
                               </span>
                               {neighbourhood.planning_area.region && (() => {
                                 const regionInfo = getRegionInfo(neighbourhood.planning_area.region as RegionType)
@@ -1347,13 +1365,13 @@ function NeighbourhoodsPageContent() {
                           {/* Show the specific flat type when "All" is selected and expanded */}
                           {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
-                              {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type}
+                              {formatFlatType((neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type)}
                             </span>
                           )}
                           {/* Show flat type when specific type is selected */}
                           {selectedFlatType !== 'All' && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
-                              {selectedFlatType}
+                              {formatFlatType(selectedFlatType)}
                             </span>
                           )}
                         </div>
