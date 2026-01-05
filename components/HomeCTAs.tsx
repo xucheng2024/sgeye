@@ -12,7 +12,7 @@ export default function HomeCTAs() {
         onClick={() => AnalyticsEvents.ctaStartGuided()}
         className="inline-flex items-center justify-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg w-full sm:w-auto sm:min-w-[280px]"
       >
-        See what I can afford
+        Check what I can afford
         <ArrowRight className="w-5 h-5" />
       </Link>
       <Link
@@ -20,7 +20,7 @@ export default function HomeCTAs() {
         onClick={() => AnalyticsEvents.ctaBrowseDirect()}
         className="inline-flex items-center justify-center px-6 py-4 rounded-lg text-lg font-semibold text-white border border-white/40 hover:bg-white/10 hover:border-white/60 transition-colors w-full sm:w-auto sm:min-w-[280px]"
       >
-        Browse all neighbourhoods
+        Compare neighbourhoods
       </Link>
     </div>
   )
