@@ -2,7 +2,7 @@
  * Main service for neighbourhoods API
  */
 
-import { normalizeFlatType } from '@/lib/utils/neighbourhood-utils'
+import { normalizeFlatType } from '@/lib/utils/flat-type-normalizer'
 import { fetchNeighbourhoods, fetchAccessData, fetchPlanningAreas, fetchSubzones } from './fetch'
 import { calculateCenterPoints } from './centers'
 import { buildMrtStationsMap } from './mrt'

@@ -20,20 +20,8 @@ export function formatFlatType(flatType: string): string {
   return toTitleCase(flatType)
 }
 
-// Normalize flat type input
-export function normalizeFlatType(value: string): string {
-  const raw = (value || '').trim()
-  if (!raw) return ''
-  const lower = raw.toLowerCase().replace(/\s+/g, ' ').trim()
-
-  if (lower === 'all' || lower === 'any' || lower === 'any size' || lower === 'any-size') return 'All'
-  if (lower === 'executive' || lower === 'exec') return 'EXECUTIVE'
-
-  const roomMatch = lower.match(/^(\d+)\s*[- ]?\s*room$/)
-  if (roomMatch?.[1]) return `${roomMatch[1]} ROOM`
-
-  return raw
-}
+// Re-export normalizeFlatType from dedicated module
+export { normalizeFlatType } from './flat-type-normalizer'
 
 // Format currency
 export function formatCurrency(amount: number | null): string {
