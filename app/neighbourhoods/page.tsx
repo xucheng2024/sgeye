@@ -406,18 +406,18 @@ function NeighbourhoodsPageContent() {
         url: `/api/neighbourhoods?${params.toString()}`
       })
       
-      // Set MRT distance based on selected tiers (use the closest distance if multiple selected)
-      if (mrtTiers.size > 0) {
+      // Don't set MRT filter at API level for multi-tier selection
+      // We'll handle it client-side for accurate OR logic
+      if (mrtTiers.size === 1) {
         const mrtDistances = {
           close: 500,
           medium: 1000,
           far: 2000
         }
-        // Use the maximum distance (most permissive) when multiple tiers selected
-        const selectedDistances = Array.from(mrtTiers).map(tier => mrtDistances[tier as keyof typeof mrtDistances]).filter(d => d !== undefined)
-        if (selectedDistances.length > 0) {
-          const maxDistance = Math.max(...selectedDistances)
-          params.set('mrt_distance_max', maxDistance.toString())
+        const tier = Array.from(mrtTiers)[0]
+        const distance = mrtDistances[tier as keyof typeof mrtDistances]
+        if (distance) {
+          params.set('mrt_distance_max', distance.toString())
         }
       }
       
@@ -509,11 +509,17 @@ function NeighbourhoodsPageContent() {
         })
       }
       
-      // Apply client-side price and lease filters for multiple tiers
+      // Apply client-side filters for price, lease, and MRT when any filters are active
       // When multiple tiers are selected, we need to check if values fall within
-      // ANY of the selected tier ranges (not the union which would include gaps)
-      // Single tier is already filtered by API, so we only need client-side filtering for multiple tiers
-      if (priceTiers.size > 1 || leaseTiers.size > 1) {
+      // ANY of the selected tier ranges (OR logic, not AND)
+      if (priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0) {
+        console.log('Applying client-side filters:', {
+          priceTiers: Array.from(priceTiers),
+          leaseTiers: Array.from(leaseTiers),
+          mrtTiers: Array.from(mrtTiers),
+          itemsBeforeFilter: displayItems.length
+        })
+        
         const priceRanges = {
           low: [0, 499999],
           medium: [500000, 999999],
@@ -524,40 +530,101 @@ function NeighbourhoodsPageContent() {
           medium: [70, 80],   // 70-80 years (medium risk)
           high: [80, 99]      // >= 80 years (low risk)
         }
+        const mrtDistances = {
+          close: 500,
+          medium: 1000,
+          far: 2000
+        }
+        
+        let priceFiltered = 0
+        let leaseFiltered = 0
+        let mrtFiltered = 0
         
         displayItems = displayItems.filter(item => {
-          // Price filter - check if item matches any selected price tier (only if multiple selected)
-          if (priceTiers.size > 1) {
+          // Price filter - check if item matches any selected price tier
+          if (priceTiers.size > 0) {
             const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-            if (price === null) return false
+            if (price === null) {
+              priceFiltered++
+              return false
+            }
             const matchesPriceTier = Array.from(priceTiers).some(tier => {
               const range = priceRanges[tier as keyof typeof priceRanges]
               return range && price >= range[0] && price <= range[1]
             })
-            if (!matchesPriceTier) return false
+            if (!matchesPriceTier) {
+              priceFiltered++
+              return false
+            }
           }
           
-          // Lease filter - check if item matches any selected lease tier (only if multiple selected)
-          if (leaseTiers.size > 1) {
+          // Lease filter - check if item matches any selected lease tier
+          if (leaseTiers.size > 0) {
             const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
-            if (lease === null) return false
+            if (lease === null) {
+              leaseFiltered++
+              return false
+            }
             const matchesLeaseTier = Array.from(leaseTiers).some(tier => {
               const range = leaseRanges[tier as keyof typeof leaseRanges]
               return range && lease >= range[0] && lease <= range[1]
             })
-            if (!matchesLeaseTier) return false
+            if (!matchesLeaseTier) {
+              leaseFiltered++
+              return false
+            }
+          }
+          
+          // MRT filter - check if neighbourhood matches any selected MRT tier
+          // Only apply client-side filtering when multiple tiers selected
+          if (mrtTiers.size > 1) {
+            const distance = item.access?.avg_distance_to_mrt ? Number(item.access.avg_distance_to_mrt) : null
+            const hasStationInArea = item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0
+            
+            // If has station in area, matches all tiers
+            if (hasStationInArea) return true
+            
+            // Otherwise check distance against selected tiers
+            if (distance === null || distance <= 0) {
+              mrtFiltered++
+              return false
+            }
+            
+            const matchesMrtTier = Array.from(mrtTiers).some(tier => {
+              const maxDist = mrtDistances[tier as keyof typeof mrtDistances]
+              return maxDist && distance <= maxDist
+            })
+            if (!matchesMrtTier) {
+              mrtFiltered++
+              return false
+            }
           }
           
           return true
         })
+        
+        console.log('Client-side filtering results:', {
+          itemsAfterFilter: displayItems.length,
+          filteredByPrice: priceFiltered,
+          filteredByLease: leaseFiltered,
+          filteredByMRT: mrtFiltered
+        })
       }
       
-      console.log('Display items after expansion:', {
+      console.log('Display items after expansion and client-side filtering:', {
         count: displayItems.length,
+        appliedFilters: {
+          priceTiers: Array.from(priceTiers),
+          leaseTiers: Array.from(leaseTiers),
+          mrtTiers: Array.from(mrtTiers)
+        },
         sample: displayItems.slice(0, 5).map(n => ({
           name: n.name,
           flatType: (n as Neighbourhood & { display_flat_type?: string }).display_flat_type || (isAllFlatTypes ? 'All' : selectedFlatTypesArray[0]),
-          price: n.summary?.median_price_12m
+          price: n.summary?.median_price_12m,
+          lease: n.summary?.median_lease_years_12m,
+          mrtDistance: n.access?.avg_distance_to_mrt,
+          mrtStationCount: n.access?.mrt_station_count
         }))
       })
       
