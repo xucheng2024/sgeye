@@ -17,6 +17,7 @@ import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 import LivingDimensions from '@/components/LivingDimensions'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
+import FeedbackForm from '@/components/FeedbackForm'
 
 interface Neighbourhood {
   id: string
@@ -378,6 +379,18 @@ export default function NeighbourhoodDetailPage() {
           </div>
         </div>
 
+        {/* Feedback entry below Living comfort */}
+        {livingNotes && (
+          <div className="mb-8">
+            <FeedbackForm
+              context="neighbourhood"
+              question={`💬 Living in ${toTitleCase(neighbourhood.name)}? Share a real experience (30 seconds)`}
+              placeholder="E.g., Great food options nearby, but can be noisy during peak hours..."
+              metadata={{ neighbourhood_id: neighbourhood.id, neighbourhood_name: neighbourhood.name }}
+              className="mt-4"
+            />
+          </div>
+        )}
 
         {/* Transport details */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
