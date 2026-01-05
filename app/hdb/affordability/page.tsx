@@ -103,10 +103,7 @@ export default function HDBAffordabilityPage() {
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Start with a comfortable range</h1>
-          <p className="text-lg text-gray-600 mb-2">We'll begin by understanding what's realistic for your household.</p>
-          <p className="text-sm text-gray-500">
-            This helps narrow things down, so you don't have to consider everything at once.
-          </p>
+          <p className="text-lg text-gray-600">Let's see what feels right for your household.</p>
         </div>
       </header>
 
@@ -122,7 +119,7 @@ export default function HDBAffordabilityPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monthly Household Income
+                  Monthly Household Income <span className="text-xs font-normal text-gray-500">((Key factor for bank loan assessment))</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -139,9 +136,49 @@ export default function HDBAffordabilityPage() {
                   />
                   <span className="text-sm font-medium text-gray-600 whitespace-nowrap">k</span>
                 </div>
-                <p className="mt-1.5 text-xs text-gray-600">
-                  Used only to estimate a comfortable range. No pass or fail.
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-500">Common ranges:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonthlyIncomeInput('7')
+                      setMonthlyIncome(7000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    6–8k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonthlyIncomeInput('9')
+                      setMonthlyIncome(9000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    8–10k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonthlyIncomeInput('11')
+                      setMonthlyIncome(11000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    10–12k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMonthlyIncomeInput('12')
+                      setMonthlyIncome(12000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    12k+
+                  </button>
+                </div>
                 {monthlyIncome > 0 && (
                   <p className="mt-1 text-xs text-gray-500">
                     ≈ {formatCurrency(monthlyIncome)} per month
@@ -167,6 +204,49 @@ export default function HDBAffordabilityPage() {
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
                   />
                   <span className="text-sm font-medium text-gray-600 whitespace-nowrap">k</span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-gray-500">Typical amounts:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDownPaymentInput('50')
+                      setDownPayment(50000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    50k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDownPaymentInput('100')
+                      setDownPayment(100000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    100k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDownPaymentInput('150')
+                      setDownPayment(150000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    150k
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDownPaymentInput('200')
+                      setDownPayment(200000)
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    200k+
+                  </button>
                 </div>
                 {downPayment > 0 && (
                   <p className="mt-1 text-xs text-gray-500">
@@ -236,7 +316,7 @@ export default function HDBAffordabilityPage() {
                     Calculating...
                   </span>
                 ) : (
-                  'Calculate Affordability'
+                  'Show my range'
                 )}
               </button>
               {results && (
@@ -253,33 +333,35 @@ export default function HDBAffordabilityPage() {
             description="Based on current HDB and bank guidelines."
             icon={<Home className="w-6 h-6" />}
           >
-            {/* Section 1: Summary Box */}
-            {results && (
-              <div className="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4">
-                <h3 className="text-base font-bold text-gray-900 mb-2">
-                  What families often consider at this range
-                </h3>
-                <p className="text-sm text-gray-800 leading-relaxed mb-2">
-                  With this budget, most families are choosing between:
-                </p>
-                <ul className="text-sm text-gray-800 space-y-1 mb-2 list-disc list-inside">
-                  <li>Older flats with longer lease</li>
-                  <li>Smaller homes closer to MRT</li>
-                  <li>Lower school pressure areas further out</li>
-                </ul>
-                <p className="text-xs text-gray-600 italic">
-                  The actual trade-offs depend on your priorities, not just the budget number.
-                </p>
-              </div>
-            )}
-            
             {results ? (
               <div className="space-y-4">
                 {/* Budget - As emphasis only */}
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-xl border-2 border-purple-300 shadow-lg">
                   <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">A comfortable price range</div>
-                  <div className="text-4xl font-bold text-purple-600 mb-2">
-                    {formatCurrency(results.maxPropertyPrice)}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-4xl font-bold text-purple-600">
+                      {formatCurrency(results.maxPropertyPrice)}
+                    </div>
+                    <Link
+                      href={(() => {
+                        // Determine price tier based on budget
+                        const budget = Math.round(results.maxPropertyPrice * 1.1)
+                        let priceTier = 'all'
+                        if (budget <= 500000) {
+                          priceTier = 'low'
+                        } else if (budget <= 1000000) {
+                          priceTier = 'medium'
+                        } else {
+                          priceTier = 'high'
+                        }
+                        return `/neighbourhoods?price_tier=${priceTier}&source=affordability`
+                      })()}
+                      onClick={() => AnalyticsEvents.affordabilityToExplore()}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 hover:border-gray-400 transition-colors whitespace-nowrap"
+                    >
+                      See neighbourhoods that fit
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 </div>
 
@@ -331,34 +413,6 @@ export default function HDBAffordabilityPage() {
                     </div>
                   </div>
                 </details>
-
-                {/* Next Step CTA */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="text-sm font-semibold text-gray-900 mb-2">Next step:</div>
-                  <p className="text-sm text-gray-700 mb-4">
-                    See which neighbourhoods and flat types fit this budget.
-                  </p>
-                  <Link
-                    href={(() => {
-                      // Determine price tier based on budget
-                      const budget = Math.round(results.maxPropertyPrice * 1.1)
-                      let priceTier = 'all'
-                      if (budget <= 500000) {
-                        priceTier = 'low'
-                      } else if (budget <= 1000000) {
-                        priceTier = 'medium'
-                      } else {
-                        priceTier = 'high'
-                      }
-                      return `/neighbourhoods?price_tier=${priceTier}&source=affordability`
-                    })()}
-                    onClick={() => AnalyticsEvents.affordabilityToExplore()}
-                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    Explore neighbourhoods
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
               </div>
             ) : (
               <div className="text-center text-gray-500 py-8">Click "Calculate" to see results</div>
