@@ -1532,11 +1532,14 @@ function NeighbourhoodsPageContent() {
                             </>
                           )}
                           {/* Show the specific flat type when "All" is selected and expanded */}
-                          {(neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type && (
-                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
-                              {formatFlatType((neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type)}
-                            </span>
-                          )}
+                          {(() => {
+                            const displayFlatTypeValue = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type;
+                            return displayFlatTypeValue && (
+                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
+                                {formatFlatType(displayFlatTypeValue)}
+                              </span>
+                            );
+                          })()}
                           {/* Show flat type when specific type(s) are selected (not "All") */}
                           {!isAllFlatTypes && displayFlatType && (
                             <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block font-medium">
