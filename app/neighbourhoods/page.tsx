@@ -562,7 +562,7 @@ function NeighbourhoodsPageContent() {
               }
             }
           })
-          .filter((n): n is NonNullable<typeof n> => n !== null)
+          .filter((n: (Neighbourhood & { display_flat_type?: string }) | null): n is Neighbourhood & { display_flat_type?: string } => n !== null)
       } else {
         // Specific flat types selected: filter to only show neighbourhoods that have these flat types
         // Expand to show one card per selected flat type, but only if it meets price/lease filters

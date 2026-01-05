@@ -850,6 +850,70 @@ const NOTES_BY_KEY: Record<string, LivingNotes> = {
     crowdVibe: { rating: 'good', note: 'Family + working adults mix; stable “mature estate” rhythm.' },
     longTermComfort: { rating: 'good', note: 'Often the best-balanced choice: convenience + stability without feeling too hectic.' },
   },
+
+  'JURONG WEST CENTRAL': {
+    noiseDensity: { rating: 'mixed', note: 'Town-centre hub with Jurong Point nearby; busier near the mall and MRT, calmer in residential pockets.' },
+    dailyConvenience: { rating: 'good', note: 'Strong west-side convenience: Jurong Point mall, markets, food courts, and excellent MRT connectivity.' },
+    greenOutdoor: { rating: 'mixed', note: 'Green pockets exist; larger parks like Jurong Lake Gardens are a short distance away.' },
+    crowdVibe: { rating: 'good', note: 'Family-oriented heartland rhythm; steady daily life with good community feel.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable long-term if you like west heartland living with strong amenities and connectivity.' },
+  },
+
+  'JURONG WEST': {
+    noiseDensity: { rating: 'mixed', note: 'Mature west town; generally calm in residential blocks, busier near main roads and MRT stations.' },
+    dailyConvenience: { rating: 'good', note: 'Strong mature-town convenience: shops, food, markets, and good transit access.' },
+    greenOutdoor: { rating: 'good', note: 'Good access to Jurong Lake Gardens and west-side park connectors for walks and outdoor time.' },
+    crowdVibe: { rating: 'good', note: 'Local family vibe; stable heartland rhythm with quieter evenings.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable long-term if you value west-side amenities and are OK with distance from CBD.' },
+  },
+
+  'JURONG EAST': {
+    noiseDensity: { rating: 'mixed', note: 'Hub-adjacent area; busier near Jurong East MRT and shopping malls, calmer in residential estates.' },
+    dailyConvenience: { rating: 'good', note: 'Excellent convenience: major malls, food options, and strong transit connectivity.' },
+    greenOutdoor: { rating: 'mixed', note: 'Some green pockets; larger parks require a short trip.' },
+    crowdVibe: { rating: 'mixed', note: 'Busier hub energy with mix of families and commuters; higher footfall near MRT.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable if you like west-side hub convenience; choose pockets away from the busiest areas for quieter nights.' },
+  },
+
+  'TAMPINES': {
+    noiseDensity: { rating: 'mixed', note: 'Mature east town; generally calm in residential blocks, busier near town centre and MRT.' },
+    dailyConvenience: { rating: 'good', note: 'Strong mature-town convenience: Tampines Mall, markets, food courts, and excellent MRT connectivity.' },
+    greenOutdoor: { rating: 'good', note: 'Good access to Tampines Eco Green and east-side park connectors for walks and outdoor time.' },
+    crowdVibe: { rating: 'good', note: 'Family-oriented heartland rhythm; stable daily life with good community feel.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable long-term if you like east heartland living with strong amenities and connectivity.' },
+  },
+
+  'PASIR RIS': {
+    noiseDensity: { rating: 'good', note: 'More residential and coastal; generally calmer than town centres, some expressway influence.' },
+    dailyConvenience: { rating: 'good', note: 'Strong east-side convenience: White Sands mall, markets, and good transit access.' },
+    greenOutdoor: { rating: 'good', note: 'Excellent outdoor access: Pasir Ris Park, beach, and coastal walks are a daily-living plus.' },
+    crowdVibe: { rating: 'good', note: 'Relaxed east-coast rhythm; family-friendly with active weekends.' },
+    longTermComfort: { rating: 'good', note: 'A strong long-term choice if you value outdoor life and east-side convenience.' },
+  },
+
+  'WOODLANDS': {
+    noiseDensity: { rating: 'mixed', note: 'North hub; busier near Woodlands MRT and Causeway Point, calmer in residential estates.' },
+    dailyConvenience: { rating: 'good', note: 'Strong north-side convenience: Causeway Point mall, markets, and excellent MRT connectivity.' },
+    greenOutdoor: { rating: 'good', note: 'Good access to Woodlands Waterfront Park and north-side greenery for walks.' },
+    crowdVibe: { rating: 'good', note: 'Family-oriented heartland rhythm; steady daily life.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable long-term if you like north-side living and are OK with distance from CBD.' },
+  },
+
+  'SENGKANG': {
+    noiseDensity: { rating: 'mixed', note: 'New-town density; noise clusters near schools and main roads, calmer in residential pockets.' },
+    dailyConvenience: { rating: 'good', note: 'Designed for families: Compass One mall, markets, and good MRT/LRT connectivity.' },
+    greenOutdoor: { rating: 'good', note: 'Strong park connectors and outdoor spaces; very kid/stroller-friendly.' },
+    crowdVibe: { rating: 'good', note: 'Young families and active weekends; strong "new town" community feel.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable for family living if you prefer newer estates and are OK with distance from CBD.' },
+  },
+
+  'PUNGGOL': {
+    noiseDensity: { rating: 'mixed', note: 'New-town density; noise clusters near schools and main roads, calmer in residential pockets.' },
+    dailyConvenience: { rating: 'good', note: 'Designed for families: Waterway Point mall, markets, and good MRT/LRT connectivity.' },
+    greenOutdoor: { rating: 'good', note: 'Excellent outdoor access: Punggol Waterway, park connectors, and coastal routes.' },
+    crowdVibe: { rating: 'good', note: 'Young families and active weekends; strong "new town" community feel.' },
+    longTermComfort: { rating: 'good', note: 'Comfortable for family living if you value outdoor access and newer estate amenities.' },
+  },
 }
 
 export function getLivingNotesForNeighbourhood(name: string): LivingNotes | null {
