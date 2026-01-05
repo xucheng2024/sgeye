@@ -155,6 +155,7 @@ function NeighbourhoodsPageContent() {
   const [leaseTiers, setLeaseTiers] = useState<Set<string>>(new Set(parseUrlArray(leaseTierParam)))
   const [mrtTiers, setMrtTiers] = useState<Set<string>>(new Set(parseUrlArray(mrtTierParam)))
   const [region, setRegion] = useState<string>(regionParam)
+  const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true) // Default: only show neighbourhoods with 12-month data
   
   useEffect(() => {
     loadPlanningAreas()
@@ -348,6 +349,15 @@ function NeighbourhoodsPageContent() {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region])
+
+  // Re-apply 12-month data filter when showOnlyWithData changes
+  useEffect(() => {
+    if (originalNeighbourhoods.length > 0) {
+      // Re-trigger loadNeighbourhoods to re-apply all filters including showOnlyWithData
+      loadNeighbourhoods()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showOnlyWithData])
 
   async function loadPlanningAreas() {
     try {
@@ -768,6 +778,19 @@ function NeighbourhoodsPageContent() {
         }))
       })
       
+      // Apply filter: only show neighbourhoods with 12-month data
+      if (showOnlyWithData) {
+        const beforeCount = displayItems.length
+        displayItems = displayItems.filter(item => {
+          return item.summary?.tx_12m != null && Number(item.summary.tx_12m) > 0
+        })
+        console.log('Filtered by 12-month data:', {
+          before: beforeCount,
+          after: displayItems.length,
+          filtered: beforeCount - displayItems.length
+        })
+      }
+      
       // Calculate dynamic thresholds based on actual data
       const thresholds = calculateThresholds(displayItems)
       setPriceThresholds(thresholds.price)
@@ -1169,6 +1192,21 @@ function NeighbourhoodsPageContent() {
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          {/* Data Availability Filter */}
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOnlyWithData}
+                onChange={(e) => setShowOnlyWithData(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">
+                Only show neighbourhoods with 12-month data
+              </span>
+            </label>
+          </div>
+          
           {/* First Row: Flat Type, Planning Area, Region */}
           <div className="flex flex-wrap gap-4 mb-4">
             {/* Flat Type Filter - Multi-select */}
