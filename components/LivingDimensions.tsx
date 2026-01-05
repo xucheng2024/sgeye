@@ -72,21 +72,31 @@ export default function LivingDimensions({
 
   // Compressed variant for list page
   if (variant === 'compressed') {
-    // Calculate star rating: good = 1, mixed = 0, bad = -1
-    // If total is negative, show 0 stars
+    // Calculate total score: good = 1, mixed = 0, bad = -1
     const totalScore = goodCount - badCount
-    const totalStars = Math.max(0, Math.min(5, totalScore))
-    const fullStars = Math.floor(totalStars)
-    const emptyStars = 5 - fullStars
     
-    // Build star display: ⭐️ for full, empty stars not shown
-    const stars = '⭐️'.repeat(fullStars)
+    // Map score to user-friendly label with color
+    let label = ''
+    let labelColor = ''
+    if (totalScore >= 3) {
+      label = 'Comfortable'
+      labelColor = 'text-green-600'
+    } else if (totalScore >= 1) {
+      label = 'Balanced'
+      labelColor = 'text-blue-600'
+    } else if (totalScore >= -1) {
+      label = 'Trade-offs'
+      labelColor = 'text-amber-600'
+    } else {
+      label = 'Niche fit'
+      labelColor = 'text-red-600'
+    }
     
     return (
       <div className={className}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-900">Living comfort</span>
-          <span className="text-base text-gray-700 tracking-tight">{stars}</span>
+          <span className={`text-sm font-medium ${labelColor}`}>{label}</span>
           {neighbourhoodId && (
             <Link
               href={`/neighbourhood/${neighbourhoodId}`}

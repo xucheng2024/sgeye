@@ -521,7 +521,7 @@ function NeighbourhoodsPageContent() {
           } : null
         })
         displayItems = loaded
-          .map(neighbourhood => {
+          .map((neighbourhood: Neighbourhood) => {
             const details = neighbourhood.flat_type_details || []
 
             // No price/lease restriction: keep aggregated view (one card per neighbourhood)
@@ -1723,7 +1723,7 @@ function NeighbourhoodsPageContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {neighbourhoods.map(neighbourhood => {
+                  {neighbourhoods.map((neighbourhood: Neighbourhood & { display_flat_type?: string }) => {
                 const isSelected = selectedForCompare.has(neighbourhood.id)
                 const displayFlatType = (neighbourhood as Neighbourhood & { display_flat_type?: string }).display_flat_type
                 const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
