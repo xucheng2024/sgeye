@@ -133,6 +133,77 @@ export async function GET(
       }
     }
 
+    // If no MRT stations in area, find nearest station
+    let nearestStation: { name: string; distance: number } | null = null
+    if (!access || !access.mrt_station_count || access.mrt_station_count === 0) {
+      // Get neighbourhood center
+      const { data: neighbourhoodWithCenter } = await supabase
+        .from('neighbourhoods')
+        .select('center, bbox')
+        .eq('id', id)
+        .single()
+      
+      if (neighbourhoodWithCenter) {
+        let lat: number | null = null
+        let lng: number | null = null
+        
+        // Try to get coordinates from center first
+        if (neighbourhoodWithCenter.center) {
+          const center = typeof neighbourhoodWithCenter.center === 'string' 
+            ? JSON.parse(neighbourhoodWithCenter.center) 
+            : neighbourhoodWithCenter.center
+          if (center?.lat && center?.lng) {
+            lat = center.lat
+            lng = center.lng
+          }
+        }
+        
+        // Fallback to bbox center if center is not available
+        if ((lat === null || lng === null) && neighbourhoodWithCenter.bbox) {
+          const bbox = typeof neighbourhoodWithCenter.bbox === 'string' 
+            ? JSON.parse(neighbourhoodWithCenter.bbox) 
+            : neighbourhoodWithCenter.bbox
+          if (bbox && Array.isArray(bbox) && bbox.length === 4) {
+            // bbox format: [minLng, minLat, maxLng, maxLat]
+            lat = (bbox[1] + bbox[3]) / 2
+            lng = (bbox[0] + bbox[2]) / 2
+          }
+        }
+        
+        if (lat !== null && lng !== null) {
+          // Get all MRT stations
+          const { data: allMrtStations } = await supabase
+            .from('mrt_stations')
+            .select('station_code, latitude, longitude')
+            .not('station_code', 'is', null)
+          
+          if (allMrtStations && allMrtStations.length > 0) {
+            // Find nearest station using Haversine formula
+            for (const station of allMrtStations) {
+              if (!station.latitude || !station.longitude) continue
+              
+              // Haversine distance calculation (in meters)
+              const R = 6371000 // Earth radius in meters
+              const lat1 = lat * Math.PI / 180
+              const lat2 = Number(station.latitude) * Math.PI / 180
+              const deltaLat = (Number(station.latitude) - lat) * Math.PI / 180
+              const deltaLng = (Number(station.longitude) - lng) * Math.PI / 180
+              
+              const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                       Math.cos(lat1) * Math.cos(lat2) *
+                       Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+              const distance = R * c
+              
+              if (!nearestStation || distance < nearestStation.distance) {
+                nearestStation = { name: station.station_code, distance }
+              }
+            }
+          }
+        }
+      }
+    }
+
     const neighbourhood = {
       id: data.id,
       name: data.name,
@@ -157,6 +228,10 @@ export async function GET(
         mrt_access_type: access.mrt_access_type,
         avg_distance_to_mrt: access.avg_distance_to_mrt,
         updated_at: access.updated_at
+      } : null,
+      nearest_mrt_station: nearestStation ? {
+        name: nearestStation.name,
+        distance: Math.round(nearestStation.distance)
       } : null,
       created_at: data.created_at,
       updated_at: data.updated_at

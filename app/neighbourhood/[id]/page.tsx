@@ -14,7 +14,6 @@ import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar, ArrowRight, Schoo
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
-import { ProfileFitReasons } from '@/components/ProfileRecommendations'
 import { AnalyticsEvents } from '@/lib/analytics'
 import LivingDimensions from '@/components/LivingDimensions'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
@@ -37,6 +36,10 @@ interface Neighbourhood {
     mrt_station_count: number
     mrt_access_type: string
     avg_distance_to_mrt: number | null
+  } | null
+  nearest_mrt_station: {
+    name: string
+    distance: number
   } | null
 }
 
@@ -66,7 +69,6 @@ export default function NeighbourhoodDetailPage() {
   
   const [neighbourhood, setNeighbourhood] = useState<Neighbourhood | null>(null)
   const [trends, setTrends] = useState<Trend[]>([])
-  const [nearbyNeighbourhoods, setNearbyNeighbourhoods] = useState<Neighbourhood[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [flatType, setFlatType] = useState<string>('4 ROOM')
@@ -93,12 +95,6 @@ export default function NeighbourhoodDetailPage() {
       recordBehaviorEvent({ type: 'lease_view', metadata: { lease } })
     }
   }, [neighbourhood])
-
-  useEffect(() => {
-    if (neighbourhood?.planning_area?.id) {
-      loadNearbyNeighbourhoods()
-    }
-  }, [neighbourhood?.planning_area?.id])
 
   async function loadNeighbourhood() {
     try {
@@ -127,23 +123,6 @@ export default function NeighbourhoodDetailPage() {
     }
   }
 
-  async function loadNearbyNeighbourhoods() {
-    if (!neighbourhood?.planning_area?.id) return
-    
-    try {
-      const res = await fetch(`/api/neighbourhoods?planning_area_id=${neighbourhood.planning_area.id}&limit=20`)
-      const data = await res.json()
-      
-      if (res.ok && data.neighbourhoods) {
-        // Exclude current neighbourhood
-        const nearby = data.neighbourhoods.filter((n: Neighbourhood) => n.id !== id)
-        setNearbyNeighbourhoods(nearby)
-        calculateThresholds(data.neighbourhoods)
-      }
-    } catch (err) {
-      console.error('Error loading nearby neighbourhoods:', err)
-    }
-  }
 
   async function loadTrends() {
     try {
@@ -247,7 +226,7 @@ export default function NeighbourhoodDetailPage() {
     return 'high'
   }
 
-  function getMainSignal(n: Neighbourhood): { strengths: string[]; watchOuts: string[] } {
+  function getMainSignal(n: Neighbourhood): { strengths: string[] } {
     const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
     const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
     const mrtAccess = n.access?.mrt_access_type
@@ -256,7 +235,6 @@ export default function NeighbourhoodDetailPage() {
     const txCount = n.summary?.tx_12m ? Number(n.summary.tx_12m) : 0
     
     const strengths: string[] = []
-    const watchOuts: string[] = []
     
     // Strengths - full sentences explaining benefits
     if (lease && lease >= leaseThresholds.p75) {
@@ -280,21 +258,7 @@ export default function NeighbourhoodDetailPage() {
       }
     }
     
-    // Watch outs - full sentences explaining consequences
-    if (lease && lease < leaseThresholds.p25) {
-      watchOuts.push('Shorter lease may limit long-term resale')
-    }
-    if ((mrtAccess === 'none' || !mrtAccess) && (!mrtDistance || mrtDistance > 800)) {
-      watchOuts.push('Limited MRT access may affect daily commute')
-    }
-    if (price && price >= priceThresholds.p75) {
-      watchOuts.push('Higher price point requires careful value assessment')
-    }
-    if (txCount > 0 && txCount < 20) {
-      watchOuts.push('Lower transaction volume means fewer resale choices')
-    }
-    
-    return { strengths, watchOuts }
+    return { strengths }
   }
 
   function getMarketActivityLabel(txCount: number): string {
@@ -312,63 +276,6 @@ export default function NeighbourhoodDetailPage() {
     return 'Short (<60 years)'
   }
 
-  function getComparisonPoints(current: Neighbourhood, nearby: Neighbourhood[]): string[] {
-    const points: string[] = []
-    const currentPrice = current.summary?.median_price_12m ? Number(current.summary.median_price_12m) : null
-    const currentLease = current.summary?.median_lease_years_12m ? Number(current.summary.median_lease_years_12m) : null
-    const currentMRT = current.access?.mrt_station_count || 0
-    
-    const nearbyWithData = nearby.filter(n => n.summary || n.access)
-    
-    if (currentPrice && nearbyWithData.length > 0) {
-      const higherPrice = nearbyWithData.filter(n => {
-        const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-        return price && price > currentPrice
-      })
-      const lowerPrice = nearbyWithData.filter(n => {
-        const price = n.summary?.median_price_12m ? Number(n.summary.median_price_12m) : null
-        return price && price < currentPrice
-      })
-      
-      if (lowerPrice.length > 0 && lowerPrice.length <= 2) {
-        points.push(`Lower price than ${lowerPrice.map(n => toTitleCase(n.name)).join(' and ')}`)
-      } else if (higherPrice.length > 0 && higherPrice.length <= 2) {
-        points.push(`Higher price than ${higherPrice.map(n => toTitleCase(n.name)).join(' and ')}`)
-      } else if (nearbyWithData.length > 0) {
-        points.push(`Similar price range to nearby neighbourhoods`)
-      }
-    }
-    
-    if (currentLease && nearbyWithData.length > 0) {
-      const higherLease = nearbyWithData.filter(n => {
-        const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-        return lease && lease > currentLease
-      })
-      const lowerLease = nearbyWithData.filter(n => {
-        const lease = n.summary?.median_lease_years_12m ? Number(n.summary.median_lease_years_12m) : null
-        return lease && lease < currentLease
-      })
-      
-      if (higherLease.length > 0 && higherLease.length <= 2) {
-        points.push(`Higher remaining lease than ${higherLease.map(n => toTitleCase(n.name)).join(' and ')}`)
-      } else if (lowerLease.length > 0 && lowerLease.length <= 2) {
-        points.push(`Lower remaining lease than ${lowerLease.map(n => toTitleCase(n.name)).join(' and ')}`)
-      }
-    }
-    
-    if (currentMRT >= 0 && nearbyWithData.length > 0) {
-      const moreMRT = nearbyWithData.filter(n => (n.access?.mrt_station_count || 0) > currentMRT)
-      const fewerMRT = nearbyWithData.filter(n => (n.access?.mrt_station_count || 0) < currentMRT)
-      
-      if (fewerMRT.length > 0 && fewerMRT.length <= 2) {
-        points.push(`More MRT options than ${fewerMRT.map(n => toTitleCase(n.name)).join(' and ')}`)
-      } else if (moreMRT.length > 0 && moreMRT.length <= 2) {
-        points.push(`Fewer MRT options than ${moreMRT.map(n => toTitleCase(n.name)).join(' and ')}`)
-      }
-    }
-    
-    return points.slice(0, 3) // Limit to 3 points
-  }
 
   // Prepare chart data
   const chartData = trends.map(t => ({
@@ -404,7 +311,6 @@ export default function NeighbourhoodDetailPage() {
   }
 
   const signal = getMainSignal(neighbourhood)
-  const comparisonPoints = getComparisonPoints(neighbourhood, nearbyNeighbourhoods)
   const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
 
   return (
@@ -422,20 +328,6 @@ export default function NeighbourhoodDetailPage() {
 
           {/* Decision Profile */}
           <DecisionProfileDisplay variant="detail" className="mb-4" />
-
-          {/* Why this fits your profile */}
-          {neighbourhood && (
-            <ProfileFitReasons 
-              neighbourhood={{
-                id: neighbourhood.id,
-                name: neighbourhood.name,
-                summary: neighbourhood.summary,
-                access: neighbourhood.access,
-                planning_area: neighbourhood.planning_area,
-              }}
-              className="mb-4"
-            />
-          )}
 
           <div className="flex items-start justify-between">
             <div>
@@ -486,71 +378,61 @@ export default function NeighbourhoodDetailPage() {
           </div>
         </div>
 
-        {/* Module 2: Strengths & Trade-offs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {signal.strengths.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Why {toTitleCase(neighbourhood.name)} works well
-              </h2>
-              <ul className="space-y-3">
-                {signal.strengths.map((strength, idx) => (
-                  <li key={idx} className="text-gray-700 flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    <span>{strength}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+
+        {/* Transport details */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Train className="w-5 h-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Transport Access</h3>
+          </div>
           
-          {signal.watchOuts.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                When {toTitleCase(neighbourhood.name)} may not fit
-              </h2>
-              <ul className="space-y-3">
-                {signal.watchOuts.map((watchOut, idx) => (
-                  <li key={idx} className="text-gray-700 flex items-start">
-                    <span className="text-amber-600 mr-2">•</span>
-                    <span>{watchOut}</span>
-                  </li>
-                ))}
-              </ul>
+          {neighbourhood.access && (neighbourhood.access.mrt_station_count > 0 || neighbourhood.access.avg_distance_to_mrt || neighbourhood.access.mrt_access_type) ? (
+            <div className="space-y-3">
+              {/* MRT Station Count */}
+              {neighbourhood.access.mrt_station_count > 0 && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">MRT Stations:</span>{' '}
+                  {neighbourhood.access.mrt_station_count === 1 
+                    ? '1 station nearby'
+                    : `${neighbourhood.access.mrt_station_count} stations nearby`}
+                </div>
+              )}
+              
+              {/* Average Distance to MRT */}
+              {neighbourhood.access.avg_distance_to_mrt && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">Distance to MRT:</span>{' '}
+                  Average {Number(neighbourhood.access.avg_distance_to_mrt).toFixed(0)}m walk
+                </div>
+              )}
+              
+              {/* Access Type */}
+              {neighbourhood.access.mrt_access_type && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">Access:</span>{' '}
+                  {neighbourhood.access.mrt_access_type === 'high' && 'High connectivity'}
+                  {neighbourhood.access.mrt_access_type === 'medium' && 'Medium connectivity'}
+                  {neighbourhood.access.mrt_access_type === 'low' && 'Low connectivity'}
+                  {neighbourhood.access.mrt_access_type === 'none' && 'Limited MRT access'}
+                  {!['high', 'medium', 'low', 'none'].includes(neighbourhood.access.mrt_access_type) && 
+                    neighbourhood.access.mrt_access_type}
+                </div>
+              )}
             </div>
+          ) : neighbourhood.nearest_mrt_station ? (
+            <div className="space-y-3">
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">This neighbourhood has no MRT stations.</span>
+              </div>
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">Nearest MRT:</span>{' '}
+                {toTitleCase(neighbourhood.nearest_mrt_station.name.replace(/_/g, ' '))} ({Math.round(neighbourhood.nearest_mrt_station.distance / 100) / 10}km away)
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500">Transport data not available</div>
           )}
         </div>
-
-        {/* Transport hint */}
-        {neighbourhood.access && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Train className="w-5 h-5 text-gray-600" />
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    Transport access: {getTransportLabel()}
-                  </div>
-                  {(() => {
-                    const mrtAccess = neighbourhood.access?.mrt_access_type
-                    const mrtDistance = neighbourhood.access?.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null
-                    if (mrtAccess === 'none' || !mrtAccess) {
-                      return <div className="text-xs text-gray-600">Bus-first, limited walkable MRT</div>
-                    }
-                    return null
-                  })()}
-                </div>
-              </div>
-              <Link
-                href="/hdb/transport"
-                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Explore transport accessibility
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* Lease context */}
         {neighbourhood.summary?.median_lease_years_12m && (() => {
@@ -597,28 +479,6 @@ export default function NeighbourhoodDetailPage() {
           )
         })()}
 
-        {/* Module 3: Contextual Comparison */}
-        {neighbourhood.planning_area && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Compared to nearby neighbourhoods
-            </h2>
-            {comparisonPoints.length > 0 ? (
-              <ul className="space-y-2">
-                {comparisonPoints.map((point, idx) => (
-                  <li key={idx} className="text-gray-700 flex items-start">
-                    <span className="text-blue-600 mr-2">•</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : nearbyNeighbourhoods.length > 0 ? (
-              <p className="text-gray-500 text-sm">Similar characteristics to nearby neighbourhoods in {toTitleCase(neighbourhood.planning_area.name)}</p>
-            ) : (
-              <p className="text-gray-500 text-sm">Loading comparison data...</p>
-            )}
-          </div>
-        )}
 
         {/* Trends Chart */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">

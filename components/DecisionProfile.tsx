@@ -97,20 +97,7 @@ export default function DecisionProfileDisplay({ variant = 'compare', className 
     )
   }
 
-  // detail variant
-  return (
-    <div className={`bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6 ${className}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">{display.emoji}</span>
-        <span className="text-sm font-semibold text-gray-900">Commonly chosen by:</span>
-      </div>
-      <p className="text-sm text-gray-700">
-        {display.name.replace('Family', 'families')} prioritising {profile.type === 'budget-first' ? 'affordability and entry price' :
-        profile.type === 'long-term-stability' ? 'long-term holding and lease safety' :
-        profile.type === 'school-stability' ? 'predictable school environments' :
-        'daily commute convenience'}.
-      </p>
-    </div>
-  )
+  // detail variant - return null to hide this component on detail page
+  return null
 }
 
