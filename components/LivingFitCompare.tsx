@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { LivingNotes, LivingRating } from '@/lib/neighbourhood-living-notes'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 
@@ -29,11 +29,15 @@ function getRatingColor(rating: LivingRating): string {
 
 export default function LivingFitCompare({ neighbourhoods, className = '' }: LivingFitCompareProps) {
   const [expandedCell, setExpandedCell] = useState<{ row: string; col: number } | null>(null)
+  const [livingNotesArray, setLivingNotesArray] = useState<(LivingNotes | null)[]>([])
   
-  const livingNotesArray = neighbourhoods.map(n => getLivingNotesForNeighbourhood(n.name))
+  useEffect(() => {
+    Promise.all(neighbourhoods.map(n => getLivingNotesForNeighbourhood(n.name)))
+      .then(setLivingNotesArray)
+  }, [neighbourhoods])
   
   // Only show if at least one neighbourhood has living notes
-  if (livingNotesArray.every(notes => notes === null)) {
+  if (livingNotesArray.length === 0 || livingNotesArray.every(notes => notes === null)) {
     return null
   }
 

@@ -2320,7 +2320,45 @@ const NOTES_BY_KEY: Record<string, LivingNotes> = {
   },
 }
 
-export function getLivingNotesForNeighbourhood(name: string): LivingNotes | null {
+// Cache for API responses to avoid repeated calls
+const notesCache = new Map<string, LivingNotes | null>()
+
+export async function getLivingNotesForNeighbourhood(name: string): Promise<LivingNotes | null> {
+  const key = norm(name)
+  if (!key) return null
+
+  // Check cache first
+  if (notesCache.has(key)) {
+    return notesCache.get(key) || null
+  }
+
+  try {
+    // Fetch from API
+    const response = await fetch(`/api/neighbourhoods/living-notes?name=${encodeURIComponent(name)}`)
+    if (!response.ok) {
+      // Fallback to static data if API fails
+      return getLivingNotesForNeighbourhoodStatic(name)
+    }
+
+    const data = await response.json()
+    if (!data) {
+      // Try static data fallback
+      const staticNotes = getLivingNotesForNeighbourhoodStatic(name)
+      notesCache.set(key, staticNotes)
+      return staticNotes
+    }
+
+    notesCache.set(key, data)
+    return data
+  } catch (error) {
+    console.error('Error fetching living notes from API:', error)
+    // Fallback to static data
+    return getLivingNotesForNeighbourhoodStatic(name)
+  }
+}
+
+// Static data fallback (for backward compatibility and offline support)
+function getLivingNotesForNeighbourhoodStatic(name: string): LivingNotes | null {
   const key = norm(name)
   if (!key) return null
 

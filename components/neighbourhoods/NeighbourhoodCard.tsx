@@ -2,12 +2,13 @@
  * Neighbourhood Card Component
  */
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, ArrowRight } from 'lucide-react'
 import { NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
 import { toTitleCase, formatFlatType, formatCurrency, getMRTAccessLabel } from '@/lib/utils/neighbourhood-utils'
 import { getRegionInfo, getMajorRegionInfo, type RegionType } from '@/lib/region-mapping'
-import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
+import { getLivingNotesForNeighbourhood, type LivingNotes } from '@/lib/neighbourhood-living-notes'
 import LivingDimensions from '@/components/LivingDimensions'
 
 interface NeighbourhoodCardProps {
@@ -24,7 +25,11 @@ export function NeighbourhoodCard({
   filterParams 
 }: NeighbourhoodCardProps) {
   const displayFlatType = neighbourhood.display_flat_type
-  const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
+  const [livingNotes, setLivingNotes] = useState<LivingNotes | null>(null)
+
+  useEffect(() => {
+    getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
+  }, [neighbourhood.name])
 
   return (
     <div

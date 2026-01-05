@@ -75,6 +75,7 @@ export default function NeighbourhoodDetailPage() {
   const [flatType, setFlatType] = useState<string>('4 ROOM')
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
+  const [livingNotes, setLivingNotes] = useState<import('@/lib/neighbourhood-living-notes').LivingNotes | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -85,6 +86,12 @@ export default function NeighbourhoodDetailPage() {
       AnalyticsEvents.neighbourDetailView({ neighbourhoodId: id })
     }
   }, [id, flatType])
+
+  useEffect(() => {
+    if (neighbourhood?.name) {
+      getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
+    }
+  }, [neighbourhood?.name])
 
   useEffect(() => {
     // Track lease-related interactions
@@ -312,7 +319,6 @@ export default function NeighbourhoodDetailPage() {
   }
 
   const signal = getMainSignal(neighbourhood)
-  const livingNotes = getLivingNotesForNeighbourhood(neighbourhood.name)
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -60,6 +60,7 @@ function ComparePageContent() {
   const [error, setError] = useState<string | null>(null)
   const [flatType, setFlatType] = useState<string>('4 ROOM')
   const [months, setMonths] = useState<number>(24)
+  const [livingNotesMap, setLivingNotesMap] = useState<Map<string, import('@/lib/neighbourhood-living-notes').LivingNotes | null>>(new Map())
 
   useEffect(() => {
     if (ids.length > 0) {
@@ -105,7 +106,17 @@ function ComparePageContent() {
         throw new Error(data.error || 'Failed to compare neighbourhoods')
       }
       
-      setComparisons(data.comparison || [])
+      const comparisonData = data.comparison || []
+      setComparisons(comparisonData)
+      
+      // Load living notes for all comparisons
+      const notesPromises = comparisonData.map(async (c: NeighbourhoodComparison) => {
+        const notes = await getLivingNotesForNeighbourhood(c.name)
+        return [c.id, notes] as const
+      })
+      const notesResults = await Promise.all(notesPromises)
+      const notesMap = new Map(notesResults)
+      setLivingNotesMap(notesMap)
     } catch (err: any) {
       setError(err.message || 'Failed to load comparison')
       console.error('Error loading comparison:', err)
@@ -840,7 +851,7 @@ function ComparePageContent() {
 
             {/* Living Check */}
             {comparisons.length >= 2 && (() => {
-              const livingNotesArray = comparisons.map(c => getLivingNotesForNeighbourhood(c.name))
+              const livingNotesArray = comparisons.map(c => livingNotesMap.get(c.id) || null)
               const hasAnyNotes = livingNotesArray.some(notes => notes !== null)
               
               if (!hasAnyNotes) return null
