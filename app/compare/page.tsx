@@ -1014,7 +1014,7 @@ function ComparePageContent() {
               </div>
             )}
 
-            {/* Living Check */}
+            {/* Living Comfort */}
             {comparisons.length >= 2 && (() => {
               const livingNotesArray = comparisons.map(c => livingNotesMap.get(c.id) || null)
               const hasAnyNotes = livingNotesArray.some(notes => notes !== null)
@@ -1024,20 +1024,69 @@ function ComparePageContent() {
               function getRatingMeta(rating: LivingRating): { label: string; className: string } {
                 if (rating === 'good') {
                   return {
-                    label: 'Good',
+                    label: '✓',
                     className: 'border-green-200 bg-green-50 text-green-800',
                   }
                 }
                 if (rating === 'bad') {
                   return {
-                    label: 'Bad',
+                    label: '✗',
                     className: 'border-red-200 bg-red-50 text-red-800',
                   }
                 }
                 return {
-                  label: 'Mixed',
+                  label: '?',
                   className: 'border-amber-200 bg-amber-50 text-amber-800',
                 }
+              }
+              
+              // Helper to capitalize first letter of a string
+              function capitalizeFirst(str: string): string {
+                if (!str) return str
+                return str.charAt(0).toUpperCase() + str.slice(1)
+              }
+              
+              // Helper to format description with line breaks for better scanability
+              function formatDescription(note: string): JSX.Element {
+                // Split at semicolons first (natural break points)
+                if (note.includes(';')) {
+                  const parts = note.split(';').map(s => s.trim()).filter(Boolean)
+                  if (parts.length > 1) {
+                    return (
+                      <>
+                        {capitalizeFirst(parts[0])}.
+                        {parts.slice(1).map((part, idx) => {
+                          const capitalized = capitalizeFirst(part)
+                          return (
+                            <span key={idx}>
+                              <br />
+                              {capitalized}{capitalized.endsWith('.') ? '' : '.'}
+                            </span>
+                          )
+                        })}
+                      </>
+                    )
+                  }
+                }
+                
+                // If no semicolons, try splitting at first period if text is long enough
+                const firstPeriodIndex = note.indexOf('.')
+                if (firstPeriodIndex > 0 && firstPeriodIndex < note.length - 10) {
+                  const firstPart = note.substring(0, firstPeriodIndex + 1).trim()
+                  const restPart = note.substring(firstPeriodIndex + 1).trim()
+                  if (restPart) {
+                    return (
+                      <>
+                        {capitalizeFirst(firstPart)}
+                        <br />
+                        {capitalizeFirst(restPart)}
+                      </>
+                    )
+                  }
+                }
+                
+                // No suitable break point, return as is (capitalized)
+                return <>{capitalizeFirst(note)}</>
               }
               
               const dimensions = [
@@ -1051,15 +1100,14 @@ function ComparePageContent() {
               return (
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-1">Living check</h2>
-                    <p className="text-xs text-gray-500">5 dimensions of daily living quality</p>
+                    <h2 className="text-xl font-semibold text-gray-900">Living comfort</h2>
                   </div>
-                  <table className="responsive-table w-full divide-y divide-gray-200">
+                  <table className="responsive-table w-auto divide-y divide-gray-200">
                     <thead>
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dimension</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Dimension</th>
                         {comparisons.map((c, i) => (
-                          <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          <th key={c.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-auto">
                             {toTitleCase(c.name)}
                           </th>
                         ))}
@@ -1068,14 +1116,14 @@ function ComparePageContent() {
                     <tbody className="divide-y divide-gray-200">
                       {dimensions.map(dim => (
                         <tr key={dim.key}>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-700">{dim.label}</td>
+                          <td className="px-3 py-3 text-sm font-medium text-gray-900 w-[120px]">{dim.label}</td>
                           {comparisons.map((c, idx) => {
                             const notes = livingNotesArray[idx]
                             const dimension = notes?.[dim.key]
                             
                             if (!dimension) {
                               return (
-                                <td key={c.id} className="px-4 py-3 text-sm text-gray-400">
+                                <td key={c.id} className="px-6 py-3 text-sm text-gray-400 w-auto">
                                   —
                                 </td>
                               )
@@ -1084,15 +1132,13 @@ function ComparePageContent() {
                             const ratingMeta = getRatingMeta(dimension.rating)
                             
                             return (
-                              <td key={c.id} className="px-4 py-3 text-sm">
-                                <div className="space-y-2">
-                                  <div>
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${ratingMeta.className}`}>
-                                      {ratingMeta.label}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-gray-600 leading-relaxed">
-                                    {dimension.note}
+                              <td key={c.id} className="px-6 py-3 text-sm w-auto">
+                                <div className="flex items-center gap-3">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border flex-shrink-0 ${ratingMeta.className}`}>
+                                    {ratingMeta.label}
+                                  </span>
+                                  <div className="text-sm text-gray-600 leading-relaxed">
+                                    {formatDescription(dimension.note)}
                                   </div>
                                 </div>
                               </td>
