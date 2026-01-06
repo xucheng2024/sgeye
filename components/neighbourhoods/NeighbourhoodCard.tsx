@@ -83,7 +83,13 @@ function NeighbourhoodCardComponent({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{toTitleCase(neighbourhood.name)}</h3>
+          <Link 
+            href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
+            className="group inline-flex items-center gap-2 hover:text-blue-600 transition-colors"
+          >
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{toTitleCase(neighbourhood.name)}</h3>
+            <span className="text-xs text-gray-400 group-hover:text-blue-500 font-medium">more</span>
+          </Link>
           <div className="flex flex-wrap gap-2 mt-1">
             {neighbourhood.planning_area && (
               <>
