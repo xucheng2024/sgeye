@@ -42,6 +42,7 @@ export {
   findAffordableProperties,
   getNeighbourhoodTimeAccess,
   getNeighbourhoodIdFromTown,
+  getNeighbourhoodIdFromPlanningArea,
 } from './hdb-data/fetch'
 
 // Re-export calculation functions from new structure

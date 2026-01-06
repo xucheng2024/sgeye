@@ -3,26 +3,54 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
-import { getNeighbourhoodTransportProfile, getNeighbourhoodIdFromTown, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
-import { TOWNS } from './constants'
+import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import type { NeighbourhoodTransportProfile } from '@/lib/hdb-data'
 
+interface Neighbourhood {
+  id: string
+  name: string
+  planning_area?: {
+    id: string
+    name: string
+  } | null
+}
+
 export default function TransportPage() {
-  const [selectedTown, setSelectedTown] = useState<string>('ANG MO KIO')
+  const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
+  const [selectedNeighbourhoodId, setSelectedNeighbourhoodId] = useState<string>('')
   const [transportProfile, setTransportProfile] = useState<NeighbourhoodTransportProfile | null>(null)
   const [loading, setLoading] = useState(false)
   
   useEffect(() => {
+    // Load neighbourhoods
+    const loadNeighbourhoods = async () => {
+      try {
+        const res = await fetch('/api/neighbourhoods?limit=500')
+        const data = await res.json()
+        const neighbourhoodsData = data.neighbourhoods || []
+        // Sort by name for easier selection
+        const sorted = neighbourhoodsData.sort((a: Neighbourhood, b: Neighbourhood) => 
+          (a.name || '').localeCompare(b.name || '')
+        )
+        setNeighbourhoods(sorted)
+        if (sorted.length > 0 && !selectedNeighbourhoodId) {
+          setSelectedNeighbourhoodId(sorted[0].id)
+        }
+      } catch (error) {
+        console.error('Error loading neighbourhoods:', error)
+      }
+    }
+    loadNeighbourhoods()
+  }, [])
+  
+  useEffect(() => {
     const loadTransportProfile = async () => {
+      if (!selectedNeighbourhoodId) return
+      
       setLoading(true)
       try {
-        const neighbourhoodId = await getNeighbourhoodIdFromTown(selectedTown)
-        if (neighbourhoodId) {
-          const profile = await getNeighbourhoodTransportProfile(neighbourhoodId)
-          setTransportProfile(profile)
-        } else {
-          setTransportProfile(null)
-        }
+        const profile = await getNeighbourhoodTransportProfile(selectedNeighbourhoodId)
+        setTransportProfile(profile)
       } catch (error) {
         console.error('Error loading transport profile:', error)
         setTransportProfile(null)
@@ -31,7 +59,7 @@ export default function TransportPage() {
       }
     }
     loadTransportProfile()
-  }, [selectedTown])
+  }, [selectedNeighbourhoodId])
   
   const tbi = transportProfile ? calculateTBI(transportProfile) : null
   const tbiLevel = tbi !== null ? getTBILevel(tbi) : null
@@ -54,52 +82,69 @@ export default function TransportPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Town Selector */}
+        {/* Neighbourhood Selector */}
         <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
           <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Select Town / Planning Area:
+            Select neighbourhood (subarea):
           </label>
           <select
-            value={selectedTown}
-            onChange={(e) => setSelectedTown(e.target.value)}
+            value={selectedNeighbourhoodId}
+            onChange={(e) => setSelectedNeighbourhoodId(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all text-base"
+            disabled={neighbourhoods.length === 0}
           >
-            {TOWNS.map(town => (
-              <option key={town} value={town}>{town}</option>
+            {neighbourhoods.map(neighbourhood => (
+              <option key={neighbourhood.id} value={neighbourhood.id}>
+                {neighbourhood.name}
+                {neighbourhood.planning_area && ` (${neighbourhood.planning_area.name})`}
+              </option>
             ))}
           </select>
+          {loading && (
+            <p className="text-sm text-gray-500 mt-2">Loading transport profile...</p>
+          )}
         </div>
 
         {/* Structural Indicators */}
         {transportProfile && tbi !== null && tbiLevel && (
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Structural Transport Indicators</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">What makes commuting easier or harder here</h2>
             
             {/* TBI Score */}
-            <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-semibold text-gray-900">Transport Burden Index (TBI)</span>
-                <span className={`text-3xl font-bold ${
-                  tbiLevel === 'low' ? 'text-green-600' :
-                  tbiLevel === 'moderate' ? 'text-yellow-600' :
-                  tbiLevel === 'high' ? 'text-orange-600' :
-                  'text-red-600'
-                }`}>
-                  {tbi}
+            <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 relative">
+              <div className="absolute top-4 right-4">
+                <Link
+                  href="/neighbourhoods"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                >
+                  Compare with another neighbourhood
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="mb-3">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-xl font-semibold text-gray-900">Transport Burden: {tbiLabel}</span>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {tbiLevel === 'low' && "You'll spend minimal time commuting. This location offers strong structural advantages for daily travel."}
+                  {tbiLevel === 'moderate' && "You'll spend a manageable but noticeable amount of time commuting over the long term."}
+                  {tbiLevel === 'high' && "You'll spend significant time commuting. This location requires more daily travel investment."}
+                  {tbiLevel === 'very_high' && "You'll spend substantial time commuting. This location has structural constraints that add up over years."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-blue-200">
+                <span className="text-sm text-gray-600">
+                  TBI {tbi} / 100 (lower is better)
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${
-                  tbiLevel === 'low' ? 'bg-green-100 text-green-800' :
-                  tbiLevel === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                  tbiLevel === 'high' ? 'bg-orange-100 text-orange-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {tbiLabel}
-                </span>
-                <span className="text-sm text-gray-600">
-                  (0-100 scale, lower is better)
-                </span>
+              {/* Comparison Anchor */}
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <p className="text-xs font-medium text-gray-700 mb-2">How this feels compared to other areas:</p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Central hubs: ~20–25</li>
+                  <li>• Most heartland neighbourhoods: ~30–40</li>
+                  <li>• Outer / fringe areas: ~45–60</li>
+                </ul>
               </div>
             </div>
 
@@ -111,7 +156,7 @@ export default function TransportPage() {
                   <span className="font-semibold text-gray-900">Number of MRT lines</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">{transportProfile.mrtLinesCount}</p>
-                <p className="text-sm text-gray-600 mt-1">Lines serving this town</p>
+                <p className="text-sm text-gray-600 mt-1">Lines accessible from this area</p>
               </div>
 
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -146,11 +191,11 @@ export default function TransportPage() {
 
             {/* TBI Breakdown */}
             <div className="mt-6 p-5 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-gray-900 mb-4">TBI Component Breakdown</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Component breakdown</h3>
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-700">Central Access Burden (40%)</span>
+                    <span className="text-sm text-gray-700">How far this town is from major job hubs</span>
                     <span className="text-sm font-semibold text-gray-900">{transportProfile.centralAccessBurden}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -162,7 +207,7 @@ export default function TransportPage() {
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-700">Transfer Burden (25%)</span>
+                    <span className="text-sm text-gray-700">How often you need to change lines</span>
                     <span className="text-sm font-semibold text-gray-900">{transportProfile.transferBurden}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -174,7 +219,7 @@ export default function TransportPage() {
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-700">Network Redundancy (20%)</span>
+                    <span className="text-sm text-gray-700">Backup routes when one line is disrupted</span>
                     <span className="text-sm font-semibold text-gray-900">{transportProfile.networkRedundancy}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -186,7 +231,7 @@ export default function TransportPage() {
                 </div>
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-700">Daily Mobility Friction (15%)</span>
+                    <span className="text-sm text-gray-700">Walking distance, waits, and small delays</span>
                     <span className="text-sm font-semibold text-gray-900">{transportProfile.dailyMobilityFriction}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -197,6 +242,9 @@ export default function TransportPage() {
                   </div>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 italic mt-4 pt-4 border-t border-blue-200">
+                These are structural factors — they don&apos;t change if you switch flats within the same area.
+              </p>
             </div>
           </div>
         )}
@@ -207,22 +255,15 @@ export default function TransportPage() {
             <Clock className="w-6 h-6 text-blue-600" />
             <h2 className="text-2xl font-bold text-gray-900">Why time burden matters</h2>
           </div>
-          <div className="space-y-4 text-gray-700 leading-relaxed">
+          <div className="space-y-3 text-gray-700 leading-relaxed">
             <p>
-              When you choose where to live, you&apos;re committing to a daily routine that lasts 10–15 years. 
-              A 15–30 minute difference each way might seem small, but it adds up.
+              Choosing where to live is choosing a daily routine for 10–15 years.
             </p>
             <p>
-              Over a decade, that&apos;s hundreds of hours spent commuting instead of with family, 
-              on hobbies, or simply resting. The cumulative effect is real.
+              A small time difference may feel minor today, but it compounds into hundreds of hours over time.
             </p>
-            <p>
-              This isn&apos;t about one-off trips or occasional delays. It&apos;s about the structural reality 
-              of your location: how many transfers you need, how far you are from major hubs, 
-              and how accessible your town is to the rest of Singapore.
-            </p>
-            <p className="font-semibold text-gray-900 mt-4">
-              The question isn&apos;t &quot;Can I get there?&quot; It&apos;s &quot;How sustainable is this commute for the next 15 years?&quot;
+            <p className="font-semibold text-gray-900">
+              This is about sustainability — not just getting there.
             </p>
           </div>
         </section>
@@ -233,36 +274,42 @@ export default function TransportPage() {
             <MapPin className="w-6 h-6 text-blue-600" />
             <h2 className="text-2xl font-bold text-gray-900">What affects time burden structurally</h2>
           </div>
-          <div className="space-y-6">
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Centrality</h3>
-              <p className="text-gray-700">
-                Central areas and city fringe towns are closer to major employment hubs, reducing baseline travel time.
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-semibold text-gray-900 mb-2">MRT Density</h3>
-              <p className="text-gray-700">
-                Towns with more MRT stations offer more route options and shorter walking distances to transit.
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Transfer Complexity</h3>
-              <p className="text-gray-700">
-                Direct connections to major lines mean fewer transfers, less waiting, and more predictable journeys.
-              </p>
-            </div>
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Regional Hub Access</h3>
-              <p className="text-gray-700">
-                Proximity to regional centres (Jurong East, Tampines, Woodlands, Punggol) provides better connectivity to multiple destinations.
-              </p>
-            </div>
+          <div className="mb-6">
+            <p className="text-sm font-semibold text-gray-700 mb-4">Structural factors you can&apos;t easily change later:</p>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 font-semibold mt-0.5">✓</span>
+                <div>
+                  <span className="font-medium text-gray-900">Centrality</span>
+                  <span className="text-gray-600"> — distance to major job hubs</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 font-semibold mt-0.5">✓</span>
+                <div>
+                  <span className="font-medium text-gray-900">MRT density</span>
+                  <span className="text-gray-600"> — number of stations and routes</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 font-semibold mt-0.5">✓</span>
+                <div>
+                  <span className="font-medium text-gray-900">Transfer complexity</span>
+                  <span className="text-gray-600"> — how many line changes are needed</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 font-semibold mt-0.5">✓</span>
+                <div>
+                  <span className="font-medium text-gray-900">Regional hub access</span>
+                  <span className="text-gray-600"> — connectivity beyond CBD</span>
+                </div>
+              </li>
+            </ul>
           </div>
           <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-sm text-gray-600 italic">
-              These are structural attributes of your town, not precise travel times. 
-              They don&apos;t change based on your specific workplace or school.
+              These are structural attributes, not precise travel times.
             </p>
           </div>
         </section>
@@ -288,20 +335,6 @@ export default function TransportPage() {
           </div>
         </section>
 
-        {/* CTA */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-8 text-center">
-          <Train className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-900 mb-4">
-            See how transport trade-offs affect your neighbourhood comparison
-          </h3>
-          <Link
-            href="/compare"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
-          >
-            Compare Towns
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
       </main>
     </div>
   )

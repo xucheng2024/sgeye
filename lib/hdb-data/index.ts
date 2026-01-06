@@ -35,6 +35,7 @@ export {
   findAffordableProperties,
   getNeighbourhoodTimeAccess,
   getNeighbourhoodIdFromTown,
+  getNeighbourhoodIdFromPlanningArea,
 } from './fetch'
 
 // Calculation functions

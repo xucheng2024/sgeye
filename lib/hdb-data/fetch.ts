@@ -708,3 +708,30 @@ export async function getNeighbourhoodIdFromTown(town: string): Promise<string |
   return null
 }
 
+// Get representative neighbourhood ID from planning area ID
+// Returns the first neighbourhood in the planning area (or one with most data)
+export async function getNeighbourhoodIdFromPlanningArea(planningAreaId: string): Promise<string | null> {
+  try {
+    if (supabase) {
+      // Get neighbourhoods in this planning area, ordered by name
+      const { data, error } = await supabase
+        .from('neighbourhoods')
+        .select('id')
+        .eq('planning_area_id', planningAreaId)
+        .limit(1)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching neighbourhood from planning area:', error)
+        return null
+      }
+      
+      return data?.id || null
+    }
+  } catch (error) {
+    console.error('Error getting neighbourhood_id from planning area:', error)
+  }
+  
+  return null
+}
+
