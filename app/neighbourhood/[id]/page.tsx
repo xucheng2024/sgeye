@@ -18,6 +18,7 @@ import { AnalyticsEvents } from '@/lib/analytics'
 import LivingDimensions from '@/components/LivingDimensions'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import FeedbackForm from '@/components/FeedbackForm'
+import FitProfile from '@/components/FitProfile'
 
 interface Neighbourhood {
   id: string
@@ -396,6 +397,17 @@ export default function NeighbourhoodDetailPage() {
               className="mt-4"
             />
           </div>
+        )}
+
+        {/* Fit Profile - Who this works for / Think twice */}
+        {livingNotes && (
+          <FitProfile
+            livingNotes={livingNotes}
+            hasMRT={neighbourhood.access?.mrt_station_count ? neighbourhood.access.mrt_station_count > 0 : false}
+            avgDistanceToMRT={neighbourhood.access?.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null}
+            mrtAccessType={neighbourhood.access?.mrt_access_type || null}
+            className="mb-8"
+          />
         )}
 
         {/* Transport details */}
