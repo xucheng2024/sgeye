@@ -28,6 +28,7 @@ import { LeaseSafetyFilter } from '@/components/neighbourhoods/LeaseSafetyFilter
 import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter'
 import { SortControls } from '@/components/neighbourhoods/SortControls'
 import { NeighbourhoodCard } from '@/components/neighbourhoods/NeighbourhoodCard'
+import { FilterWizard } from '@/components/neighbourhoods/FilterWizard'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -445,6 +446,16 @@ function NeighbourhoodsPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <FilterWizard
+        selectedFlatTypes={selectedFlatTypes}
+        onFlatTypesChange={setSelectedFlatTypes}
+        priceTiers={priceTiers}
+        onPriceTiersChange={setPriceTiers}
+        leaseTiers={leaseTiers}
+        onLeaseTiersChange={setLeaseTiers}
+        mrtTier={mrtTier}
+        onMrtTierChange={setMrtTier}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Compare Neighbourhoods</h1>

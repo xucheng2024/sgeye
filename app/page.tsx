@@ -46,66 +46,94 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section 2: How It Works */}
+      {/* Section 2: Why Neighbourhood Matters */}
       <section className="bg-gray-50 py-12 md:py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">
-            How it works
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-3">
+            Why neighbourhood matters
           </h2>
-          <div className="space-y-4">
+          <p className="text-base md:text-lg text-gray-600 text-center mb-10 max-w-2xl mx-auto">
+            Most housing regrets come from daily life — not from the home itself.
+          </p>
+          <div className="space-y-6">
+            {/* Scenario 1: School */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start gap-3">
-                <span className="text-xs font-semibold text-gray-400 mt-1">1</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Start with neighbourhoods that fit your life
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">Daily routines, commute, amenities, and community shape how a place feels to live in.</p>
-                  <Link
-                    href="/neighbourhoods"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
-                  >
-                    Explore neighbourhoods
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 italic">
+                "The flat was great. The school wasn't."
+              </h3>
+              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                They moved in before checking school demand. Two years later, they realised nearby schools were heavily oversubscribed. Daily routines became stressful. Moving again wasn't realistic.
+              </p>
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                School pressure is shaped by neighbourhood — not the flat.
+              </p>
+              <Link
+                href="/family/psle-school"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                View school demand by area
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
+
+            {/* Scenario 2: Commute */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start gap-3">
-                <span className="text-xs font-semibold text-gray-400 mt-1">2</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Check long-term comfort and risk
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">Remaining lease, estate age, and neighbourhood stability affect long-term peace of mind.</p>
-                  <Link
-                    href="/hdb/lease-price"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
-                  >
-                    View lease & long-term comfort
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 italic">
+                "It was only 15 minutes longer — on paper."
+              </h3>
+              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                What looked like a small difference turned into crowded trains, longer waits, and less time at home. That extra commute added up every day — every year.
+              </p>
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                Commute friction compounds over time.
+              </p>
+              <Link
+                href="/transport"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                Explore transport access by neighbourhood
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
+
+            {/* Scenario 3: Noise */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start gap-3">
-                <span className="text-xs font-semibold text-gray-400 mt-1">3</span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Understand school and family pressure
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3">School demand varies widely by planning area and can affect daily stress and future options.</p>
-                  <Link
-                    href="/family/psle-school"
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
-                  >
-                    View schools by area
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 italic">
+                "Quiet during viewings. Loud after dark."
+              </h3>
+              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                Weekend viewings felt peaceful. After moving in, traffic noise and nearby activity changed how the area felt at night. It wasn't something renovation could fix.
+              </p>
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                Noise patterns are shaped by neighbourhood layout.
+              </p>
+              <Link
+                href="/neighbourhoods"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                Check noise & density patterns
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Scenario 4: Long-term comfort */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 italic">
+                "The flat aged well. The area didn't."
+              </h3>
+              <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                Over time, estate age, lease profile, and neighbourhood stability affected resale flexibility and peace of mind. The home was fine. The long-term trade-offs weren't.
+              </p>
+              <p className="text-sm font-medium text-gray-900 mb-3">
+                Long-term comfort is a neighbourhood decision.
+              </p>
+              <Link
+                href="/hdb/lease-price"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              >
+                View long-term comfort & lease safety
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
@@ -143,7 +171,7 @@ export default function Home() {
               <div className="text-xs text-gray-400">Lease & risk</div>
             </Link>
             <Link
-              href="/hdb/transport"
+              href="/transport"
               className="text-left p-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
             >
               <div className="font-medium mb-0.5">How does location affect daily time burden?</div>
