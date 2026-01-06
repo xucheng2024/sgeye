@@ -2,7 +2,6 @@
  * Sort Controls Component
  */
 
-import Link from 'next/link'
 import { SortPreset } from '@/lib/types/neighbourhood'
 
 interface SortControlsProps {
@@ -50,12 +49,6 @@ export function SortControls({ sortPreset, onSortPresetChange }: SortControlsPro
           Price/m²
         </button>
       </div>
-      <Link
-        href="/hdb"
-        className="text-xs text-gray-500 hover:text-gray-700 transition-colors sm:ml-auto whitespace-nowrap"
-      >
-        How have prices changed recently?
-      </Link>
     </div>
   )
 }

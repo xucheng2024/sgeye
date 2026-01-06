@@ -622,12 +622,28 @@ function NeighbourhoodsPageContent() {
             </label>
           </div>
           
-          {/* First Row */}
+          {/* First Row - Essence Filters */}
           <div className="flex flex-wrap gap-4 mb-4">
             <FlatTypeFilter 
               selectedFlatTypes={selectedFlatTypes}
               onFlatTypesChange={setSelectedFlatTypes}
             />
+            <PriceRangeFilter 
+              priceTiers={priceTiers}
+              onPriceTiersChange={setPriceTiers}
+            />
+            <LeaseSafetyFilter 
+              leaseTiers={leaseTiers}
+              onLeaseTiersChange={setLeaseTiers}
+            />
+            <MRTDistanceFilter 
+              mrtTier={mrtTier}
+              onMrtTierChange={setMrtTier}
+            />
+          </div>
+
+          {/* Second Row - Location Filters */}
+          <div className="flex flex-wrap gap-4">
             <PlanningAreaFilter 
               planningAreas={planningAreas}
               selectedPlanningAreas={selectedPlanningAreas}
@@ -640,22 +656,6 @@ function NeighbourhoodsPageContent() {
             <PlanningRegionFilter 
               majorRegions={majorRegions}
               onMajorRegionsChange={setMajorRegions}
-            />
-          </div>
-
-          {/* Second Row */}
-          <div className="flex flex-wrap gap-4">
-            <PriceRangeFilter 
-              priceTiers={priceTiers}
-              onPriceTiersChange={setPriceTiers}
-            />
-            <LeaseSafetyFilter 
-              leaseTiers={leaseTiers}
-              onLeaseTiersChange={setLeaseTiers}
-            />
-            <MRTDistanceFilter 
-              mrtTier={mrtTier}
-              onMrtTierChange={setMrtTier}
             />
           </div>
         </div>
