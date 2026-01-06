@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Info } from 'lucide-react'
 import Link from 'next/link'
 import type { LivingNotes, LivingRating } from '@/lib/neighbourhood-living-notes'
 
@@ -96,7 +96,16 @@ export default function LivingDimensions({
       <div className={className}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-900">Living comfort</span>
-          <span className={`text-sm font-medium ${labelColor}`}>{label}</span>
+          {neighbourhoodId ? (
+            <Link
+              href={`/neighbourhood/${neighbourhoodId}`}
+              className={`text-sm font-medium ${labelColor} hover:underline transition-colors`}
+            >
+              {label}
+            </Link>
+          ) : (
+            <span className={`text-sm font-medium ${labelColor}`}>{label}</span>
+          )}
           {neighbourhoodId && (
             <Link
               href={`/neighbourhood/${neighbourhoodId}`}
@@ -116,7 +125,20 @@ export default function LivingDimensions({
     <div className={className}>
       <div className="bg-white rounded-lg border border-gray-200 p-5">
         <div className="mb-4">
-          <h3 className="text-base font-semibold text-gray-900 mb-1">Living comfort</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-base font-semibold text-gray-900">Living comfort</h3>
+            <div className="relative group">
+              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              <div className="absolute left-0 bottom-full mb-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="font-semibold mb-2">How to read Living Comfort</div>
+                <div className="space-y-1.5">
+                  <div><span className="font-medium">Good</span> — Works well for most households with minimal trade-offs.</div>
+                  <div><span className="font-medium">Mixed</span> — Clear trade-offs exist. Comfort varies significantly by block location, road exposure, or lifestyle preferences.</div>
+                  <div><span className="font-medium">Bad</span> — Structural factors make comfortable long-term residential living difficult for most households.</div>
+                </div>
+              </div>
+            </div>
+          </div>
           <p className="text-xs text-gray-500">5 dimensions of daily living quality</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
