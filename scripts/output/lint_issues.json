@@ -1,0 +1,82 @@
+[
+  {
+    "neighbourhood_name": "ANG MO KIO",
+    "rule": "Rule 5",
+    "severity": "warning",
+    "message": "Notes mention \"industrial\" but drivers missing: industrial",
+    "field": "drivers",
+    "reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+  },
+  {
+    "neighbourhood_name": "BEDOK RESERVOIR",
+    "rule": "Rule 2",
+    "severity": "warning",
+    "message": "Has drivers indicating proximity to industrial/logistics (heavy_vehicles) - may need review",
+    "field": "drivers",
+    "reason": "NON_RESIDENTIAL_SCORED"
+  },
+  {
+    "neighbourhood_name": "BEDOK RESERVOIR",
+    "rule": "Rule 3",
+    "severity": "warning",
+    "message": "residential zone_type but has non-residential drivers: heavy_vehicles",
+    "field": "drivers",
+    "reason": "ZONE_TYPE_RATING_MODE_CONFLICT"
+  },
+  {
+    "neighbourhood_name": "BOON LAY PLACE",
+    "rule": "Rule 5",
+    "severity": "warning",
+    "message": "Notes mention \"industrial\" but drivers missing: industrial",
+    "field": "drivers",
+    "reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+  },
+  {
+    "neighbourhood_name": "GEYLANG BAHRU",
+    "rule": "Rule 5",
+    "severity": "warning",
+    "message": "Notes mention \"industrial\" but drivers missing: industrial",
+    "field": "drivers",
+    "reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+  },
+  {
+    "neighbourhood_name": "KALLANG BAHRU",
+    "rule": "Rule 5",
+    "severity": "warning",
+    "message": "Notes mention \"industrial\" but drivers missing: industrial",
+    "field": "drivers",
+    "reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+  },
+  {
+    "neighbourhood_name": "SIGLAP",
+    "rule": "Rule 2",
+    "severity": "warning",
+    "message": "Has drivers indicating proximity to industrial/logistics (heavy_vehicles) - may need review",
+    "field": "drivers",
+    "reason": "NON_RESIDENTIAL_SCORED"
+  },
+  {
+    "neighbourhood_name": "SIGLAP",
+    "rule": "Rule 3",
+    "severity": "warning",
+    "message": "residential zone_type but has non-residential drivers: heavy_vehicles",
+    "field": "drivers",
+    "reason": "ZONE_TYPE_RATING_MODE_CONFLICT"
+  },
+  {
+    "neighbourhood_name": "UPPER THOMSON",
+    "rule": "Rule 2",
+    "severity": "warning",
+    "message": "Has drivers indicating proximity to industrial/logistics (heavy_vehicles) - may need review",
+    "field": "drivers",
+    "reason": "NON_RESIDENTIAL_SCORED"
+  },
+  {
+    "neighbourhood_name": "UPPER THOMSON",
+    "rule": "Rule 3",
+    "severity": "warning",
+    "message": "residential zone_type but has non-residential drivers: heavy_vehicles",
+    "field": "drivers",
+    "reason": "ZONE_TYPE_RATING_MODE_CONFLICT"
+  }
+]

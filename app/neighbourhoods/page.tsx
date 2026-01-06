@@ -398,7 +398,7 @@ function NeighbourhoodsPageContent() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Compare Neighbourhoods</h1>
           <p className="text-lg text-gray-700">
-            Start by narrowing down neighbourhoods that fit your budget, lease comfort, and daily commute — then compare the trade-offs.
+            Narrow down neighbourhoods that fit your family's budget, lease safety, and commute — then compare what you gain and what you trade off.
           </p>
           <p className="text-sm text-gray-500 mt-2">
             School pressure is assessed at the planning area level in the next step.

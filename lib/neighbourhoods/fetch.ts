@@ -22,7 +22,8 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 export async function fetchNeighbourhoods(
   planningAreaIds: string[],
   limit: number,
-  offset: number
+  offset: number,
+  includeCityCore: boolean = false
 ): Promise<{ data: NeighbourhoodRawData[] | null; error: any }> {
   let query = supabase
     .from('neighbourhoods')
@@ -39,6 +40,7 @@ export async function fetchNeighbourhoods(
       planning_areas(id, name, region),
       parent_subzone_id
     `)
+    .eq('non_residential', false)  // Exclude non-residential areas from explore/compare
     .order('name', { ascending: true })
     .range(offset, offset + limit - 1)
 
@@ -50,7 +52,37 @@ export async function fetchNeighbourhoods(
     }
   }
 
-  return await query
+  const result = await query
+  
+  // Filter city_core zones if not included
+  if (!includeCityCore && result.data) {
+    // Normalize names for lookup
+    function norm(name: string): string {
+      return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
+    }
+    
+    const neighbourhoodNames = result.data.map(n => norm(n.name))
+    
+    // Fetch zone_types for all neighbourhoods
+    const { data: livingNotes } = await supabase
+      .from('neighbourhood_living_notes')
+      .select('neighbourhood_name, zone_type')
+    
+    if (livingNotes) {
+      const zoneTypeMap = new Map<string, string>()
+      livingNotes.forEach(note => {
+        zoneTypeMap.set(norm(note.neighbourhood_name), note.zone_type)
+      })
+      
+      // Filter out city_core zones
+      result.data = result.data.filter(n => {
+        const zoneType = zoneTypeMap.get(norm(n.name))
+        return zoneType !== 'city_core'
+      })
+    }
+  }
+  
+  return result
 }
 
 export async function fetchMonthlyData(
@@ -206,5 +238,42 @@ export async function fetchMrtStationsInArea(neighbourhoodIds: string[]): Promis
   }
 
   return data || []
+}
+
+export async function fetchLivingNotesMetadata(neighbourhoodNames: string[]): Promise<Map<string, { rating_mode: string | null; short_note: string | null; variance_level: string | null }>> {
+  if (neighbourhoodNames.length === 0) return new Map()
+
+  // Normalize names for lookup
+  function norm(name: string): string {
+    return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
+  }
+
+  // Fetch all living notes and match by normalized name
+  const { data, error } = await supabase
+    .from('neighbourhood_living_notes')
+    .select('neighbourhood_name, rating_mode, short_note, variance_level')
+
+  if (error) {
+    console.error('Error fetching living notes metadata:', error)
+    return new Map()
+  }
+
+  const normalizedInputNames = new Set(neighbourhoodNames.map(norm))
+  const metadataMap = new Map<string, { rating_mode: string | null; short_note: string | null; variance_level: string | null }>()
+  
+  if (data) {
+    data.forEach(note => {
+      const normalizedNoteName = norm(note.neighbourhood_name)
+      if (normalizedInputNames.has(normalizedNoteName)) {
+        metadataMap.set(normalizedNoteName, {
+          rating_mode: note.rating_mode || null,
+          short_note: note.short_note || null,
+          variance_level: note.variance_level || null
+        })
+      }
+    })
+  }
+
+  return metadataMap
 }
 

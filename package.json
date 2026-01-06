@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "fix-living-notes": "ts-node scripts/fix-living-notes-data.ts",
+    "generate-upsert": "ts-node scripts/generate-upsert-sql.ts"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",

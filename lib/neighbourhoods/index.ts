@@ -3,7 +3,7 @@
  */
 
 import { normalizeFlatType } from '@/lib/utils/flat-type-normalizer'
-import { fetchNeighbourhoods, fetchAccessData, fetchPlanningAreas, fetchSubzones } from './fetch'
+import { fetchNeighbourhoods, fetchAccessData, fetchPlanningAreas, fetchSubzones, fetchLivingNotesMetadata } from './fetch'
 import { calculateCenterPoints } from './centers'
 import { buildMrtStationsMap } from './mrt'
 import { aggregateMonthlyData } from './aggregation'
@@ -27,11 +27,12 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
 }> {
   const { planningAreaIds, flatTypes, limit, offset } = params
   
-  // Fetch neighbourhoods
+  // Fetch neighbourhoods (exclude city_core by default unless explicitly included)
   const { data: neighbourhoodsData, error } = await fetchNeighbourhoods(
     planningAreaIds,
     limit,
-    offset
+    offset,
+    params.includeCityCore || false
   )
   
   console.log('API: Fetched neighbourhoods from DB:', {
@@ -67,14 +68,16 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
     accessData,
     mrtStationsMap,
     planningAreasData,
-    subzonesData
+    subzonesData,
+    livingNotesMetadataMap
   ] = await Promise.all([
     calculateCenterPoints(neighbourhoodsData, neighbourhoodIds),
     aggregateMonthlyData(neighbourhoodIds, flatTypes),
     fetchAccessData(neighbourhoodIds),
     buildMrtStationsMap(neighbourhoodIds),
     fetchPlanningAreas(fetchedPlanningAreaIds),
-    fetchSubzones(fetchedSubzoneIds)
+    fetchSubzones(fetchedSubzoneIds),
+    fetchLivingNotesMetadata(neighbourhoodsData.map(n => n.name))
   ])
   
   const planningAreaMap = new Map(planningAreasData.map(pa => [pa.id, pa]))
@@ -94,7 +97,8 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
     subzoneMap,
     mrtStationsMap,
     flatTypeSummaries,
-    flatTypes
+    flatTypes,
+    livingNotesMetadataMap
   )
   
   console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
@@ -154,8 +158,13 @@ function transformNeighbourhoods(
   subzoneMap: Map<string, SubzoneData>,
   mrtStationsMap: Map<string, string[]>,
   flatTypeSummaries: FlatTypeSummary[],
-  flatTypes: string[]
+  flatTypes: string[],
+  livingNotesMetadataMap: Map<string, { rating_mode: string | null; short_note: string | null; variance_level: string | null }>
 ): NeighbourhoodResponse[] {
+  // Normalize names for lookup
+  function norm(name: string): string {
+    return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
+  }
   return neighbourhoodsData.map(n => {
     // Get planning area
     let planningArea = null
@@ -184,6 +193,7 @@ function transformNeighbourhoods(
     const summary = summaryMap.get(n.id) || null
     const access = accessMap.get(n.id) || null
     const flatTypeData = flatTypeSummaries.filter(s => s.neighbourhood_id === n.id)
+    const livingNotesMetadata = livingNotesMetadataMap.get(norm(n.name)) || null
     
     return {
       id: n.id,
@@ -224,6 +234,9 @@ function transformNeighbourhoods(
         mrt_station_names: mrtStationsMap.get(n.id) || [],
         updated_at: access.updated_at
       } : null,
+      rating_mode: livingNotesMetadata?.rating_mode as 'residential_scored' | 'not_scored' | null | undefined,
+      short_note: livingNotesMetadata?.short_note || null,
+      variance_level: livingNotesMetadata?.variance_level as 'compact' | 'moderate' | 'spread_out' | null | undefined,
       created_at: n.created_at,
       updated_at: n.updated_at
     }
@@ -249,6 +262,7 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
   const leaseMin = searchParams.get('lease_min') ? parseFloat(searchParams.get('lease_min')!) : null
   const leaseMax = searchParams.get('lease_max') ? parseFloat(searchParams.get('lease_max')!) : null
   const mrtDistanceMax = searchParams.get('mrt_distance_max') ? parseFloat(searchParams.get('mrt_distance_max')!) : null
+  const includeCityCore = searchParams.get('include_city_core') === 'true'  // Default: false (exclude city_core from explore)
   const limit = parseInt(searchParams.get('limit') || '100')
   const offset = parseInt(searchParams.get('offset') || '0')
   
@@ -262,6 +276,7 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
     leaseMin,
     leaseMax,
     mrtDistanceMax,
+    includeCityCore,
     limit,
     offset
   }

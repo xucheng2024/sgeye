@@ -1,0 +1,58 @@
+[
+  {
+    "neighbourhood_name": "ANG MO KIO",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "BEDOK RESERVOIR",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "NON_RESIDENTIAL_SCORED"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "BOON LAY PLACE",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "GEYLANG BAHRU",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "KALLANG BAHRU",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "DRIVERS_MISSING_CORE_KEYWORDS"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "SIGLAP",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "NON_RESIDENTIAL_SCORED"
+    },
+    "reason": ""
+  },
+  {
+    "neighbourhood_name": "UPPER THOMSON",
+    "changes": {
+      "review_status": "needs_review",
+      "review_reason": "NON_RESIDENTIAL_SCORED"
+    },
+    "reason": ""
+  }
+]

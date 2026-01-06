@@ -12,6 +12,7 @@ export interface NeighbourhoodQueryParams {
   leaseMin: number | null
   leaseMax: number | null
   mrtDistanceMax: number | null
+  includeCityCore?: boolean  // Include city_core zones (default: false)
   limit: number
   offset: number
 }
@@ -104,6 +105,9 @@ export interface NeighbourhoodResponse {
     mrt_station_names: string[]
     updated_at: string
   } | null
+  rating_mode?: 'residential_scored' | 'not_scored' | null
+  short_note?: string | null
+  variance_level?: 'compact' | 'moderate' | 'spread_out' | null
   created_at: string
   updated_at: string
 }

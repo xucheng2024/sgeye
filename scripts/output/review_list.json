@@ -1,0 +1,35 @@
+[
+  {
+    "neighbourhood_name": "ONE NORTH",
+    "display_name": "One North",
+    "reason": "Business park marked as residential_scored (should usually be not_scored)",
+    "current_data": {
+      "zone_type": "business_park",
+      "rating_mode": "residential_scored",
+      "short_note": "Mixed-use business park: convenient, but weekday intensity varies by pocket.",
+      "long_term_comfort_rating": "good"
+    }
+  },
+  {
+    "neighbourhood_name": "CLEANTECH",
+    "display_name": "Cleantech",
+    "reason": "Needs manual review",
+    "current_data": {
+      "zone_type": "residential",
+      "rating_mode": "residential_scored",
+      "short_note": "Residential area.",
+      "long_term_comfort_rating": "bad"
+    }
+  },
+  {
+    "neighbourhood_name": "MARITIME SQUARE",
+    "display_name": "Maritime Square",
+    "reason": "All ratings are bad (might indicate non-residential)",
+    "current_data": {
+      "zone_type": "residential",
+      "rating_mode": "residential_scored",
+      "short_note": "Residential area: expect higher street activity/noise.",
+      "long_term_comfort_rating": "bad"
+    }
+  }
+]

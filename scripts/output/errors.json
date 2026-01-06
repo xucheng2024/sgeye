@@ -1,0 +1,50 @@
+[
+  {
+    "neighbourhood_name": "ONE NORTH",
+    "field": "zone_type",
+    "message": "Rule A violation: business_park zone_type must have rating_mode = not_scored",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "ONE NORTH",
+    "field": "zone_type",
+    "message": "Rule B violation: business_park marked as residential_scored (should usually be not_scored unless it's explicitly mixed-use residential)",
+    "severity": "warning"
+  },
+  {
+    "neighbourhood_name": "CHANGI WEST",
+    "field": "short_note",
+    "message": "Rule C violation: Generic template short_note: \"Residential area.\"",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "CHANGI WEST",
+    "field": "drivers",
+    "message": "Rule C violation: Generic drivers array [\"residential\"] - must have specific drivers",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "CLEANTECH",
+    "field": "short_note",
+    "message": "Rule C violation: Generic template short_note: \"Residential area.\"",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "CLEANTECH",
+    "field": "drivers",
+    "message": "Rule C violation: Generic drivers array [\"residential\"] - must have specific drivers",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "GALI BATU",
+    "field": "short_note",
+    "message": "Rule C violation: Generic template short_note: \"Residential area: expect higher street activity/noise.\"",
+    "severity": "error"
+  },
+  {
+    "neighbourhood_name": "MARITIME SQUARE",
+    "field": "short_note",
+    "message": "Rule C violation: Generic template short_note: \"Residential area: expect higher street activity/noise.\"",
+    "severity": "error"
+  }
+]

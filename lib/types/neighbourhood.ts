@@ -48,6 +48,9 @@ export interface Neighbourhood {
     trend_stability: 'stable' | 'volatile' | 'insufficient'
     net_growth_score?: number
   } | null
+  rating_mode?: 'residential_scored' | 'not_scored' | null
+  short_note?: string | null
+  variance_level?: 'compact' | 'moderate' | 'spread_out' | null
 }
 
 export interface PlanningArea {

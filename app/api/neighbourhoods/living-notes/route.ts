@@ -86,7 +86,14 @@ export async function GET(request: NextRequest) {
       longTermComfort: {
         rating: data.long_term_comfort_rating,
         note: data.long_term_comfort_note
-      }
+      },
+      // New metadata fields
+      zoneType: data.zone_type,
+      ratingMode: data.rating_mode,
+      drivers: data.drivers || [],
+      varianceLevel: data.variance_level,
+      shortNote: data.short_note,
+      displayName: data.display_name
     }
 
     return NextResponse.json(livingNotes)

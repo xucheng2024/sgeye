@@ -1,4 +1,10 @@
-export type LivingRating = 'good' | 'mixed' | 'bad'
+export type LivingRating = 'good' | 'mixed' | 'bad' | null
+
+export type ZoneType = 'residential' | 'city_fringe' | 'city_core' | 'industrial' | 'nature' | 'offshore' | 'business_park' | 'future_development' | 'leisure'
+
+export type RatingMode = 'residential_scored' | 'not_scored'
+
+export type VarianceLevel = 'compact' | 'moderate' | 'spread_out'
 
 export type LivingDimension = {
   rating: LivingRating
@@ -11,6 +17,13 @@ export type LivingNotes = {
   greenOutdoor: LivingDimension
   crowdVibe: LivingDimension
   longTermComfort: LivingDimension
+  // New metadata fields
+  zoneType?: ZoneType
+  ratingMode?: RatingMode
+  drivers?: string[]
+  varianceLevel?: VarianceLevel
+  shortNote?: string
+  displayName?: string
 }
 
 function norm(name: string): string {

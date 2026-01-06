@@ -31,6 +31,48 @@ function NeighbourhoodCardComponent({
     getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
   }, [neighbourhood.name])
 
+  // Helper function to get variance level text
+  const getVarianceLevelText = (level: string | null | undefined): string | null => {
+    if (!level) return null
+    const mapping: Record<string, string> = {
+      'compact': 'Consistent across blocks',
+      'moderate': 'Some variation by block',
+      'spread_out': 'Block choice matters a lot'
+    }
+    return mapping[level] || null
+  }
+
+  // Check if this is a planning area level neighbourhood (name matches planning area name)
+  // Planning area level neighbourhoods should ALWAYS be scored, even if DB says not_scored
+  const isPlanningAreaLevel = neighbourhood.planning_area && 
+    neighbourhood.name.toUpperCase().trim() === neighbourhood.planning_area.name.toUpperCase().trim()
+  
+  // Only show not_scored for subzone-level neighbourhoods
+  // Planning area / town level neighbourhoods must always be scored
+  if (neighbourhood.rating_mode === 'not_scored' && !isPlanningAreaLevel) {
+    return (
+      <div
+        id={`neighbourhood-${neighbourhood.id}`}
+        className="bg-gray-100 rounded-lg border-2 border-gray-300 p-6 opacity-75"
+      >
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold text-gray-700 mb-1">{toTitleCase(neighbourhood.name)}</h3>
+          {neighbourhood.planning_area && (
+            <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded inline-block">
+              {toTitleCase(neighbourhood.planning_area.name)}
+            </span>
+          )}
+        </div>
+        <div className="text-sm text-gray-600 font-medium mb-1">
+          Not scored for residential living
+        </div>
+        <div className="text-xs text-gray-500">
+          {neighbourhood.short_note || 'Industrial / non-residential zone — daily living patterns don\'t apply.'}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       id={`neighbourhood-${neighbourhood.id}`}
@@ -140,7 +182,7 @@ function NeighbourhoodCardComponent({
                 )}
                 {isTypicalLease && (
                   <div className="relative group">
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 cursor-help">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 cursor-help">
                       Typical
                     </span>
                     <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
@@ -218,6 +260,18 @@ function NeighbourhoodCardComponent({
           </div>
         )}
       </div>
+
+      {/* Variance Level - Only show if it's compact or spread_out (not moderate) */}
+      {neighbourhood.variance_level && neighbourhood.variance_level !== 'moderate' && getVarianceLevelText(neighbourhood.variance_level) && (
+        <div className={`text-xs mb-4 pt-2 border-t border-gray-100 ${
+          neighbourhood.variance_level === 'spread_out' 
+            ? 'text-amber-700 font-medium' 
+            : 'text-gray-500'
+        }`}>
+          {neighbourhood.variance_level === 'spread_out' && '⚠️ '}
+          {getVarianceLevelText(neighbourhood.variance_level)}
+        </div>
+      )}
 
       {/* Action Button */}
       <div className="flex gap-2 pt-4 border-t border-gray-200">
