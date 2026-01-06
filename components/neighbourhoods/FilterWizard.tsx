@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ArrowRight, ArrowLeft, Home, DollarSign, Shield, Train } from 'lucide-react'
+import { X, ArrowRight, Home, DollarSign, Shield, Train } from 'lucide-react'
 import { FlatTypeFilter } from './FlatTypeFilter'
 import { PriceRangeFilter } from './PriceRangeFilter'
 import { LeaseSafetyFilter } from './LeaseSafetyFilter'
@@ -28,29 +28,29 @@ interface FilterWizardProps {
 const STEPS = [
   {
     id: 1,
-    title: 'Choose your flat size',
-    description: 'Select the flat types you\'re considering. This helps narrow down options that match your family size and needs.',
+    title: 'Which flat size do you need?',
+    tip: 'You can select more than one.',
     icon: Home,
     filterKey: 'flatType' as const,
   },
   {
     id: 2,
-    title: 'Set your budget range',
-    description: 'Filter by price range to focus on neighbourhoods within your budget. You can select multiple ranges.',
+    title: 'What\'s your budget?',
+    tip: 'You can adjust this anytime.',
     icon: DollarSign,
     filterKey: 'price' as const,
   },
   {
     id: 3,
-    title: 'Consider lease safety',
-    description: 'Remaining lease affects long-term value and financing. Choose your comfort level with lease length.',
+    title: 'How long will you stay?',
+    tip: 'Many buyers think about this only after moving in.',
     icon: Shield,
     filterKey: 'lease' as const,
   },
   {
     id: 4,
-    title: 'Set MRT distance preference',
-    description: 'How close do you want to be to MRT? This affects daily commute convenience.',
+    title: 'How close to MRT?',
+    tip: 'You can adjust this anytime.',
     icon: Train,
     filterKey: 'mrt' as const,
   },
@@ -71,13 +71,17 @@ export function FilterWizard({
 
   useEffect(() => {
     // Check if wizard has been completed
-    const completed = typeof window !== 'undefined' 
-      ? localStorage.getItem(WIZARD_STORAGE_KEY) === 'true'
-      : true
+    // TEMPORARILY DISABLED FOR TESTING - uncomment below to re-enable cache
+    // const completed = typeof window !== 'undefined' 
+    //   ? localStorage.getItem(WIZARD_STORAGE_KEY) === 'true'
+    //   : true
     
-    if (!completed) {
-      setIsVisible(true)
-    }
+    // if (!completed) {
+    //   setIsVisible(true)
+    // }
+    
+    // Always show wizard for testing
+    setIsVisible(true)
   }, [])
 
   const handleNext = () => {
@@ -87,10 +91,20 @@ export function FilterWizard({
       handleComplete()
     }
   }
-
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+  
+  // Check if current step has a selection
+  const hasSelection = () => {
+    switch (STEPS[currentStep].filterKey) {
+      case 'flatType':
+        return selectedFlatTypes.size > 0 && !(selectedFlatTypes.size === 1 && selectedFlatTypes.has('All'))
+      case 'price':
+        return priceTiers.size > 0
+      case 'lease':
+        return leaseTiers.size > 0
+      case 'mrt':
+        return mrtTier && mrtTier !== 'all'
+      default:
+        return false
     }
   }
 
@@ -101,8 +115,13 @@ export function FilterWizard({
     setIsVisible(false)
   }
 
-  const handleDismiss = () => {
-    handleComplete()
+  const handleSkip = () => {
+    // Move to next step without making a selection
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1)
+    } else {
+      handleComplete()
+    }
   }
 
   if (!isVisible) return null
@@ -110,42 +129,42 @@ export function FilterWizard({
   const currentStepData = STEPS[currentStep]
   const Icon = currentStepData.icon
   const isLastStep = currentStep === STEPS.length - 1
-  const isFirstStep = currentStep === 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-blue-600" />
+            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+              <Icon className="w-4 h-4 text-blue-600" />
             </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                {currentStepData.title}
-              </h2>
-              <p className="text-xs text-gray-500">
-                Step {currentStep + 1} of {STEPS.length}
-              </p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-500">Step {currentStep + 1}</span>
+                <span className="text-gray-300">|</span>
+                <h2 className="text-base font-semibold text-gray-900">
+                  {currentStepData.title}
+                </h2>
+              </div>
             </div>
+            <button
+              onClick={handleComplete}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close wizard"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Close wizard"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="px-6 py-2.5 bg-gray-50 border-b border-gray-200">
           <div className="flex gap-1">
             {STEPS.map((step, index) => (
               <div
                 key={step.id}
-                className={`flex-1 h-1.5 rounded-full transition-colors ${
+                className={`flex-1 h-1 rounded-full transition-colors ${
                   index <= currentStep ? 'bg-blue-600' : 'bg-gray-200'
                 }`}
               />
@@ -155,12 +174,8 @@ export function FilterWizard({
 
         {/* Content */}
         <div className="px-6 py-6">
-          <p className="text-sm text-gray-600 mb-6">
-            {currentStepData.description}
-          </p>
-
           {/* Filter Display */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="mb-6">
             {currentStepData.filterKey === 'flatType' && (
               <FlatTypeFilter
                 selectedFlatTypes={selectedFlatTypes}
@@ -186,56 +201,28 @@ export function FilterWizard({
               />
             )}
           </div>
-
-          {/* Tips */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-blue-900 mb-1">
-              💡 Tip
+          
+          {/* Tip */}
+          {currentStepData.tip && (
+            <p className="text-xs text-gray-500 mb-6">
+              {currentStepData.tip}
             </p>
-            {currentStep === 0 && (
-              <p className="text-xs text-blue-800">
-                You can select multiple flat types. The results will show neighbourhoods with any of your selected types.
-              </p>
-            )}
-            {currentStep === 1 && (
-              <p className="text-xs text-blue-800">
-                Selecting multiple price ranges will show neighbourhoods in any of those ranges. Start broad and narrow down later.
-              </p>
-            )}
-            {currentStep === 2 && (
-              <p className="text-xs text-blue-800">
-                Shorter leases may have better prices but face resale constraints. Consider your long-term plans.
-              </p>
-            )}
-            {currentStep === 3 && (
-              <p className="text-xs text-blue-800">
-                Closer MRT access often means higher prices. Balance convenience with your budget.
-              </p>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={handleDismiss}
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Skip wizard
-          </button>
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
           <div className="flex items-center gap-3">
-            {!isFirstStep && (
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-            )}
+            <button
+              onClick={handleSkip}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              Later
+            </button>
+            <div className="flex-1" />
             <button
               onClick={handleNext}
-              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
             >
               {isLastStep ? 'Finish' : 'Next'}
               {!isLastStep && <ArrowRight className="w-4 h-4" />}
