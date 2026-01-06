@@ -14,15 +14,17 @@ import LivingDimensions from '@/components/LivingDimensions'
 interface NeighbourhoodCardProps {
   neighbourhood: NeighbourhoodWithFlatType
   isSelected: boolean
-  onToggleCompare: (id: string, e: React.MouseEvent) => void
+  onToggleCompare: (uniqueKey: string, e: React.MouseEvent) => void
   filterParams: string
+  uniqueKey: string
 }
 
 function NeighbourhoodCardComponent({ 
   neighbourhood, 
   isSelected, 
   onToggleCompare, 
-  filterParams 
+  filterParams,
+  uniqueKey
 }: NeighbourhoodCardProps) {
   const displayFlatType = neighbourhood.display_flat_type
   const [livingNotes, setLivingNotes] = useState<LivingNotes | null>(null)
@@ -124,7 +126,7 @@ function NeighbourhoodCardComponent({
           </div>
         </div>
         <button
-          onClick={(e) => onToggleCompare(neighbourhood.id, e)}
+          onClick={(e) => onToggleCompare(uniqueKey, e)}
           className={`ml-2 p-2 rounded-lg transition-colors ${
             isSelected
               ? 'bg-blue-600 text-white'
@@ -292,6 +294,7 @@ function NeighbourhoodCardComponent({
 export const NeighbourhoodCard = memo(NeighbourhoodCardComponent, (prevProps, nextProps) => {
   // Custom comparison function for better memoization
   return (
+    prevProps.uniqueKey === nextProps.uniqueKey &&
     prevProps.neighbourhood.id === nextProps.neighbourhood.id &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.filterParams === nextProps.filterParams &&

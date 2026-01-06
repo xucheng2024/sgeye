@@ -16,7 +16,7 @@ import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { Neighbourhood, PlanningArea, SortPreset, NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
 import { normalizeFlatType } from '@/lib/utils/flat-type-normalizer'
-import { calculateThresholds } from '@/lib/utils/neighbourhood-utils'
+import { calculateThresholds, formatFlatType } from '@/lib/utils/neighbourhood-utils'
 import { applySortPreset } from '@/lib/utils/neighbourhood-sorting'
 import { expandNeighbourhoodsToFlatTypes, applyClientSideFilters, FILTER_RANGES } from '@/lib/utils/neighbourhood-filters'
 import { FlatTypeFilter } from '@/components/neighbourhoods/FlatTypeFilter'
@@ -81,6 +81,7 @@ function NeighbourhoodsPageContent() {
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
   
   useEffect(() => {
+    // Load planning areas immediately (neighbourhoods load separately when filters are ready)
     loadPlanningAreas()
     AnalyticsEvents.viewExplore()
   }, [])
@@ -151,21 +152,25 @@ function NeighbourhoodsPageContent() {
       setRegion(urlRegion)
     }
     
-    // Handle add_to_compare parameter
-    if (addToCompare && !selectedForCompare.has(addToCompare)) {
-      const newSet = new Set(selectedForCompare)
-      if (newSet.size < 3) {
-        newSet.add(addToCompare)
-        setSelectedForCompare(newSet)
-        const newUrl = new URL(window.location.href)
-        newUrl.searchParams.delete('add_to_compare')
-        window.history.replaceState({}, '', newUrl.toString())
-        setTimeout(() => {
-          const element = document.getElementById(`neighbourhood-${addToCompare}`)
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          }
-        }, 100)
+    // Handle add_to_compare parameter (expects neighbourhood ID only, not unique key)
+    if (addToCompare) {
+      // Check if any key starts with this neighbourhood ID
+      const alreadySelected = Array.from(selectedForCompare).some(key => key.startsWith(addToCompare + '-') || key === addToCompare)
+      if (!alreadySelected) {
+        const newSet = new Set(selectedForCompare)
+        if (newSet.size < 3) {
+          newSet.add(addToCompare)
+          setSelectedForCompare(newSet)
+          const newUrl = new URL(window.location.href)
+          newUrl.searchParams.delete('add_to_compare')
+          window.history.replaceState({}, '', newUrl.toString())
+          setTimeout(() => {
+            const element = document.getElementById(`neighbourhood-${addToCompare}`)
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          }, 100)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,10 +231,35 @@ function NeighbourhoodsPageContent() {
   }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, showOnlyWithData])
 
   async function loadPlanningAreas() {
+    // Check localStorage cache first (planning areas rarely change)
+    const cacheKey = 'planning_areas_cache'
+    const cached = typeof window !== 'undefined' ? localStorage.getItem(cacheKey) : null
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached)
+        // Cache valid for 1 hour
+        if (Date.now() - timestamp < 60 * 60 * 1000) {
+          setPlanningAreas(data)
+          return
+        }
+      } catch (e) {
+        // Invalid cache, continue to fetch
+      }
+    }
+    
     try {
       const res = await fetch('/api/planning-areas')
       const data = await res.json()
-      setPlanningAreas(data.planning_areas || [])
+      const planningAreasData = data.planning_areas || []
+      setPlanningAreas(planningAreasData)
+      
+      // Cache in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: planningAreasData,
+          timestamp: Date.now()
+        }))
+      }
     } catch (err) {
       console.error('Error loading planning areas:', err)
     }
@@ -286,7 +316,9 @@ function NeighbourhoodsPageContent() {
         params.set('major_region', majorRegionArray.join(','))
       }
       
-      params.set('limit', '500')
+      // Reduce initial load size for faster first render
+      const initialLimit = neighbourhoods.length === 0 ? 100 : 500
+      params.set('limit', initialLimit.toString())
       
       const url = `/api/neighbourhoods?${params.toString()}`
       const res = await fetch(url)
@@ -351,29 +383,49 @@ function NeighbourhoodsPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortPreset])
 
-  const toggleCompare = useCallback((neighbourhoodId: string, e: React.MouseEvent) => {
+  const toggleCompare = useCallback((uniqueKey: string, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const newSet = new Set(selectedForCompare)
-    if (newSet.has(neighbourhoodId)) {
-      newSet.delete(neighbourhoodId)
-    } else {
-      if (newSet.size >= 3) {
-        alert('You can compare up to 3 neighbourhoods at a time')
-        return
+    
+    setSelectedForCompare(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(uniqueKey)) {
+        newSet.delete(uniqueKey)
+      } else {
+        if (newSet.size >= 3) {
+          alert('You can compare up to 3 neighbourhoods at a time')
+          return prev
+        }
+        newSet.add(uniqueKey)
+        // Extract neighbourhood ID for analytics by finding the matching neighbourhood
+        const neighbourhood = neighbourhoods.find(n => {
+          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+          return nKey === uniqueKey
+        })
+        if (neighbourhood) {
+          AnalyticsEvents.addToCompare({ neighbourhoodId: neighbourhood.id })
+        }
       }
-      newSet.add(neighbourhoodId)
-      AnalyticsEvents.addToCompare({ neighbourhoodId })
-    }
-    setSelectedForCompare(newSet)
-  }, [selectedForCompare])
+      return newSet
+    })
+  }, [neighbourhoods])
 
   function handleCompareSelected() {
     if (selectedForCompare.size === 0) {
       alert('Please select at least one neighbourhood to compare')
       return
     }
-    const ids = Array.from(selectedForCompare).join(',')
+    // Extract neighbourhood IDs from unique keys by finding matching neighbourhoods
+    const ids = Array.from(selectedForCompare)
+      .map(uniqueKey => {
+        const neighbourhood = neighbourhoods.find(n => {
+          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+          return nKey === uniqueKey
+        })
+        return neighbourhood?.id
+      })
+      .filter(Boolean)
+      .join(',')
     router.push(`/compare?ids=${ids}`)
   }
 
@@ -475,7 +527,16 @@ function NeighbourhoodsPageContent() {
                 <div>
                   <div className="text-base font-semibold text-gray-900">
                     Compare: {Array.from(selectedForCompare)
-                      .map(id => neighbourhoods.find(n => n.id === id)?.name)
+                      .map(uniqueKey => {
+                        const neighbourhood = neighbourhoods.find(n => {
+                          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+                          return nKey === uniqueKey
+                        })
+                        if (!neighbourhood) return null
+                        return neighbourhood.display_flat_type 
+                          ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
+                          : neighbourhood.name
+                      })
                       .filter(Boolean)
                       .join(' vs ')}
                   </div>
@@ -496,7 +557,16 @@ function NeighbourhoodsPageContent() {
                 <div>
                   <div className="text-base font-semibold text-gray-900">
                     {Array.from(selectedForCompare)
-                      .map(id => neighbourhoods.find(n => n.id === id)?.name)
+                      .map(uniqueKey => {
+                        const neighbourhood = neighbourhoods.find(n => {
+                          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+                          return nKey === uniqueKey
+                        })
+                        if (!neighbourhood) return null
+                        return neighbourhood.display_flat_type 
+                          ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
+                          : neighbourhood.name
+                      })
                       .filter(Boolean)
                       .join('')} selected
                   </div>
@@ -662,9 +732,10 @@ function NeighbourhoodsPageContent() {
                         <NeighbourhoodCard
                           key={uniqueKey}
                           neighbourhood={neighbourhood}
-                          isSelected={selectedForCompare.has(neighbourhood.id)}
+                          isSelected={selectedForCompare.has(uniqueKey)}
                           onToggleCompare={toggleCompare}
                           filterParams={filterParams}
+                          uniqueKey={uniqueKey}
                         />
                       )
                     })}

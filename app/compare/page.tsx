@@ -41,7 +41,8 @@ interface NeighbourhoodComparison {
 }
 
 // Convert string to Title Case (first letter uppercase, rest lowercase, handle multi-word)
-function toTitleCase(str: string): string {
+function toTitleCase(str: string | null | undefined): string {
+  if (!str) return ''
   return str
     .toLowerCase()
     .split(' ')
@@ -203,7 +204,7 @@ function ComparePageContent() {
       
       // Load living notes for all comparisons
       const notesPromises = comparisonData.map(async (c: NeighbourhoodComparison) => {
-        const notes = await getLivingNotesForNeighbourhood(c.name)
+        const notes = c.name ? await getLivingNotesForNeighbourhood(c.name) : null
         return [c.id, notes] as const
       })
       const notesResults = await Promise.all(notesPromises)

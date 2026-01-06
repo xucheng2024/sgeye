@@ -88,20 +88,19 @@ export function expandNeighbourhoodsToFlatTypes(
       .map((neighbourhood): NeighbourhoodWithFlatType | null => {
         const details = neighbourhood.flat_type_details || []
 
-        if (priceTiers.size === 0 && leaseTiers.size === 0) {
-          return {
-            ...neighbourhood,
-            display_flat_type: undefined
-          }
-        }
-
+        // Filter candidates based on price/lease tiers if specified
         const candidates = details.filter(d => {
           const p = d.median_price_12m != null ? Number(d.median_price_12m) : null
           const l = d.median_lease_years_12m != null ? Number(d.median_lease_years_12m) : null
+          
+          // If no filters, include all flat types
+          if (priceTiers.size === 0 && leaseTiers.size === 0) return true
+          
           return matchesPriceTiers(p, priceTiers as Set<string>) && matchesLeaseTiers(l, leaseTiers as Set<string>)
         })
         if (candidates.length === 0) return null
 
+        // Select best matching flat type
         const best = [...candidates].sort((a, b) => {
           const priceA = a.median_price_12m != null ? Number(a.median_price_12m) : Infinity
           const priceB = b.median_price_12m != null ? Number(b.median_price_12m) : Infinity
@@ -109,7 +108,9 @@ export function expandNeighbourhoodsToFlatTypes(
           const leaseB = b.median_lease_years_12m != null ? Number(b.median_lease_years_12m) : -Infinity
 
           if (priceTiers.size > 0 && priceA !== priceB) return priceA - priceB
-          return leaseB - leaseA
+          if (leaseB !== leaseA) return leaseB - leaseA
+          // If no clear winner, prefer 4 ROOM as most common
+          return 0
         })[0]
 
         return {
