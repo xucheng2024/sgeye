@@ -61,25 +61,31 @@ export async function fetchNeighbourhoods(
       return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
     }
     
-    const neighbourhoodNames = result.data.map(n => norm(n.name))
+    // Cache zone_type map (rarely changes, cache for 1 hour)
+    const zoneTypeCacheKey = 'zone_type_map'
+    let zoneTypeMap = cache.get<Map<string, string>>(zoneTypeCacheKey)
     
-    // Fetch zone_types for all neighbourhoods
-    const { data: livingNotes } = await supabase
-      .from('neighbourhood_living_notes')
-      .select('neighbourhood_name, zone_type')
-    
-    if (livingNotes) {
-      const zoneTypeMap = new Map<string, string>()
-      livingNotes.forEach(note => {
-        zoneTypeMap.set(norm(note.neighbourhood_name), note.zone_type)
-      })
+    if (!zoneTypeMap) {
+      // Fetch zone_types for all neighbourhoods
+      const { data: livingNotes } = await supabase
+        .from('neighbourhood_living_notes')
+        .select('neighbourhood_name, zone_type')
       
-      // Filter out city_core zones
-      result.data = result.data.filter(n => {
-        const zoneType = zoneTypeMap.get(norm(n.name))
-        return zoneType !== 'city_core'
-      })
+      zoneTypeMap = new Map<string, string>()
+      if (livingNotes) {
+        livingNotes.forEach(note => {
+          zoneTypeMap!.set(norm(note.neighbourhood_name), note.zone_type)
+        })
+      }
+      // Cache for 1 hour
+      cache.set(zoneTypeCacheKey, zoneTypeMap, 60 * 60 * 1000)
     }
+    
+    // Filter out city_core zones
+    result.data = result.data.filter(n => {
+      const zoneType = zoneTypeMap.get(norm(n.name))
+      return zoneType !== 'city_core'
+    })
   }
   
   return result
@@ -90,6 +96,20 @@ export async function fetchMonthlyData(
   flatTypes: string[],
   months: number = 12
 ): Promise<any[]> {
+  if (neighbourhoodIds.length === 0) return []
+
+  // Cache monthly data queries (data changes monthly, cache for 1 hour)
+  const cacheKey = getCacheKey(
+    'monthly_data',
+    neighbourhoodIds.sort().join(','),
+    flatTypes.sort().join(','),
+    months.toString()
+  )
+  const cached = cache.get<any[]>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const endDate = new Date()
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months)
@@ -112,10 +132,22 @@ export async function fetchMonthlyData(
     }
   }
 
-  return await paginateQuery<any>(query, 1000)
+  const result = await paginateQuery<any>(query, 1000)
+  // Cache for 1 hour
+  cache.set(cacheKey, result, 60 * 60 * 1000)
+  return result
 }
 
 export async function fetchAccessData(neighbourhoodIds: string[]): Promise<AccessData[]> {
+  if (neighbourhoodIds.length === 0) return []
+
+  // Cache access data (changes infrequently, cache for 15 minutes)
+  const cacheKey = getCacheKey('access_data', neighbourhoodIds.sort().join(','))
+  const cached = cache.get<AccessData[]>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const { data, error } = await supabase
     .from('neighbourhood_access')
     .select('*')
@@ -126,7 +158,10 @@ export async function fetchAccessData(neighbourhoodIds: string[]): Promise<Acces
     return []
   }
 
-  return (data || []) as AccessData[]
+  const result = (data || []) as AccessData[]
+  // Cache for 15 minutes
+  cache.set(cacheKey, result, 15 * 60 * 1000)
+  return result
 }
 
 export async function fetchPlanningAreas(planningAreaIds: string[]): Promise<PlanningAreaData[]> {
@@ -248,17 +283,28 @@ export async function fetchLivingNotesMetadata(neighbourhoodNames: string[]): Pr
     return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
   }
 
-  // Fetch all living notes and match by normalized name
-  const { data, error } = await supabase
+  // Cache living notes metadata (rarely changes, cache for 30 minutes)
+  const cacheKey = getCacheKey('living_notes_metadata', neighbourhoodNames.length.toString())
+  const cached = cache.get<Map<string, { rating_mode: string | null; short_note: string | null; variance_level: string | null }>>(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  // For small sets, use IN query. For large sets, fetch all (but cache it)
+  const normalizedInputNames = new Set(neighbourhoodNames.map(norm))
+  let query = supabase
     .from('neighbourhood_living_notes')
     .select('neighbourhood_name, rating_mode, short_note, variance_level')
+
+  // If we have many names, it's more efficient to fetch all and filter
+  // But we'll cache the result
+  const { data, error } = await query
 
   if (error) {
     console.error('Error fetching living notes metadata:', error)
     return new Map()
   }
 
-  const normalizedInputNames = new Set(neighbourhoodNames.map(norm))
   const metadataMap = new Map<string, { rating_mode: string | null; short_note: string | null; variance_level: string | null }>()
   
   if (data) {
@@ -274,6 +320,8 @@ export async function fetchLivingNotesMetadata(neighbourhoodNames: string[]): Pr
     })
   }
 
+  // Cache the result for 30 minutes
+  cache.set(cacheKey, metadataMap, 30 * 60 * 1000)
   return metadataMap
 }
 
