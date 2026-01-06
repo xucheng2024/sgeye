@@ -143,10 +143,16 @@ function NeighbourhoodCardComponent({
       <div className="space-y-1.5 text-sm mb-4">
         {/* Price */}
         {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
-          <div className="flex items-center justify-between">
+          <Link 
+            href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
+            className="flex items-center justify-between group hover:bg-blue-50 -mx-2 px-2 py-1 rounded transition-colors"
+          >
             <span className="text-gray-600">Price:</span>
-            <span className="font-semibold text-gray-900">{formatCurrency(Number(neighbourhood.summary.median_price_12m))}</span>
-          </div>
+            <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-1">
+              {formatCurrency(Number(neighbourhood.summary.median_price_12m))}
+              <span className="text-gray-400 group-hover:text-blue-500">&gt;</span>
+            </span>
+          </Link>
         )}
         
         {/* Area */}
