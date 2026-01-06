@@ -49,6 +49,98 @@ function toTitleCase(str: string): string {
     .join(' ')
 }
 
+// Format neighbourhood name with subarea (planning_area) if available
+function formatNeighbourhoodNameWithSubarea(comparison: NeighbourhoodComparison): string {
+  const name = comparison.name ? toTitleCase(comparison.name) : 'The former'
+  if (comparison.planning_area?.name) {
+    return `${name} (${toTitleCase(comparison.planning_area.name)})`
+  }
+  return name
+}
+
+// Format conclusion text with highlighted neighbourhood name
+function formatConclusionWithHighlight(text: string, comparisons: NeighbourhoodComparison[]): JSX.Element {
+  // Find all neighbourhood names and their positions (case-insensitive)
+  const matches: Array<{ name: string; originalName: string; index: number }> = []
+  
+  for (const comp of comparisons) {
+    if (!comp.name) continue
+    
+    const originalName = comp.name
+    const titleCaseName = toTitleCase(originalName)
+    
+    // Try both original and title case
+    const namesToTry = [titleCaseName, originalName]
+    if (originalName.toLowerCase() !== titleCaseName.toLowerCase()) {
+      namesToTry.push(originalName.toLowerCase())
+      namesToTry.push(originalName.toUpperCase())
+    }
+    
+    for (const name of namesToTry) {
+      if (!name) continue
+      let searchIndex = 0
+      while (true) {
+        const index = text.indexOf(name, searchIndex)
+        if (index === -1) break
+        
+        // Check if this match is already covered
+        const isOverlapping = matches.some(m => 
+          (index >= m.index && index < m.index + m.name.length) ||
+          (m.index >= index && m.index < index + name.length)
+        )
+        
+        if (!isOverlapping) {
+          matches.push({ name, originalName: titleCaseName, index })
+        }
+        searchIndex = index + 1
+      }
+    }
+  }
+  
+  // Sort matches by index
+  matches.sort((a, b) => a.index - b.index)
+  
+  // Remove overlapping matches (keep the first one)
+  const filteredMatches: Array<{ name: string; originalName: string; index: number }> = []
+  for (const match of matches) {
+    const overlaps = filteredMatches.some(m => 
+      (match.index >= m.index && match.index < m.index + m.name.length) ||
+      (m.index >= match.index && m.index < match.index + match.name.length)
+    )
+    if (!overlaps) {
+      filteredMatches.push(match)
+    }
+  }
+  
+  // If no matches, return original text
+  if (filteredMatches.length === 0) {
+    return <>{text}</>
+  }
+  
+  // Build parts array
+  const parts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+  
+  for (const match of filteredMatches) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index))
+    }
+    // Add highlighted name (use originalName for display)
+    parts.push(
+      <span key={`${match.originalName}-${match.index}`} className="text-gray-900 font-semibold">{match.name}</span>
+    )
+    lastIndex = match.index + match.name.length
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex))
+  }
+  
+  return <>{parts}</>
+}
+
 function ComparePageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -327,7 +419,6 @@ function ComparePageContent() {
       
       const pros: string[] = []
       const cons: string[] = []
-      let personaHeadline = ''
       
       // Compare with others
       const otherPrices = comparisons.filter((_, i) => i !== idx).map(c => c.summary?.median_price_12m).filter(p => p !== null && p !== undefined) as number[]
@@ -336,65 +427,124 @@ function ComparePageContent() {
       const otherStations = comparisons.filter((_, i) => i !== idx).map(c => c.access?.mrt_station_count || 0)
       const otherDistances = comparisons.filter((_, i) => i !== idx).map(c => c.access?.avg_distance_to_mrt).filter(d => d !== null && d !== undefined) as number[]
       
-      // Price analysis
+      // Price analysis - using "you" statements
       if (price && otherPrices.length > 0) {
         const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
         if (price < avgOtherPrice * 0.85) {
-          pros.push('First-time buyer / Value for money')
-          personaHeadline = 'Better for first-time buyers and long-term holding'
+          pros.push("You're buying your first HDB")
+          pros.push("You prioritise value and lease length")
         } else if (price > avgOtherPrice * 1.15) {
-          pros.push('Accepts higher unit price')
-          cons.push('Budget-sensitive buyer')
-          if (mrtStations > 0) {
-            personaHeadline = 'Better if you prioritise location over price'
-          }
+          pros.push("You're okay paying more for central access")
+          cons.push("You're very price-sensitive")
         }
       }
       
-      // Transport convenience analysis
+      // Transport convenience analysis - using "you" statements
       if (mrtStations > 0 || (mrtDistance && mrtDistance <= 500)) {
-        pros.push('Prioritises MRT accessibility')
-        if (!personaHeadline && price && otherPrices.length > 0) {
+        pros.push("You value mature-estate convenience")
+        if (price && otherPrices.length > 0) {
           const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
           if (price > avgOtherPrice * 1.15) {
-            personaHeadline = 'Better if you prioritise location over price'
+            pros.push("You're okay paying more for central access")
           }
         }
       } else if (mrtDistance && mrtDistance > 1500) {
-        cons.push('Relies on bus or driving')
+        cons.push("You need central-city access")
+        cons.push("You dislike longer commutes")
       }
       
-      // Lease analysis
+      // Lease analysis - using "you" statements
       if (lease && otherLeases.length > 0) {
         const avgOtherLease = otherLeases.reduce((a, b) => a + b, 0) / otherLeases.length
         if (lease > avgOtherLease + 5) {
-          pros.push('Long-term holding')
-          if (!personaHeadline) {
-            personaHeadline = 'Better for first-time buyers and long-term holding'
-          }
+          pros.push("You prioritise value and lease length")
+        } else if (lease < avgOtherLease - 5) {
+          cons.push("You need strong lease safety")
         }
       }
       
-      // Market activity
+      // Market activity - using "you" statements
       if (txCount > 100) {
-        pros.push('Active resale market')
+        // Active market is generally good, but don't add as explicit pro unless it's a key differentiator
       } else if (txCount < 50) {
-        cons.push('Limited recent resale activity')
-      }
-      
-      // Default persona if none set
-      if (!personaHeadline) {
-        personaHeadline = 'Better for families seeking balanced trade-offs'
+        cons.push("You need strong recent resale activity")
       }
       
       return {
         id: c.id,
         name: c.name,
-        personaHeadline,
         pros,
         cons
       }
     })
+  }
+
+  // Get which cell should be highlighted for a metric (returns index or null)
+  function getHighlightedCellIndex(metric: string, rawValues: (number | null | string)[]): number | null {
+    if (rawValues.length < 2) return null
+    
+    // Extract numeric values
+    let numericValues: number[] = []
+    
+    switch (metric) {
+      case 'Transactions (12m)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseInt(v.replace(/,/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        if (numericValues.length < 2) return null
+        const maxTx = Math.max(...numericValues)
+        const minTx = Math.min(...numericValues)
+        // Threshold: ≥ 1.5×
+        if (maxTx >= minTx * 1.5) {
+          return numericValues.indexOf(maxTx)
+        }
+        return null
+      
+      case 'Median Price':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v.replace(/[^0-9.]/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        if (numericValues.length < 2) return null
+        const maxPrice = Math.max(...numericValues)
+        const minPrice = Math.min(...numericValues)
+        // Threshold: ≥ $150k
+        if (maxPrice - minPrice >= 150000) {
+          return numericValues.indexOf(maxPrice)
+        }
+        return null
+      
+      case 'Median Lease (years)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v)
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        if (numericValues.length < 2) return null
+        const maxLease = Math.max(...numericValues)
+        const minLease = Math.min(...numericValues)
+        // Threshold: ≥ 10 years
+        if (maxLease - minLease >= 10) {
+          return numericValues.indexOf(maxLease)
+        }
+        return null
+      
+      // Price per sqm: no highlighting (as per requirements)
+      default:
+        return null
+    }
   }
 
   // Generate verdict for each metric row - returns neighbourhood name + value judgment
@@ -657,17 +807,22 @@ function ComparePageContent() {
                 <tbody className="divide-y divide-gray-200">
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Transactions (12m)</td>
-                    {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {c.summary?.tx_12m ? c.summary.tx_12m.toLocaleString() : 'N/A'}
-                      </td>
-                    ))}
+                    {comparisons.map((c, idx) => {
+                      const rawValues = comparisons.map(c => c.summary?.tx_12m ?? null)
+                      const highlightIdx = getHighlightedCellIndex('Transactions (12m)', rawValues)
+                      const shouldHighlight = highlightIdx === idx
+                      return (
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                          {c.summary?.tx_12m ? c.summary.tx_12m.toLocaleString() : 'N/A'}
+                        </td>
+                      )
+                    })}
                     {comparisons.length >= 2 && (() => {
                       const verdict = getMetricVerdict('Transactions (12m)', comparisons.map(c => c.summary?.tx_12m ?? null))
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <span className="text-gray-700">{verdict.display}</span>
+                            <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
                           ) : ''}
                         </td>
                       )
@@ -675,17 +830,22 @@ function ComparePageContent() {
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Median Price</td>
-                    {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {formatCurrency(c.summary?.median_price_12m ?? null)}
-                      </td>
-                    ))}
+                    {comparisons.map((c, idx) => {
+                      const rawValues = comparisons.map(c => c.summary?.median_price_12m ?? null)
+                      const highlightIdx = getHighlightedCellIndex('Median Price', rawValues)
+                      const shouldHighlight = highlightIdx === idx
+                      return (
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                          {formatCurrency(c.summary?.median_price_12m ?? null)}
+                        </td>
+                      )
+                    })}
                     {comparisons.length >= 2 && (() => {
                       const verdict = getMetricVerdict('Median Price', comparisons.map(c => c.summary?.median_price_12m ?? null))
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <span className="text-gray-700">{verdict.display}</span>
+                            <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
                           ) : ''}
                         </td>
                       )
@@ -694,7 +854,7 @@ function ComparePageContent() {
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Price per sqm</td>
                     {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
+                      <td key={c.id} className="px-4 py-3 text-sm text-gray-700">
                         {c.summary?.median_psm_12m ? `$${Math.round(c.summary.median_psm_12m).toLocaleString()}` : 'N/A'}
                       </td>
                     ))}
@@ -703,7 +863,7 @@ function ComparePageContent() {
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <span className="text-gray-700">{verdict.display}</span>
+                            <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
                           ) : ''}
                         </td>
                       )
@@ -711,17 +871,22 @@ function ComparePageContent() {
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Lease safety</td>
-                    {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-900">
-                        {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)} years` : 'N/A'}
-                      </td>
-                    ))}
+                    {comparisons.map((c, idx) => {
+                      const rawValues = comparisons.map(c => c.summary?.median_lease_years_12m ?? null)
+                      const highlightIdx = getHighlightedCellIndex('Median Lease (years)', rawValues)
+                      const shouldHighlight = highlightIdx === idx
+                      return (
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                          {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)} years` : 'N/A'}
+                        </td>
+                      )
+                    })}
                     {comparisons.length >= 2 && (() => {
                       const verdict = getMetricVerdict('Median Lease (years)', comparisons.map(c => c.summary?.median_lease_years_12m ?? null))
                       return (
                         <td className="px-4 py-3 text-sm">
                           {verdict ? (
-                            <span className="text-gray-700">{verdict.display}</span>
+                            <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
                           ) : ''}
                         </td>
                       )
@@ -773,7 +938,7 @@ function ComparePageContent() {
                             return (
                               <td className="px-4 py-3 text-sm">
                                 {verdict ? (
-                                  <span className="text-gray-700">{verdict.display}</span>
+                                  <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
                                 ) : <span className="text-gray-700">Similar distance to MRT</span>}
                               </td>
                             )
@@ -941,20 +1106,19 @@ function ComparePageContent() {
               )
             })()}
 
-            {/* Who is this neighbourhood for */}
+            {/* If you are this type of buyer */}
             {whoIsThisFor.length > 0 && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Who is this neighbourhood for?</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">If you are this type of buyer</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {whoIsThisFor.map((item, idx) => (
                     <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-semibold text-lg text-gray-900 mb-1">{item.name}</h3>
-                      <p className="text-sm font-medium text-gray-700 mb-3">{item.personaHeadline}</p>
+                      <h3 className="font-semibold text-lg text-gray-900 mb-4">{toTitleCase(item.name)}</h3>
                       {item.pros.length > 0 && (
                         <div className="mb-3">
                           {item.pros.map((pro, i) => (
                             <div key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
-                              <span className="text-green-600 mt-0.5">✔️</span>
+                              <span className="text-green-600 mt-0.5 font-semibold">✔</span>
                               <span>{pro}</span>
                             </div>
                           ))}
@@ -964,7 +1128,7 @@ function ComparePageContent() {
                         <div className="mb-3">
                           {item.cons.map((con, i) => (
                             <div key={i} className="flex items-start gap-2 text-sm text-gray-700 mb-1.5">
-                              <span className="text-red-600 mt-0.5">❌</span>
+                              <span className="text-red-600 mt-0.5 font-semibold">✖</span>
                               <span>{con}</span>
                             </div>
                           ))}

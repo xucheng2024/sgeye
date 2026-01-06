@@ -2,6 +2,7 @@ import React from 'react'
 import { ChevronRight, Info } from 'lucide-react'
 import Link from 'next/link'
 import type { LivingNotes, LivingRating, VarianceLevel } from '@/lib/neighbourhood-living-notes'
+import { highlightKeywords } from '@/lib/utils/highlight-keywords'
 
 function ratingMeta(rating: LivingRating): { label: string; className: string } | null {
   if (rating === 'good') {
@@ -49,7 +50,7 @@ function Row({
         )}
         <div className="text-sm font-semibold text-gray-900">{label}</div>
       </div>
-      <div className="text-sm text-gray-600 leading-relaxed">{note}</div>
+      <div className="text-sm text-gray-600 leading-relaxed">{highlightKeywords(note)}</div>
     </div>
   )
 }
@@ -197,7 +198,7 @@ export default function LivingDimensions({
         <div className="bg-white rounded-lg border border-gray-200 p-5">
           <div className="mb-4">
             <h3 className="text-base font-semibold text-gray-900 mb-2">{zoneInfo.label}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{notes.shortNote || zoneInfo.description}</p>
+            <p className="text-sm text-gray-600 leading-relaxed">{highlightKeywords(notes.shortNote || zoneInfo.description)}</p>
             {notes.drivers && notes.drivers.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {notes.drivers.map((driver, idx) => (
@@ -282,7 +283,7 @@ export default function LivingDimensions({
             )}
           </div>
           {notes.shortNote && (
-            <p className="text-sm text-gray-600 mt-2">{notes.shortNote}</p>
+            <p className="text-sm text-gray-600 mt-2">{highlightKeywords(notes.shortNote)}</p>
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
