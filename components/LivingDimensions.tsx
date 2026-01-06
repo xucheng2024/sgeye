@@ -7,23 +7,72 @@ import { highlightKeywords } from '@/lib/utils/highlight-keywords'
 function ratingMeta(rating: LivingRating): { label: string; className: string } | null {
   if (rating === 'good') {
     return {
-      label: 'Good',
+      label: '✓',
       className: 'border-green-200 bg-green-50 text-green-800',
     }
   }
   if (rating === 'bad') {
     return {
-      label: 'Bad',
+      label: '✗',
       className: 'border-red-200 bg-red-50 text-red-800',
     }
   }
   if (rating === 'mixed') {
     return {
-      label: 'Mixed',
+      label: '?',
       className: 'border-amber-200 bg-amber-50 text-amber-800',
     }
   }
   return null
+}
+
+// Helper to capitalize first letter of a string
+function capitalizeFirst(str: string): string {
+  if (!str) return str
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+// Helper to format description with line breaks for better scanability
+function formatDescription(note: string): JSX.Element {
+  // Split at semicolons first (natural break points)
+  if (note.includes(';')) {
+    const parts = note.split(';').map(s => s.trim()).filter(Boolean)
+    if (parts.length > 1) {
+      return (
+        <>
+          {capitalizeFirst(parts[0])}.
+          {parts.slice(1).map((part, idx) => {
+            const capitalized = capitalizeFirst(part)
+            return (
+              <span key={idx}>
+                <br />
+                {capitalized}{capitalized.endsWith('.') ? '' : '.'}
+              </span>
+            )
+          })}
+        </>
+      )
+    }
+  }
+  
+  // If no semicolons, try splitting at first period if text is long enough
+  const firstPeriodIndex = note.indexOf('.')
+  if (firstPeriodIndex > 0 && firstPeriodIndex < note.length - 10) {
+    const firstPart = note.substring(0, firstPeriodIndex + 1).trim()
+    const restPart = note.substring(firstPeriodIndex + 1).trim()
+    if (restPart) {
+      return (
+        <>
+          {capitalizeFirst(firstPart)}
+          <br />
+          {capitalizeFirst(restPart)}
+        </>
+      )
+    }
+  }
+  
+  // No suitable break point, return as is (capitalized)
+  return <>{capitalizeFirst(note)}</>
 }
 
 function Row({
@@ -244,55 +293,70 @@ export default function LivingDimensions({
 
   const varianceMeta = getVarianceMeta(notes.varianceLevel)
 
+  // Helper function to get rating meta (for table view)
+  function getRatingMeta(rating: LivingRating): { label: string; className: string } | null {
+    return ratingMeta(rating)
+  }
+
   // For scored areas (residential, city_fringe)
+  const dimensions = [
+    { key: 'noiseDensity', label: 'Noise & density', note: notes.noiseDensity.note, rating: notes.noiseDensity.rating },
+    { key: 'dailyConvenience', label: 'Daily convenience', note: notes.dailyConvenience.note, rating: notes.dailyConvenience.rating },
+    { key: 'greenOutdoor', label: 'Green & outdoors', note: notes.greenOutdoor.note, rating: notes.greenOutdoor.rating },
+    { key: 'crowdVibe', label: 'Crowd & vibe', note: notes.crowdVibe.note, rating: notes.crowdVibe.rating },
+    { key: 'longTermComfort', label: 'Long-term comfort', note: notes.longTermComfort.note, rating: notes.longTermComfort.rating },
+  ] as const
+
   return (
     <div className={className}>
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 overflow-x-auto">
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold text-gray-900">Living comfort</h3>
-              <div className="relative group">
-                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
-                <div className="absolute left-0 bottom-full mb-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <div className="font-semibold mb-2">How to read Living Comfort</div>
-                  <div className="space-y-1.5">
-                    <div><span className="font-medium">Good</span> — Works well for most households with minimal trade-offs.</div>
-                    <div><span className="font-medium">Mixed</span> — Clear trade-offs exist. Comfort varies significantly by block location, road exposure, or lifestyle preferences.</div>
-                    <div><span className="font-medium">Bad</span> — Structural factors make comfortable long-term residential living difficult for most households.</div>
-                  </div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-900">Living comfort</h2>
+            <div className="relative group">
+              <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+              <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                <div className="font-semibold mb-2">How to read Living Comfort</div>
+                <div className="space-y-1.5">
+                  <div><span className="font-medium text-green-400">✓</span> — Works well for most households with minimal trade-offs.</div>
+                  <div><span className="font-medium text-amber-400">?</span> — Clear trade-offs exist. Comfort varies significantly by block location, road exposure, or lifestyle preferences.</div>
+                  <div><span className="font-medium text-red-400">×</span> — Structural factors make comfortable long-term residential living difficult for most households.</div>
                 </div>
               </div>
             </div>
-            
-            {/* Variance Level Badge */}
-            {varianceMeta && (
-              <div className="relative group">
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium ${varianceMeta.badgeColor}`}>
-                  <span className="text-[10px] text-gray-500">Block variation:</span>
-                  <span>{varianceMeta.label}</span>
-                </div>
-                <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <div className="font-semibold mb-1.5">Why this matters</div>
-                  <div>{varianceMeta.tooltip}</div>
-                  <div className="mt-2 pt-2 border-t border-white/20 text-[11px] text-gray-300">
-                    Don't just look at neighbourhood name—the specific block is crucial.
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-          {notes.shortNote && (
-            <p className="text-sm text-gray-600 mt-2">{highlightKeywords(notes.shortNote)}</p>
-          )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Row label="Noise & density" rating={notes.noiseDensity.rating} note={notes.noiseDensity.note} showRating={isScored} />
-          <Row label="Daily convenience" rating={notes.dailyConvenience.rating} note={notes.dailyConvenience.note} showRating={isScored} />
-          <Row label="Green & outdoors" rating={notes.greenOutdoor.rating} note={notes.greenOutdoor.note} showRating={isScored} />
-          <Row label="Crowd & vibe" rating={notes.crowdVibe.rating} note={notes.crowdVibe.note} showRating={isScored} />
-          <Row label="Long-term comfort" rating={notes.longTermComfort.rating} note={notes.longTermComfort.note} showRating={isScored} />
-        </div>
+        <table className="responsive-table w-auto divide-y divide-gray-200">
+          <thead>
+            <tr>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Dimension</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-auto">Description</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {dimensions.map(dim => {
+              const ratingMeta = getRatingMeta(dim.rating)
+              
+              return (
+                <tr key={dim.key}>
+                  <td className="px-3 py-3 text-sm font-medium text-gray-900 w-[120px]">{dim.label}</td>
+                  <td className="px-6 py-3 text-sm w-auto">
+                    <div className="flex items-center gap-3">
+                      {ratingMeta && (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border flex-shrink-0 ${ratingMeta.className}`}>
+                          {ratingMeta.label}
+                        </span>
+                      )}
+                      <div className="text-sm text-gray-600 leading-relaxed">
+                        {formatDescription(dim.note)}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

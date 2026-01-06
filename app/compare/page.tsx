@@ -10,7 +10,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Info } from 'lucide-react'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
@@ -427,39 +427,46 @@ function ComparePageContent() {
       const otherStations = comparisons.filter((_, i) => i !== idx).map(c => c.access?.mrt_station_count || 0)
       const otherDistances = comparisons.filter((_, i) => i !== idx).map(c => c.access?.avg_distance_to_mrt).filter(d => d !== null && d !== undefined) as number[]
       
+      // Helper to add unique items
+      const addUnique = (arr: string[], item: string) => {
+        if (!arr.includes(item)) {
+          arr.push(item)
+        }
+      }
+      
       // Price analysis - using "you" statements
       if (price && otherPrices.length > 0) {
         const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
         if (price < avgOtherPrice * 0.85) {
-          pros.push("You're buying your first HDB")
-          pros.push("You prioritise value and lease length")
+          addUnique(pros, "You're buying your first HDB")
+          addUnique(pros, "You prioritise value and lease length")
         } else if (price > avgOtherPrice * 1.15) {
-          pros.push("You're okay paying more for central access")
-          cons.push("You're very price-sensitive")
+          addUnique(pros, "You're okay paying more for central access")
+          addUnique(cons, "You're very price-sensitive")
         }
       }
       
       // Transport convenience analysis - using "you" statements
       if (mrtStations > 0 || (mrtDistance && mrtDistance <= 500)) {
-        pros.push("You value mature-estate convenience")
+        addUnique(pros, "You value mature-estate convenience")
         if (price && otherPrices.length > 0) {
           const avgOtherPrice = otherPrices.reduce((a, b) => a + b, 0) / otherPrices.length
           if (price > avgOtherPrice * 1.15) {
-            pros.push("You're okay paying more for central access")
+            addUnique(pros, "You're okay paying more for central access")
           }
         }
       } else if (mrtDistance && mrtDistance > 1500) {
-        cons.push("You need central-city access")
-        cons.push("You dislike longer commutes")
+        addUnique(cons, "You need central-city access")
+        addUnique(cons, "You dislike longer commutes")
       }
       
       // Lease analysis - using "you" statements
       if (lease && otherLeases.length > 0) {
         const avgOtherLease = otherLeases.reduce((a, b) => a + b, 0) / otherLeases.length
         if (lease > avgOtherLease + 5) {
-          pros.push("You prioritise value and lease length")
+          addUnique(pros, "You prioritise value and lease length")
         } else if (lease < avgOtherLease - 5) {
-          cons.push("You need strong lease safety")
+          addUnique(cons, "You need strong lease safety")
         }
       }
       
@@ -467,7 +474,7 @@ function ComparePageContent() {
       if (txCount > 100) {
         // Active market is generally good, but don't add as explicit pro unless it's a key differentiator
       } else if (txCount < 50) {
-        cons.push("You need strong recent resale activity")
+        addUnique(cons, "You need strong recent resale activity")
       }
       
       return {
@@ -812,7 +819,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Transactions (12m)', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {c.summary?.tx_12m ? c.summary.tx_12m.toLocaleString() : 'N/A'}
                         </td>
                       )
@@ -835,7 +842,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Median Price', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {formatCurrency(c.summary?.median_price_12m ?? null)}
                         </td>
                       )
@@ -854,7 +861,7 @@ function ComparePageContent() {
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Price per sqm</td>
                     {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-700">
+                      <td key={c.id} className="px-4 py-3 text-sm text-gray-600 font-normal">
                         {c.summary?.median_psm_12m ? `$${Math.round(c.summary.median_psm_12m).toLocaleString()}` : 'N/A'}
                       </td>
                     ))}
@@ -876,7 +883,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Median Lease (years)', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
+                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)} years` : 'N/A'}
                         </td>
                       )
@@ -916,7 +923,7 @@ function ComparePageContent() {
                           ))}
                           {comparisons.length >= 2 && (
                             <td className="px-4 py-3 text-sm">
-                              <span className="font-medium text-gray-700">≈ Similar</span>
+                              <span className="text-gray-700">≈ Similar</span>
                             </td>
                           )}
                         </tr>
@@ -1100,7 +1107,20 @@ function ComparePageContent() {
               return (
                 <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8 overflow-x-auto">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-gray-900">Living comfort</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-semibold text-gray-900">Living comfort</h2>
+                      <div className="relative group">
+                        <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" />
+                        <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                          <div className="font-semibold mb-2">How to read Living Comfort</div>
+                          <div className="space-y-1.5">
+                            <div><span className="font-medium text-green-400">✓</span> — Works well for most households with minimal trade-offs.</div>
+                            <div><span className="font-medium text-amber-400">?</span> — Clear trade-offs exist. Comfort varies significantly by block location, road exposure, or lifestyle preferences.</div>
+                            <div><span className="font-medium text-red-400">×</span> — Structural factors make comfortable long-term residential living difficult for most households.</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <table className="responsive-table w-auto divide-y divide-gray-200">
                     <thead>
