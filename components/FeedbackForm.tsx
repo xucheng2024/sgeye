@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 interface FeedbackFormProps {
-  context: 'affordability' | 'compare' | 'home'
+  context: 'affordability' | 'compare' | 'home' | 'neighbourhood'
   question: string
   placeholder?: string
   metadata?: Record<string, any>

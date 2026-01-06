@@ -64,7 +64,7 @@ export function applyClientSideFilters(
     // MRT filter
     if (mrtTiers.size > 1) {
       const distance = item.access?.avg_distance_to_mrt ? Number(item.access.avg_distance_to_mrt) : null
-      const hasStationInArea = item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0
+      const hasStationInArea = !!(item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0)
       
       if (!matchesMrtTiers(distance, mrtTiers, hasStationInArea)) return false
     }

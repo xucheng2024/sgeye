@@ -61,8 +61,10 @@ async function checkNeighbourhoodHierarchy() {
       console.log(`\n📍 ${name}:`);
       console.log(`   ID: ${neighbourhood.id}`);
       console.log(`   Type: ${neighbourhood.type || 'N/A'}`);
-      console.log(`   Parent Subzone: ${neighbourhood.subzones?.name || 'N/A'}`);
-      console.log(`   Planning Area: ${neighbourhood.planning_areas?.name || 'N/A'}`);
+      const subzone = Array.isArray(neighbourhood.subzones) ? neighbourhood.subzones[0] : neighbourhood.subzones;
+      const planningArea = Array.isArray(neighbourhood.planning_areas) ? neighbourhood.planning_areas[0] : neighbourhood.planning_areas;
+      console.log(`   Parent Subzone: ${subzone?.name || 'N/A'}`);
+      console.log(`   Planning Area: ${planningArea?.name || 'N/A'}`);
     } else {
       console.log(`❌ ${name}: Not found in neighbourhoods table`);
     }

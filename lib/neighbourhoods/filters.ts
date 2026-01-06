@@ -94,7 +94,7 @@ export function applyFilters(
     // MRT filter (applies to neighbourhood, not flat type)
     if (mrtDistanceMax !== null) {
       const distance = n.access?.avg_distance_to_mrt ? Number(n.access.avg_distance_to_mrt) : null
-      const hasStation = n.access?.mrt_station_count && n.access.mrt_station_count > 0
+      const hasStation = !!(n.access?.mrt_station_count && n.access.mrt_station_count > 0)
       if (!matchesMrtDistance(distance, mrtDistanceMax, hasStation)) {
         filteredByMRT++
         return false

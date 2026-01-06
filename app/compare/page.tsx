@@ -205,10 +205,10 @@ function ComparePageContent() {
       // Load living notes for all comparisons
       const notesPromises = comparisonData.map(async (c: NeighbourhoodComparison) => {
         const notes = c.name ? await getLivingNotesForNeighbourhood(c.name) : null
-        return [c.id, notes] as const
+        return [c.id, notes] as [string, import('@/lib/neighbourhood-living-notes').LivingNotes | null]
       })
       const notesResults = await Promise.all(notesPromises)
-      const notesMap = new Map(notesResults)
+      const notesMap = new Map<string, import('@/lib/neighbourhood-living-notes').LivingNotes | null>(notesResults)
       setLivingNotesMap(notesMap)
     } catch (err: any) {
       setError(err.message || 'Failed to load comparison')

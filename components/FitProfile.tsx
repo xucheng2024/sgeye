@@ -125,7 +125,7 @@ function generateFitProfile(
 
 export default function FitProfile({ livingNotes, hasMRT, avgDistanceToMRT, mrtAccessType, className }: FitProfileProps) {
   // Skip for non-residential areas
-  const isScored = livingNotes.ratingMode === 'residential_scored' || livingNotes.ratingMode === 'city_fringe_scored'
+  const isScored = livingNotes.ratingMode === 'residential_scored'
   if (!isScored) {
     return null
   }
