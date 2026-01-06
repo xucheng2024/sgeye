@@ -870,7 +870,7 @@ function ComparePageContent() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
                     {comparisons.map((c, i) => (
-                      <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th key={`${c.id}-${i}`} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         {toTitleCase(c.name)}
                         {c.planning_area && (
                           <div className="text-xs text-gray-400 mt-1">{toTitleCase(c.planning_area.name)}</div>
@@ -890,7 +890,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Transactions (12m)', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
+                        <td key={`${c.id}-${idx}`} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {c.summary?.tx_12m ? c.summary.tx_12m.toLocaleString() : 'N/A'}
                         </td>
                       )
@@ -913,7 +913,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Median Price', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
+                        <td key={`${c.id}-${idx}`} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {formatCurrency(c.summary?.median_price_12m ?? null)}
                         </td>
                       )
@@ -931,8 +931,8 @@ function ComparePageContent() {
                   </tr>
                   <tr>
                     <td className="px-4 py-3 text-sm font-medium text-gray-700">Price per sqm</td>
-                    {comparisons.map(c => (
-                      <td key={c.id} className="px-4 py-3 text-sm text-gray-600 font-normal">
+                    {comparisons.map((c, idx) => (
+                      <td key={`${c.id}-${idx}`} className="px-4 py-3 text-sm text-gray-600 font-normal">
                         {c.summary?.median_psm_12m ? `$${Math.round(c.summary.median_psm_12m).toLocaleString()}` : 'N/A'}
                       </td>
                     ))}
@@ -954,7 +954,7 @@ function ComparePageContent() {
                       const highlightIdx = getHighlightedCellIndex('Median Lease (years)', rawValues)
                       const shouldHighlight = highlightIdx === idx
                       return (
-                        <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
+                        <td key={`${c.id}-${idx}`} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                           {c.summary?.median_lease_years_12m ? `${c.summary.median_lease_years_12m.toFixed(1)} years` : 'N/A'}
                         </td>
                       )
@@ -985,7 +985,7 @@ function ComparePageContent() {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
                       {comparisons.map((c, i) => (
-                        <th key={c.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <th key={`${c.id}-${i}`} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           {toTitleCase(c.name)}
                         </th>
                       ))}
@@ -1002,7 +1002,7 @@ function ComparePageContent() {
                         const hasAccess = mrtInfo.text !== 'None'
                         
                         return (
-                          <td key={c.id} className="px-4 py-3 text-sm">
+                          <td key={`${c.id}-mrt`} className="px-4 py-3 text-sm">
                             {mrtInfo.isInArea ? (
                               <span className="font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
                                 ✓ {mrtInfo.text}
@@ -1033,14 +1033,14 @@ function ComparePageContent() {
                         
                         if (!tbiData) {
                           return (
-                            <td key={c.id} className="px-4 py-3 text-sm text-gray-400">
+                            <td key={`${c.id}-tbi-${idx}`} className="px-4 py-3 text-sm text-gray-400">
                               N/A
                             </td>
                           )
                         }
                         
                         return (
-                          <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
+                          <td key={`${c.id}-tbi-${idx}`} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
                             <div className="flex flex-col gap-1">
                               <span className="font-semibold">{tbiData.label}</span>
                               <span className="text-xs text-gray-500">TBI {tbiData.tbi} / 100</span>
@@ -1170,7 +1170,7 @@ function ComparePageContent() {
                       <tr>
                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[120px]">Dimension</th>
                         {comparisons.map((c, i) => (
-                          <th key={c.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-auto">
+                          <th key={`${c.id}-${i}`} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-auto">
                             {toTitleCase(c.name)}
                           </th>
                         ))}
@@ -1186,7 +1186,7 @@ function ComparePageContent() {
                             
                             if (!dimension) {
                               return (
-                                <td key={c.id} className="px-6 py-3 text-sm text-gray-400 w-auto">
+                                <td key={`${c.id}-${dim.key}-${idx}`} className="px-6 py-3 text-sm text-gray-400 w-auto">
                                   —
                                 </td>
                               )
@@ -1195,7 +1195,7 @@ function ComparePageContent() {
                             const ratingMeta = getRatingMeta(dimension.rating)
                             
                             return (
-                              <td key={c.id} className="px-6 py-3 text-sm w-auto">
+                              <td key={`${c.id}-${dim.key}-${idx}`} className="px-6 py-3 text-sm w-auto">
                                 <div className="flex items-center gap-3">
                                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border flex-shrink-0 ${ratingMeta.className}`}>
                                     {ratingMeta.label}

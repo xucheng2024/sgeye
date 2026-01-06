@@ -29,7 +29,7 @@ function TransportPageContent() {
       try {
         const res = await fetch('/api/neighbourhoods?limit=500')
         const data = await res.json()
-        const neighbourhoodsData = data.neighbourhoods || []
+        const neighbourhoodsData: Neighbourhood[] = (data.neighbourhoods || []) as Neighbourhood[]
         // Sort by name for easier selection
         const sorted = neighbourhoodsData.sort((a: Neighbourhood, b: Neighbourhood) => 
           (a.name || '').localeCompare(b.name || '')
@@ -38,7 +38,7 @@ function TransportPageContent() {
         
         // Check if neighbourhood_id is in URL params
         const neighbourhoodIdFromUrl = searchParams.get('neighbourhood_id')
-        if (neighbourhoodIdFromUrl && sorted.some(n => n.id === neighbourhoodIdFromUrl)) {
+        if (neighbourhoodIdFromUrl && sorted.some((n: Neighbourhood) => n.id === neighbourhoodIdFromUrl)) {
           setSelectedNeighbourhoodId(neighbourhoodIdFromUrl)
         } else if (sorted.length > 0 && !selectedNeighbourhoodId) {
           setSelectedNeighbourhoodId(sorted[0].id)
@@ -54,7 +54,7 @@ function TransportPageContent() {
   // Handle URL parameter change
   useEffect(() => {
     const neighbourhoodIdFromUrl = searchParams.get('neighbourhood_id')
-    if (neighbourhoodIdFromUrl && neighbourhoods.some(n => n.id === neighbourhoodIdFromUrl)) {
+    if (neighbourhoodIdFromUrl && neighbourhoods.some((n: Neighbourhood) => n.id === neighbourhoodIdFromUrl)) {
       setSelectedNeighbourhoodId(neighbourhoodIdFromUrl)
     }
   }, [searchParams, neighbourhoods])

@@ -139,48 +139,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Section 3: For Data Explorers (Optional) */}
-      <section className="bg-white py-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-sm font-semibold text-gray-400 text-center mb-4">
-            Explore quickly
-          </h2>
-          <p className="text-xs text-gray-500 text-center mb-4">
-            Jump straight to the pages you need.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <Link
-              href="/hdb"
-              className="text-left p-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-            >
-              <div className="font-medium mb-0.5">How have resale prices evolved?</div>
-              <div className="text-xs text-gray-400">Price trends</div>
-            </Link>
-            <Link
-              href="/neighbourhoods"
-              className="text-left p-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-            >
-              <div className="font-medium mb-0.5">Where are prices highest and lowest?</div>
-              <div className="text-xs text-gray-400">Neighbourhood list</div>
-            </Link>
-            <Link
-              href="/hdb/lease-price"
-              className="text-left p-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-            >
-              <div className="font-medium mb-0.5">How does lease decay affect prices?</div>
-              <div className="text-xs text-gray-400">Lease & risk</div>
-            </Link>
-            <Link
-              href="/transport"
-              className="text-left p-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
-            >
-              <div className="font-medium mb-0.5">How does location affect daily time burden?</div>
-              <div className="text-xs text-gray-400">Transport & accessibility</div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Feedback Form */}
       <section className="bg-white py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
