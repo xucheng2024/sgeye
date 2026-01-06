@@ -45,23 +45,111 @@ const parseUrlArray = (value: string): string[] => {
     .filter(v => v.trim() !== '')
 }
 
+// Filter storage keys
+const FILTER_STORAGE_KEY = 'neighbourhood_filters'
+const FILTER_STORAGE_VERSION = '1'
+
+interface SavedFilters {
+  version: string
+  flatTypes: string[]
+  priceTiers: string[]
+  leaseTiers: string[]
+  mrtTier: string
+  region: string
+  majorRegions: string[]
+  planningAreas: string[]
+  showOnlyWithData: boolean
+}
+
+// Load saved filters from localStorage
+function loadSavedFilters(): Partial<SavedFilters> | null {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (!saved) return null
+    
+    const parsed = JSON.parse(saved) as SavedFilters
+    // Check version compatibility
+    if (parsed.version !== FILTER_STORAGE_VERSION) return null
+    
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+// Save filters to localStorage
+function saveFilters(filters: Omit<SavedFilters, 'version'>): void {
+  if (typeof window === 'undefined') return
+  
+  try {
+    const toSave: SavedFilters = {
+      ...filters,
+      version: FILTER_STORAGE_VERSION,
+    }
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(toSave))
+  } catch (error) {
+    console.error('Failed to save filters:', error)
+  }
+}
+
 function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  // Read filter states from URL params
+  // Read filter states from URL params (priority 1)
   const planningAreaIdParam = searchParams.get('planning_area_id') || ''
   const flatTypeParam = searchParams.get('flat_type') || ''
   const priceTierParam = searchParams.get('price_tier') || ''
   const leaseTierParam = searchParams.get('lease_tier') || ''
-  const mrtTierParam = searchParams.get('mrt_tier') || 'all'
-  const regionParam = searchParams.get('region') || 'all'
+  const mrtTierParam = searchParams.get('mrt_tier') || ''
+  const regionParam = searchParams.get('region') || ''
   const majorRegionParam = searchParams.get('major_region') || ''
+  
+  // Determine initial values from URL params (priority 1)
+  const getInitialFlatTypesFromUrl = (): Set<string> => {
+    if (flatTypeParam) {
+      const urlTypes = parseUrlArray(flatTypeParam)
+      return new Set(urlTypes.length > 0 ? urlTypes : ['All'])
+    }
+    return new Set(['All'])
+  }
+  
+  const getInitialPriceTiersFromUrl = (): Set<string> => {
+    if (priceTierParam) return new Set(parseUrlArray(priceTierParam))
+    return new Set<string>()
+  }
+  
+  const getInitialLeaseTiersFromUrl = (): Set<string> => {
+    if (leaseTierParam) return new Set(parseUrlArray(leaseTierParam))
+    return new Set<string>()
+  }
+  
+  const getInitialMrtTierFromUrl = (): string => {
+    if (mrtTierParam) return mrtTierParam
+    return 'all'
+  }
+  
+  const getInitialRegionFromUrl = (): string => {
+    if (regionParam) return regionParam
+    return 'all'
+  }
+  
+  const getInitialMajorRegionsFromUrl = (): Set<string> => {
+    if (majorRegionParam) return new Set(parseUrlArray(majorRegionParam))
+    return new Set<string>()
+  }
+  
+  const getInitialPlanningAreasFromUrl = (): Set<string> => {
+    if (planningAreaIdParam) return new Set(parseUrlArray(planningAreaIdParam))
+    return new Set<string>()
+  }
   
   const [neighbourhoods, setNeighbourhoods] = useState<NeighbourhoodWithFlatType[]>([])
   const [originalNeighbourhoods, setOriginalNeighbourhoods] = useState<Neighbourhood[]>([])
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
-  const [selectedPlanningAreas, setSelectedPlanningAreas] = useState<Set<string>>(new Set(parseUrlArray(planningAreaIdParam)))
+  const [selectedPlanningAreas, setSelectedPlanningAreas] = useState<Set<string>>(getInitialPlanningAreasFromUrl())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
@@ -69,16 +157,52 @@ function NeighbourhoodsPageContent() {
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   
-  // Filter states
-  const [selectedFlatTypes, setSelectedFlatTypes] = useState<Set<string>>(
-    new Set(parseUrlArray(flatTypeParam).length > 0 ? parseUrlArray(flatTypeParam) : ['All'])
-  )
-  const [priceTiers, setPriceTiers] = useState<Set<string>>(new Set(parseUrlArray(priceTierParam)))
-  const [leaseTiers, setLeaseTiers] = useState<Set<string>>(new Set(parseUrlArray(leaseTierParam)))
-  const [mrtTier, setMrtTier] = useState<string>(mrtTierParam || 'all')
-  const [region, setRegion] = useState<string>(regionParam)
-  const [majorRegions, setMajorRegions] = useState<Set<string>>(new Set(parseUrlArray(majorRegionParam)))
+  // Filter states - initialize from URL params
+  const [selectedFlatTypes, setSelectedFlatTypes] = useState<Set<string>>(getInitialFlatTypesFromUrl())
+  const [priceTiers, setPriceTiers] = useState<Set<string>>(getInitialPriceTiersFromUrl())
+  const [leaseTiers, setLeaseTiers] = useState<Set<string>>(getInitialLeaseTiersFromUrl())
+  const [mrtTier, setMrtTier] = useState<string>(getInitialMrtTierFromUrl())
+  const [region, setRegion] = useState<string>(getInitialRegionFromUrl())
+  const [majorRegions, setMajorRegions] = useState<Set<string>>(getInitialMajorRegionsFromUrl())
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
+  
+  // Load saved filters from localStorage on mount (only if no URL params)
+  useEffect(() => {
+    // Only load from localStorage if there are no URL params
+    const hasUrlParams = planningAreaIdParam || flatTypeParam || priceTierParam || 
+                        leaseTierParam || mrtTierParam || regionParam || majorRegionParam
+    
+    if (!hasUrlParams) {
+      const saved = loadSavedFilters()
+      if (saved) {
+        if (saved.flatTypes && saved.flatTypes.length > 0) {
+          setSelectedFlatTypes(new Set(saved.flatTypes))
+        }
+        if (saved.priceTiers && saved.priceTiers.length > 0) {
+          setPriceTiers(new Set(saved.priceTiers))
+        }
+        if (saved.leaseTiers && saved.leaseTiers.length > 0) {
+          setLeaseTiers(new Set(saved.leaseTiers))
+        }
+        if (saved.mrtTier) {
+          setMrtTier(saved.mrtTier)
+        }
+        if (saved.region) {
+          setRegion(saved.region)
+        }
+        if (saved.majorRegions && saved.majorRegions.length > 0) {
+          setMajorRegions(new Set(saved.majorRegions))
+        }
+        if (saved.planningAreas && saved.planningAreas.length > 0) {
+          setSelectedPlanningAreas(new Set(saved.planningAreas))
+        }
+        if (saved.showOnlyWithData !== undefined) {
+          setShowOnlyWithData(saved.showOnlyWithData)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   
   useEffect(() => {
     // Load planning areas immediately (neighbourhoods load separately when filters are ready)
@@ -175,6 +299,20 @@ function NeighbourhoodsPageContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  // Save filters to localStorage when they change
+  useEffect(() => {
+    saveFilters({
+      flatTypes: Array.from(selectedFlatTypes),
+      priceTiers: Array.from(priceTiers),
+      leaseTiers: Array.from(leaseTiers),
+      mrtTier: mrtTier,
+      region: region,
+      majorRegions: Array.from(majorRegions),
+      planningAreas: Array.from(selectedPlanningAreas),
+      showOnlyWithData: showOnlyWithData,
+    })
+  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, selectedPlanningAreas, showOnlyWithData])
 
   // Update URL when filters change
   useEffect(() => {

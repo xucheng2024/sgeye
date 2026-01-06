@@ -35,33 +35,64 @@ export async function getNeighbourhoodTransportProfile(neighbourhoodId: string):
 
       // Calculate central access burden (0-100)
       // Based on MRT station count and access type
+      // Represents structural convenience to job centers/main hubs
       let centralAccessBurden = 50 // default
-      if (mrtAccessType === 'high') centralAccessBurden = 10 + (mrtStationCount > 3 ? 0 : 5)
-      else if (mrtAccessType === 'medium') centralAccessBurden = 25 + (mrtStationCount > 1 ? 0 : 10)
-      else if (mrtAccessType === 'low') centralAccessBurden = 40
-      else centralAccessBurden = 60 // none
+      if (mrtAccessType === 'high') {
+        if (mrtStationCount >= 4) centralAccessBurden = 10
+        else if (mrtStationCount >= 2) centralAccessBurden = 15
+        else centralAccessBurden = 20 // 1 station
+      } else if (mrtAccessType === 'medium') {
+        if (mrtStationCount >= 2) centralAccessBurden = 25
+        else centralAccessBurden = 35 // 1 station
+      } else if (mrtAccessType === 'low') {
+        centralAccessBurden = 45
+      } else {
+        centralAccessBurden = 60 // none
+      }
 
       // Transfer burden (0-100)
+      // Adjusted: direct routes may still be slow if centralAccessBurden is high
       let transferBurden = 20 // default
-      if (transferComplexity === 'direct') transferBurden = 10
-      else if (transferComplexity === '1_transfer') transferBurden = 25
-      else transferBurden = 50 // 2_plus
+      if (transferComplexity === 'direct') {
+        // If central access is already poor, direct route may still be slow
+        transferBurden = centralAccessBurden >= 40 ? 15 : 10
+      } else if (transferComplexity === '1_transfer') {
+        transferBurden = 25
+      } else {
+        transferBurden = 50 // 2_plus
+      }
 
       // Network redundancy (0-100, lower is better)
       // Based on MRT lines and bus coverage
+      // Represents alternative route availability when one line is disrupted
       let networkRedundancy = 30 // default
-      if (mrtStationCount >= 3) networkRedundancy = 10
-      else if (mrtStationCount >= 1 && busStopCount >= 10) networkRedundancy = 20
-      else if (mrtStationCount >= 1) networkRedundancy = 35
-      else if (busStopCount >= 10) networkRedundancy = 40
-      else networkRedundancy = 55
+      if (mrtStationCount >= 3) {
+        networkRedundancy = 10
+      } else if (mrtStationCount >= 1) {
+        if (busStopCount >= 10) {
+          networkRedundancy = 20
+        } else if (busStopCount >= 5) {
+          networkRedundancy = 28
+        } else {
+          networkRedundancy = 35
+        }
+      } else if (busStopCount >= 10) {
+        networkRedundancy = 40
+      } else {
+        networkRedundancy = 55
+      }
 
       // Daily mobility friction (0-100)
-      // Based on bus dependency and overall access
+      // Proxy for last-mile, waiting uncertainty, and walking exposure
+      // busDependency is a proxy, not "more buses = better/worse"
       let dailyMobilityFriction = 30 // default
-      if (busDependency === 'low') dailyMobilityFriction = 10
-      else if (busDependency === 'medium') dailyMobilityFriction = 20
-      else dailyMobilityFriction = 40 // high
+      if (busDependency === 'low') {
+        dailyMobilityFriction = 10
+      } else if (busDependency === 'medium') {
+        dailyMobilityFriction = 20
+      } else {
+        dailyMobilityFriction = 35 // high (reduced from 40 for better balance)
+      }
 
       // Determine distance band and commute category
       let distanceBand: 'central' | 'well_connected' | 'peripheral' = 'peripheral'

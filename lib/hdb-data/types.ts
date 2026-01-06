@@ -176,13 +176,13 @@ export function getTBILevel(tbi: number): 'low' | 'moderate' | 'high' | 'very_hi
   return 'very_high'
 }
 
-// Get TBI level label
+// Get TBI level label (life-oriented language)
 export function getTBILevelLabel(level: 'low' | 'moderate' | 'high' | 'very_high'): string {
   const labels = {
-    low: 'Low burden',
-    moderate: 'Moderate',
-    high: 'High',
-    very_high: 'Very High',
+    low: 'Light',
+    moderate: 'Manageable',
+    high: 'Heavy',
+    very_high: 'Straining',
   }
   return labels[level]
 }

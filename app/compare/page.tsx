@@ -16,6 +16,7 @@ import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import type { LivingRating } from '@/lib/neighbourhood-living-notes'
+import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 
 interface NeighbourhoodComparison {
   id: string
@@ -154,6 +155,7 @@ function ComparePageContent() {
   const [flatType, setFlatType] = useState<string>('4 ROOM')
   const [months, setMonths] = useState<number>(24)
   const [livingNotesMap, setLivingNotesMap] = useState<Map<string, import('@/lib/neighbourhood-living-notes').LivingNotes | null>>(new Map())
+  const [tbiDataMap, setTbiDataMap] = useState<Map<string, { tbi: number; level: 'low' | 'moderate' | 'high' | 'very_high'; label: string }>>(new Map())
 
   useEffect(() => {
     if (ids.length > 0) {
@@ -210,6 +212,30 @@ function ComparePageContent() {
       const notesResults = await Promise.all(notesPromises)
       const notesMap = new Map<string, import('@/lib/neighbourhood-living-notes').LivingNotes | null>(notesResults)
       setLivingNotesMap(notesMap)
+
+      // Load transport profiles and calculate TBI for all comparisons
+      const tbiPromises = comparisonData.map(async (c: NeighbourhoodComparison) => {
+        try {
+          const profile = await getNeighbourhoodTransportProfile(c.id)
+          if (profile) {
+            const tbi = calculateTBI(profile)
+            const level = getTBILevel(tbi)
+            const label = getTBILevelLabel(level)
+            return [c.id, { tbi, level, label }] as [string, { tbi: number; level: 'low' | 'moderate' | 'high' | 'very_high'; label: string }]
+          }
+        } catch (error) {
+          console.error(`Error loading transport profile for ${c.id}:`, error)
+        }
+        return [c.id, null] as [string, null]
+      })
+      const tbiResults = await Promise.all(tbiPromises)
+      const tbiMap = new Map<string, { tbi: number; level: 'low' | 'moderate' | 'high' | 'very_high'; label: string }>()
+      tbiResults.forEach(([id, data]) => {
+        if (data) {
+          tbiMap.set(id, data)
+        }
+      })
+      setTbiDataMap(tbiMap)
     } catch (err: any) {
       setError(err.message || 'Failed to load comparison')
       console.error('Error loading comparison:', err)
@@ -549,6 +575,24 @@ function ComparePageContent() {
         }
         return null
       
+      case 'Transport Burden (TBI)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v)
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        if (numericValues.length < 2) return null
+        const maxTbi = Math.max(...numericValues)
+        const minTbi = Math.min(...numericValues)
+        // Threshold: ≥ 8 points difference (lower is better, so highlight the one with lower TBI)
+        if (maxTbi - minTbi >= 8) {
+          return numericValues.indexOf(minTbi)
+        }
+        return null
+      
       // Price per sqm: no highlighting (as per requirements)
       default:
         return null
@@ -614,6 +658,17 @@ function ComparePageContent() {
           if (typeof v === 'string') {
             if (v === 'N/A' || v === '') return null
             const num = parseFloat(v.replace(/[^0-9.]/g, ''))
+            return isNaN(num) ? null : num
+          }
+          return null
+        }).filter(v => v !== null) as number[]
+        break
+      
+      case 'Transport Burden (TBI)':
+        numericValues = rawValues.map(v => {
+          if (typeof v === 'number') return v
+          if (typeof v === 'string') {
+            const num = parseFloat(v)
             return isNaN(num) ? null : num
           }
           return null
@@ -707,6 +762,21 @@ function ComparePageContent() {
           return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is closer to nearest MRT` }
         } else {
           return { display: `${neighbourhoodNameDist} is closer to MRT`, tooltip: `${neighbourhoodNameDist} is slightly closer to nearest MRT` }
+        }
+      
+      case 'Transport Burden (TBI)':
+        const minTbi = Math.min(...numericValues)
+        const maxTbi = Math.max(...numericValues)
+        if (Math.abs(maxTbi - minTbi) < 3) return { display: 'Similar transport burden', tooltip: 'Both have similar time burden for commuting' }
+        const minTbiIdx = numericValues.indexOf(minTbi)
+        const neighbourhoodNameTbi = comparisons[minTbiIdx]?.name ? toTitleCase(comparisons[minTbiIdx].name) : 'The former'
+        const tbiDiff = maxTbi - minTbi
+        if (tbiDiff > 15) {
+          return { display: `${neighbourhoodNameTbi} has lower transport burden`, tooltip: `${neighbourhoodNameTbi} has substantially lower time burden` }
+        } else if (tbiDiff > 8) {
+          return { display: `${neighbourhoodNameTbi} has lower transport burden`, tooltip: `${neighbourhoodNameTbi} has lower time burden` }
+        } else {
+          return { display: `${neighbourhoodNameTbi} has lower transport burden`, tooltip: `${neighbourhoodNameTbi} has slightly lower time burden` }
         }
       
       default:
@@ -919,6 +989,9 @@ function ComparePageContent() {
                           {toTitleCase(c.name)}
                         </th>
                       ))}
+                      {comparisons.length >= 2 && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Conclusion</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -946,6 +1019,45 @@ function ComparePageContent() {
                           </td>
                         )
                       })}
+                      {comparisons.length >= 2 && (
+                        <td className="px-4 py-3 text-sm text-gray-400">—</td>
+                      )}
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-700">Transport Burden</td>
+                      {comparisons.map((c, idx) => {
+                        const tbiData = tbiDataMap.get(c.id)
+                        const rawValues = comparisons.map(c => tbiDataMap.get(c.id)?.tbi ?? null)
+                        const highlightIdx = getHighlightedCellIndex('Transport Burden (TBI)', rawValues)
+                        const shouldHighlight = highlightIdx === idx
+                        
+                        if (!tbiData) {
+                          return (
+                            <td key={c.id} className="px-4 py-3 text-sm text-gray-400">
+                              N/A
+                            </td>
+                          )
+                        }
+                        
+                        return (
+                          <td key={c.id} className={`px-4 py-3 text-sm ${shouldHighlight ? 'text-gray-900 font-semibold' : 'text-gray-600 font-normal'}`}>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-semibold">{tbiData.label}</span>
+                              <span className="text-xs text-gray-500">TBI {tbiData.tbi} / 100</span>
+                            </div>
+                          </td>
+                        )
+                      })}
+                      {comparisons.length >= 2 && (() => {
+                        const verdict = getMetricVerdict('Transport Burden (TBI)', comparisons.map(c => tbiDataMap.get(c.id)?.tbi ?? null))
+                        return (
+                          <td className="px-4 py-3 text-sm">
+                            {verdict ? (
+                              <span className="text-gray-700">{formatConclusionWithHighlight(verdict.display, comparisons)}</span>
+                            ) : ''}
+                          </td>
+                        )
+                      })()}
                     </tr>
                   </tbody>
                 </table>

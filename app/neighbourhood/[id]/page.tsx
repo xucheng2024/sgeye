@@ -10,7 +10,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar, ArrowRight, School, AlertCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, TrendingUp, Home, Train, Calendar, ArrowRight, School, AlertCircle, Info } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import DecisionProfileDisplay from '@/components/DecisionProfile'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
@@ -19,6 +19,7 @@ import LivingDimensions from '@/components/LivingDimensions'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import FeedbackForm from '@/components/FeedbackForm'
 import FitProfile from '@/components/FitProfile'
+import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 
 interface Neighbourhood {
   id: string
@@ -77,6 +78,7 @@ export default function NeighbourhoodDetailPage() {
   const [priceThresholds, setPriceThresholds] = useState({ p25: 550000, p50: 650000, p75: 745000 })
   const [leaseThresholds, setLeaseThresholds] = useState({ p25: 54, p50: 61, p75: 75 })
   const [livingNotes, setLivingNotes] = useState<import('@/lib/neighbourhood-living-notes').LivingNotes | null>(null)
+  const [transportProfile, setTransportProfile] = useState<import('@/lib/hdb-data').NeighbourhoodTransportProfile | null>(null)
 
   useEffect(() => {
     if (id) {
@@ -93,6 +95,15 @@ export default function NeighbourhoodDetailPage() {
       getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
     }
   }, [neighbourhood?.name])
+
+  useEffect(() => {
+    if (id) {
+      getNeighbourhoodTransportProfile(id).then(setTransportProfile).catch(err => {
+        console.error('Error loading transport profile:', err)
+        setTransportProfile(null)
+      })
+    }
+  }, [id])
 
   useEffect(() => {
     // Track lease-related interactions
@@ -417,52 +428,91 @@ export default function NeighbourhoodDetailPage() {
             <h3 className="text-lg font-semibold text-gray-900">Transport Access</h3>
           </div>
           
-          {neighbourhood.access && (neighbourhood.access.mrt_station_count > 0 || neighbourhood.access.avg_distance_to_mrt || neighbourhood.access.mrt_access_type) ? (
-            <div className="space-y-3">
-              {/* MRT Station Count */}
-              {neighbourhood.access.mrt_station_count > 0 && (
-                <div className="text-sm text-gray-700">
-                  <span className="font-medium">MRT Stations:</span>{' '}
-                  {neighbourhood.access.mrt_station_count === 1 
-                    ? '1 station nearby'
-                    : `${neighbourhood.access.mrt_station_count} stations nearby`}
-                </div>
-              )}
+          <div className="space-y-4">
+            {/* TBI Display - Show for all cases if transportProfile exists */}
+            {transportProfile && (() => {
+              const tbi = calculateTBI(transportProfile)
+              const tbiLevel = getTBILevel(tbi)
+              const tbiLabel = getTBILevelLabel(tbiLevel)
               
-              {/* Average Distance to MRT */}
-              {neighbourhood.access.avg_distance_to_mrt && (
-                <div className="text-sm text-gray-700">
-                  <span className="font-medium">Distance to MRT:</span>{' '}
-                  Average {Number(neighbourhood.access.avg_distance_to_mrt).toFixed(0)}m walk
+              return (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 relative">
+                  <div className="absolute top-4 right-4">
+                    <Link
+                      href={`/transport?neighbourhood_id=${id}`}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                    >
+                      <Info className="w-4 h-4" />
+                      View details
+                    </Link>
+                  </div>
+                  <div className="mb-2 pr-20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base font-semibold text-gray-900">Transport Burden: {tbiLabel}</span>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {tbiLevel === 'low' && "Light burden: You'll spend minimal time commuting. This location offers strong structural advantages for daily travel."}
+                      {tbiLevel === 'moderate' && "Manageable burden: You'll spend a noticeable but sustainable amount of time commuting over the long term."}
+                      {tbiLevel === 'high' && "Heavy burden: You'll spend significant time commuting daily. This location requires more travel investment."}
+                      {tbiLevel === 'very_high' && "Straining burden: You'll spend substantial time commuting. This location has structural constraints that are hard to sustain long-term."}
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-blue-200">
+                    <span className="text-xs text-gray-600">
+                      TBI {tbi} / 100 ({tbiLabel})
+                    </span>
+                  </div>
                 </div>
-              )}
-              
-              {/* Access Type */}
-              {neighbourhood.access.mrt_access_type && (
+              )
+            })()}
+
+            {neighbourhood.access && (neighbourhood.access.mrt_station_count > 0 || neighbourhood.access.avg_distance_to_mrt || neighbourhood.access.mrt_access_type) ? (
+              <div className="space-y-3">
+                {/* MRT Station Count */}
+                {neighbourhood.access.mrt_station_count > 0 && (
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">MRT Stations:</span>{' '}
+                    {neighbourhood.access.mrt_station_count === 1 
+                      ? '1 station nearby'
+                      : `${neighbourhood.access.mrt_station_count} stations nearby`}
+                  </div>
+                )}
+                
+                {/* Average Distance to MRT */}
+                {neighbourhood.access.avg_distance_to_mrt && (
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">Distance to MRT:</span>{' '}
+                    Average {Number(neighbourhood.access.avg_distance_to_mrt).toFixed(0)}m walk
+                  </div>
+                )}
+                
+                {/* Access Type */}
+                {neighbourhood.access.mrt_access_type && (
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">Access:</span>{' '}
+                    {neighbourhood.access.mrt_access_type === 'high' && 'High connectivity'}
+                    {neighbourhood.access.mrt_access_type === 'medium' && 'Medium connectivity'}
+                    {neighbourhood.access.mrt_access_type === 'low' && 'Low connectivity'}
+                    {neighbourhood.access.mrt_access_type === 'none' && 'Limited MRT access'}
+                    {!['high', 'medium', 'low', 'none'].includes(neighbourhood.access.mrt_access_type) && 
+                      neighbourhood.access.mrt_access_type}
+                  </div>
+                )}
+              </div>
+            ) : neighbourhood.nearest_mrt_station ? (
+              <div className="space-y-3">
                 <div className="text-sm text-gray-700">
-                  <span className="font-medium">Access:</span>{' '}
-                  {neighbourhood.access.mrt_access_type === 'high' && 'High connectivity'}
-                  {neighbourhood.access.mrt_access_type === 'medium' && 'Medium connectivity'}
-                  {neighbourhood.access.mrt_access_type === 'low' && 'Low connectivity'}
-                  {neighbourhood.access.mrt_access_type === 'none' && 'Limited MRT access'}
-                  {!['high', 'medium', 'low', 'none'].includes(neighbourhood.access.mrt_access_type) && 
-                    neighbourhood.access.mrt_access_type}
+                  <span className="font-medium">This neighbourhood has no MRT stations.</span>
                 </div>
-              )}
-            </div>
-          ) : neighbourhood.nearest_mrt_station ? (
-            <div className="space-y-3">
-              <div className="text-sm text-gray-700">
-                <span className="font-medium">This neighbourhood has no MRT stations.</span>
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">Nearest MRT:</span>{' '}
+                  {toTitleCase(neighbourhood.nearest_mrt_station.name.replace(/_/g, ' '))} ({Math.round(neighbourhood.nearest_mrt_station.distance / 100) / 10}km away)
+                </div>
               </div>
-              <div className="text-sm text-gray-700">
-                <span className="font-medium">Nearest MRT:</span>{' '}
-                {toTitleCase(neighbourhood.nearest_mrt_station.name.replace(/_/g, ' '))} ({Math.round(neighbourhood.nearest_mrt_station.distance / 100) / 10}km away)
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-gray-500">Transport data not available</div>
-          )}
+            ) : (
+              <div className="text-sm text-gray-500">Transport data not available</div>
+            )}
+          </div>
         </div>
 
         {/* Lease context */}

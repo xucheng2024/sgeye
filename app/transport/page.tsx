@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
 import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
@@ -15,7 +16,8 @@ interface Neighbourhood {
   } | null
 }
 
-export default function TransportPage() {
+function TransportPageContent() {
+  const searchParams = useSearchParams()
   const [neighbourhoods, setNeighbourhoods] = useState<Neighbourhood[]>([])
   const [selectedNeighbourhoodId, setSelectedNeighbourhoodId] = useState<string>('')
   const [transportProfile, setTransportProfile] = useState<NeighbourhoodTransportProfile | null>(null)
@@ -33,7 +35,12 @@ export default function TransportPage() {
           (a.name || '').localeCompare(b.name || '')
         )
         setNeighbourhoods(sorted)
-        if (sorted.length > 0 && !selectedNeighbourhoodId) {
+        
+        // Check if neighbourhood_id is in URL params
+        const neighbourhoodIdFromUrl = searchParams.get('neighbourhood_id')
+        if (neighbourhoodIdFromUrl && sorted.some(n => n.id === neighbourhoodIdFromUrl)) {
+          setSelectedNeighbourhoodId(neighbourhoodIdFromUrl)
+        } else if (sorted.length > 0 && !selectedNeighbourhoodId) {
           setSelectedNeighbourhoodId(sorted[0].id)
         }
       } catch (error) {
@@ -41,7 +48,16 @@ export default function TransportPage() {
       }
     }
     loadNeighbourhoods()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  
+  // Handle URL parameter change
+  useEffect(() => {
+    const neighbourhoodIdFromUrl = searchParams.get('neighbourhood_id')
+    if (neighbourhoodIdFromUrl && neighbourhoods.some(n => n.id === neighbourhoodIdFromUrl)) {
+      setSelectedNeighbourhoodId(neighbourhoodIdFromUrl)
+    }
+  }, [searchParams, neighbourhoods])
   
   useEffect(() => {
     const loadTransportProfile = async () => {
@@ -126,15 +142,15 @@ export default function TransportPage() {
                   <span className="text-xl font-semibold text-gray-900">Transport Burden: {tbiLabel}</span>
                 </div>
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  {tbiLevel === 'low' && "You'll spend minimal time commuting. This location offers strong structural advantages for daily travel."}
-                  {tbiLevel === 'moderate' && "You'll spend a manageable but noticeable amount of time commuting over the long term."}
-                  {tbiLevel === 'high' && "You'll spend significant time commuting. This location requires more daily travel investment."}
-                  {tbiLevel === 'very_high' && "You'll spend substantial time commuting. This location has structural constraints that add up over years."}
+                  {tbiLevel === 'low' && "Light burden: You'll spend minimal time commuting. This location offers strong structural advantages for daily travel."}
+                  {tbiLevel === 'moderate' && "Manageable burden: You'll spend a noticeable but sustainable amount of time commuting over the long term."}
+                  {tbiLevel === 'high' && "Heavy burden: You'll spend significant time commuting daily. This location requires more travel investment."}
+                  {tbiLevel === 'very_high' && "Straining burden: You'll spend substantial time commuting. This location has structural constraints that are hard to sustain long-term."}
                 </p>
               </div>
               <div className="pt-3 border-t border-blue-200">
                 <span className="text-sm text-gray-600">
-                  TBI {tbi} / 100 (lower is better)
+                  TBI {tbi} / 100 ({tbiLabel})
                 </span>
               </div>
               {/* Comparison Anchor */}
@@ -340,3 +356,17 @@ export default function TransportPage() {
   )
 }
 
+export default function TransportPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <TransportPageContent />
+    </Suspense>
+  )
+}
