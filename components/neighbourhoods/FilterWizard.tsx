@@ -71,17 +71,13 @@ export function FilterWizard({
 
   useEffect(() => {
     // Check if wizard has been completed
-    // TEMPORARILY DISABLED FOR TESTING - uncomment below to re-enable cache
-    // const completed = typeof window !== 'undefined' 
-    //   ? localStorage.getItem(WIZARD_STORAGE_KEY) === 'true'
-    //   : true
+    const completed = typeof window !== 'undefined' 
+      ? localStorage.getItem(WIZARD_STORAGE_KEY) === 'true'
+      : true
     
-    // if (!completed) {
-    //   setIsVisible(true)
-    // }
-    
-    // Always show wizard for testing
-    setIsVisible(true)
+    if (!completed) {
+      setIsVisible(true)
+    }
   }, [])
 
   const handleNext = () => {
