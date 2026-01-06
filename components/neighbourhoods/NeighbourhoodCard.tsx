@@ -85,10 +85,10 @@ function NeighbourhoodCardComponent({
         <div className="flex-1">
           <Link 
             href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
-            className="group inline-flex items-center gap-2 hover:text-blue-600 transition-colors"
+            className="group inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{toTitleCase(neighbourhood.name)}</h3>
-            <span className="text-xs text-gray-400 group-hover:text-blue-500 font-medium">more</span>
+            <span className="text-xs text-gray-400 group-hover:text-blue-500 font-medium">see more &gt;</span>
           </Link>
           <div className="flex flex-wrap gap-2 mt-1">
             {neighbourhood.planning_area && (
@@ -269,7 +269,7 @@ function NeighbourhoodCardComponent({
 
       {/* Variance Level - Only show if it's compact or spread_out (not moderate) */}
       {neighbourhood.variance_level && neighbourhood.variance_level !== 'moderate' && getVarianceLevelText(neighbourhood.variance_level) && (
-        <div className={`text-xs mb-4 pt-2 border-t border-gray-100 ${
+        <div className={`text-xs pt-2 border-t border-gray-100 ${
           neighbourhood.variance_level === 'spread_out' 
             ? 'text-amber-700 font-medium' 
             : 'text-gray-500'
@@ -278,16 +278,6 @@ function NeighbourhoodCardComponent({
           {getVarianceLevelText(neighbourhood.variance_level)}
         </div>
       )}
-
-      {/* Action Button */}
-      <div className="flex gap-2 pt-4 border-t border-gray-200">
-        <Link
-          href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
-          className="flex-1 text-center text-sm font-medium text-blue-600 hover:text-blue-700 py-2 rounded hover:bg-blue-50 transition-colors"
-        >
-          View details
-        </Link>
-      </div>
     </div>
   )
 }
