@@ -17,7 +17,6 @@
 export type {
   RawResaleTransaction,
   AggregatedMonthly,
-  AffordabilityResult,
   BinnedLeaseData,
   LeaseRiskLevel,
   NeighbourhoodProfile,
@@ -47,7 +46,6 @@ export {
 
 // Re-export calculation functions from new structure
 export {
-  calculateAffordability,
   calculateMonthlyMortgage,
   computeLeaseRisk,
 } from './hdb-data/calculations'

@@ -19,10 +19,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
           <div className="text-center">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">
-              Find a home that fits your family.
+              Choose the right neighbourhood<br className="hidden sm:block" />
+              <span className="sm:ml-0"> — before choosing a home.</span>
             </h1>
-            <p className="text-base md:text-2xl text-blue-100 mb-7 max-w-3xl mx-auto">
-              Compare prices, lease safety, MRT access, and schools — side by side.
+            <p className="text-sm md:text-lg lg:text-xl text-white/90 leading-relaxed mb-10 md:mb-12 max-w-2xl mx-auto">
+              Neighbourhood determines your daily life — commute, schools, routines, and long-term comfort.
             </p>
             <HomeCTAs />
             <div className="mt-10 pt-6 border-t border-white/10">
@@ -57,14 +58,14 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">1</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Start with a comfortable range
+                    Start with neighbourhoods that fit your life
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">Based on income, loan rules, and lease comfort.</p>
+                  <p className="text-sm text-gray-600 mb-3">Daily routines, commute, amenities, and community shape how a place feels to live in.</p>
                   <Link
-                    href="/hdb/affordability"
+                    href="/neighbourhoods"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                   >
-                    Start
+                    Explore neighbourhoods
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -75,14 +76,14 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">2</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Understand school demand
+                    Check long-term comfort and risk
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">See how demand varies by area.</p>
+                  <p className="text-sm text-gray-600 mb-3">Remaining lease, estate age, and neighbourhood stability affect long-term peace of mind.</p>
                   <Link
-                    href="/family/psle-school"
+                    href="/hdb/lease-price"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                   >
-                    View schools
+                    View lease & long-term comfort
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -93,14 +94,14 @@ export default function Home() {
                 <span className="text-xs font-semibold text-gray-400 mt-1">3</span>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Compare neighbourhoods side by side
+                    Understand school and family pressure
                   </h3>
-                  <p className="text-sm text-gray-600 mb-3">Price, lease safety, schools, and transport — together.</p>
+                  <p className="text-sm text-gray-600 mb-3">School demand varies widely by planning area and can affect daily stress and future options.</p>
                   <Link
-                    href="/neighbourhoods"
+                    href="/family/psle-school"
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                   >
-                    Compare neighbourhoods
+                    View schools by area
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

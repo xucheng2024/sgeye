@@ -101,7 +101,6 @@ export function trackEvent(
 export const AnalyticsEvents = {
   // Page views
   viewHome: () => trackEvent('view_home'),
-  viewAffordability: () => trackEvent('view_affordability'),
   viewExplore: () => trackEvent('view_explore'),
   viewCompare: () => trackEvent('view_compare'),
   viewSchool: () => trackEvent('view_school'),
@@ -109,9 +108,6 @@ export const AnalyticsEvents = {
   // Conversion events
   ctaStartGuided: () => trackEvent('cta_start_guided'),
   ctaBrowseDirect: () => trackEvent('cta_browse_direct'),
-  affordabilityCalculate: (params?: { maxPrice?: number }) =>
-    trackEvent('affordability_calculate', params),
-  affordabilityToExplore: () => trackEvent('affordability_to_explore'),
   addToCompare: (params?: { neighbourhoodId?: string }) =>
     trackEvent('add_to_compare', params),
   compareView: (params?: { count?: number }) =>

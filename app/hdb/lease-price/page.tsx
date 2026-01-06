@@ -513,15 +513,15 @@ export default function HDBLeasePricePage() {
               For owner-occupiers planning long-term stay, price per sqm reflects market caution earlier than total price.
             </p>
             <p>
-              Consider combining this with the Affordability and Rent vs Buy tools.
+              Consider combining this with other tools to make informed decisions.
             </p>
           </div>
           <div className="space-y-3">
             <Link
-              href="/hdb/affordability"
+              href="/neighbourhoods"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
             >
-              Check how lease risk affects your buying options
+              Explore neighbourhoods
               <ArrowRight className="w-5 h-5" />
             </Link>
             <p className="text-sm text-gray-500">

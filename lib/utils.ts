@@ -19,9 +19,15 @@ export function formatCurrency(num: number): string {
     return 'S$' + (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M'
   }
   if (num >= 1000) {
-    return 'S$' + (num / 1000).toFixed(0) + 'k'
+    const kValue = num / 1000
+    // Show decimal if less than 10k and has significant decimal part
+    if (kValue < 10 && kValue % 1 !== 0) {
+      return 'S$' + kValue.toFixed(1) + 'k'
+    }
+    return 'S$' + Math.round(kValue) + 'k'
   }
-  return 'S$' + num.toLocaleString()
+  // For values less than 1000, show with proper formatting
+  return 'S$' + num.toFixed(2)
 }
 
 /**

@@ -20,7 +20,7 @@ interface DecisionPathCardProps {
 }
 
 export default function DecisionPathCard({ budget, realityCheckData, className = '' }: DecisionPathCardProps) {
-  const exploreUrl = `/neighbourhoods?price_max=${Math.round(budget * 1.1)}&source=affordability`
+  const exploreUrl = `/neighbourhoods?price_max=${Math.round(budget * 1.1)}`
 
   return (
     <div className={`bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 ${className}`}>
@@ -32,7 +32,6 @@ export default function DecisionPathCard({ budget, realityCheckData, className =
       </p>
       <Link
         href={exploreUrl}
-        onClick={() => AnalyticsEvents.affordabilityToExplore()}
         className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
       >
         Explore neighbourhoods

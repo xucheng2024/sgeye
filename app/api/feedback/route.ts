@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!context || !['affordability', 'compare', 'home', 'neighbourhood'].includes(context)) {
+    if (!context || !['compare', 'home', 'neighbourhood'].includes(context)) {
       return NextResponse.json(
-        { error: 'Valid context is required (affordability, compare, home, or neighbourhood)' },
+        { error: 'Valid context is required (compare, home, or neighbourhood)' },
         { status: 400 }
       )
     }

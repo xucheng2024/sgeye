@@ -56,7 +56,6 @@ function NeighbourhoodsPageContent() {
   const mrtTierParam = searchParams.get('mrt_tier') || 'all'
   const regionParam = searchParams.get('region') || 'all'
   const majorRegionParam = searchParams.get('major_region') || ''
-  const sourceParam = searchParams.get('source')
   
   const [neighbourhoods, setNeighbourhoods] = useState<NeighbourhoodWithFlatType[]>([])
   const [originalNeighbourhoods, setOriginalNeighbourhoods] = useState<Neighbourhood[]>([])
@@ -455,13 +454,6 @@ function NeighbourhoodsPageContent() {
           <p className="text-sm text-gray-500 mt-2">
             School pressure is assessed at the planning area level in the next step.
           </p>
-          {sourceParam === 'affordability' && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
-                <strong>Filters applied from affordability calculator:</strong> Your search is pre-filtered based on your budget and selected flat type.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Filters Section */}

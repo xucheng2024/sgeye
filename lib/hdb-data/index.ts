@@ -7,7 +7,6 @@
 export type {
   RawResaleTransaction,
   AggregatedMonthly,
-  AffordabilityResult,
   BinnedLeaseData,
   LeaseRiskLevel,
   NeighbourhoodProfile,
@@ -40,7 +39,6 @@ export {
 
 // Calculation functions
 export {
-  calculateAffordability,
   calculateMonthlyMortgage,
   computeLeaseRisk,
 } from './calculations'
