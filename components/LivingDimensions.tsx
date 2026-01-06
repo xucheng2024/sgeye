@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { type ReactElement } from 'react'
 import { ChevronRight, Info } from 'lucide-react'
 import Link from 'next/link'
 import type { LivingNotes, LivingRating, VarianceLevel } from '@/lib/neighbourhood-living-notes'
@@ -33,7 +33,7 @@ function capitalizeFirst(str: string): string {
 }
 
 // Helper to format description with line breaks for better scanability
-function formatDescription(note: string): JSX.Element {
+function formatDescription(note: string): ReactElement {
   // Split at semicolons first (natural break points)
   if (note.includes(';')) {
     const parts = note.split(';').map(s => s.trim()).filter(Boolean)

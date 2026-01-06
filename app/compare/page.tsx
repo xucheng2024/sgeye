@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, type ReactElement } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Info } from 'lucide-react'
@@ -60,7 +60,7 @@ function formatNeighbourhoodNameWithSubarea(comparison: NeighbourhoodComparison)
 }
 
 // Format conclusion text with highlighted neighbourhood name
-function formatConclusionWithHighlight(text: string, comparisons: NeighbourhoodComparison[]): JSX.Element {
+function formatConclusionWithHighlight(text: string, comparisons: NeighbourhoodComparison[]): ReactElement {
   // Find all neighbourhood names and their positions (case-insensitive)
   const matches: Array<{ name: string; originalName: string; index: number }> = []
   
@@ -119,7 +119,7 @@ function formatConclusionWithHighlight(text: string, comparisons: NeighbourhoodC
   }
   
   // Build parts array
-  const parts: (string | JSX.Element)[] = []
+  const parts: (string | ReactElement)[] = []
   let lastIndex = 0
   
   for (const match of filteredMatches) {
@@ -985,7 +985,7 @@ function ComparePageContent() {
               }
               
               // Helper to format description with line breaks for better scanability
-              function formatDescription(note: string): JSX.Element {
+              function formatDescription(note: string): ReactElement {
                 // Split at semicolons first (natural break points)
                 if (note.includes(';')) {
                   const parts = note.split(';').map(s => s.trim()).filter(Boolean)
