@@ -23,13 +23,14 @@ import { FlatTypeFilter } from '@/components/neighbourhoods/FlatTypeFilter'
 import { PlanningAreaFilter } from '@/components/neighbourhoods/PlanningAreaFilter'
 import { MarketTierFilter } from '@/components/neighbourhoods/MarketTierFilter'
 import { PlanningRegionFilter } from '@/components/neighbourhoods/PlanningRegionFilter'
-import { SubareaSearch } from '@/components/neighbourhoods/SubareaSearch'
+import { EnhancedSearch } from '@/components/neighbourhoods/EnhancedSearch'
 import { PriceRangeFilter } from '@/components/neighbourhoods/PriceRangeFilter'
 import { LeaseSafetyFilter } from '@/components/neighbourhoods/LeaseSafetyFilter'
 import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter'
 import { SortControls } from '@/components/neighbourhoods/SortControls'
 import { NeighbourhoodCard } from '@/components/neighbourhoods/NeighbourhoodCard'
 import { FilterWizard } from '@/components/neighbourhoods/FilterWizard'
+import { ActiveFilters } from '@/components/neighbourhoods/ActiveFilters'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -101,6 +102,7 @@ function NeighbourhoodsPageContent() {
   
   // Read filter states from URL params (priority 1)
   const planningAreaIdParam = searchParams.get('planning_area_id') || ''
+  const subzoneIdParam = searchParams.get('subzone_id') || ''
   const flatTypeParam = searchParams.get('flat_type') || ''
   const priceTierParam = searchParams.get('price_tier') || ''
   const leaseTierParam = searchParams.get('lease_tier') || ''
@@ -147,10 +149,16 @@ function NeighbourhoodsPageContent() {
     return new Set<string>()
   }
   
+  const getInitialSubzonesFromUrl = (): Set<string> => {
+    if (subzoneIdParam) return new Set(parseUrlArray(subzoneIdParam))
+    return new Set<string>()
+  }
+  
   const [neighbourhoods, setNeighbourhoods] = useState<NeighbourhoodWithFlatType[]>([])
   const [originalNeighbourhoods, setOriginalNeighbourhoods] = useState<Neighbourhood[]>([])
   const [planningAreas, setPlanningAreas] = useState<PlanningArea[]>([])
   const [selectedPlanningAreas, setSelectedPlanningAreas] = useState<Set<string>>(getInitialPlanningAreasFromUrl())
+  const [selectedSubzones, setSelectedSubzones] = useState<Set<string>>(getInitialSubzonesFromUrl())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
@@ -244,6 +252,7 @@ function NeighbourhoodsPageContent() {
   // Sync filters from URL params
   useEffect(() => {
     const urlPlanningAreas = parseUrlArray(searchParams.get('planning_area_id') || '')
+    const urlSubzones = parseUrlArray(searchParams.get('subzone_id') || '')
     const urlFlatTypes = parseUrlArray(searchParams.get('flat_type') || '')
     const urlPriceTiers = parseUrlArray(searchParams.get('price_tier') || '')
     const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
@@ -254,6 +263,11 @@ function NeighbourhoodsPageContent() {
     const urlPlanningAreaSet = new Set(urlPlanningAreas)
     if (Array.from(selectedPlanningAreas).sort().join(',') !== Array.from(urlPlanningAreaSet).sort().join(',')) {
       setSelectedPlanningAreas(urlPlanningAreaSet)
+    }
+    
+    const urlSubzoneSet = new Set(urlSubzones)
+    if (Array.from(selectedSubzones).sort().join(',') !== Array.from(urlSubzoneSet).sort().join(',')) {
+      setSelectedSubzones(urlSubzoneSet)
     }
     
     const urlFlatTypeSet = new Set(urlFlatTypes.length > 0 ? urlFlatTypes : ['All'])
@@ -319,9 +333,15 @@ function NeighbourhoodsPageContent() {
   useEffect(() => {
     const params = new URLSearchParams()
     
-    const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
-    if (planningAreaArray.length > 0) {
-      params.set('planning_area_id', planningAreaArray.join(','))
+    // Subzone filter takes priority
+    const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
+    if (subzoneArray.length > 0) {
+      params.set('subzone_id', subzoneArray.join(','))
+    } else {
+      const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+      if (planningAreaArray.length > 0) {
+        params.set('planning_area_id', planningAreaArray.join(','))
+      }
     }
     
     const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
@@ -361,13 +381,13 @@ function NeighbourhoodsPageContent() {
       const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions])
+  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions])
 
   // Combined effect to load neighbourhoods when filters change (including showOnlyWithData)
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, showOnlyWithData])
+  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, showOnlyWithData])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -410,9 +430,15 @@ function NeighbourhoodsPageContent() {
     try {
       const params = new URLSearchParams()
       
-      const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
-      if (planningAreaArray.length > 0) {
-        params.set('planning_area_id', planningAreaArray.join(','))
+      // Subzone filter takes priority over planning area
+      const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
+      if (subzoneArray.length > 0) {
+        params.set('subzone_id', subzoneArray.join(','))
+      } else {
+        const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+        if (planningAreaArray.length > 0) {
+          params.set('planning_area_id', planningAreaArray.join(','))
+        }
       }
       
       const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
@@ -596,7 +622,7 @@ function NeighbourhoodsPageContent() {
         onMrtTierChange={setMrtTier}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Compare Neighbourhoods</h1>
           <p className="text-lg text-gray-700">
             Narrow down neighbourhoods that fit your family's budget, lease safety, and commute — then compare what you gain and what you trade off.
@@ -606,10 +632,56 @@ function NeighbourhoodsPageContent() {
           </p>
         </div>
 
+        {/* Enhanced Search - Prominent placement */}
+        <div className="mb-6">
+          <EnhancedSearch
+            planningAreas={planningAreas}
+            selectedPlanningAreas={selectedPlanningAreas}
+            onPlanningAreasChange={setSelectedPlanningAreas}
+            selectedSubzones={selectedSubzones}
+            onSubzonesChange={setSelectedSubzones}
+            neighbourhoods={originalNeighbourhoods}
+            onNeighbourhoodSelect={(neighbourhoodId) => {
+              // Scroll to the neighbourhood card
+              setTimeout(() => {
+                const element = document.getElementById(`neighbourhood-${neighbourhoodId}`)
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2')
+                  setTimeout(() => {
+                    element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2')
+                  }, 2000)
+                }
+              }, 100)
+            }}
+          />
+        </div>
+
+        {/* Active Filters Display */}
+        <ActiveFilters
+          selectedFlatTypes={selectedFlatTypes}
+          onFlatTypesChange={setSelectedFlatTypes}
+          priceTiers={priceTiers}
+          onPriceTiersChange={setPriceTiers}
+          leaseTiers={leaseTiers}
+          onLeaseTiersChange={setLeaseTiers}
+          mrtTier={mrtTier}
+          onMrtTierChange={setMrtTier}
+          region={region}
+          onRegionChange={setRegion}
+          majorRegions={majorRegions}
+          onMajorRegionsChange={setMajorRegions}
+          selectedPlanningAreas={selectedPlanningAreas}
+          onPlanningAreasChange={setSelectedPlanningAreas}
+          selectedSubzones={selectedSubzones}
+          onSubzonesChange={setSelectedSubzones}
+          planningAreas={planningAreas}
+        />
+
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-          {/* Data Availability Filter */}
-          <div className="mb-4 pb-4 border-b border-gray-200">
+          {/* Header with Clear All Button */}
+          <div className="mb-4 pb-4 border-b border-gray-200 flex items-center justify-between">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -621,6 +693,23 @@ function NeighbourhoodsPageContent() {
                 Only show neighbourhoods with 12-month data
               </span>
             </label>
+            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTier !== 'all' || region !== 'all' || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
+              <button
+                onClick={() => {
+                  setSelectedFlatTypes(new Set(['All']))
+                  setPriceTiers(new Set())
+                  setLeaseTiers(new Set())
+                  setMrtTier('all')
+                  setRegion('all')
+                  setMajorRegions(new Set())
+                  setSelectedPlanningAreas(new Set())
+                  setSelectedSubzones(new Set())
+                }}
+                className="text-xs text-gray-500 hover:text-gray-700 font-medium transition-colors"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
           
           {/* First Row - Essence Filters */}
@@ -837,17 +926,10 @@ function NeighbourhoodsPageContent() {
                     </div>
                   </div>
                   {viewMode === 'list' && (
-                    <div className="flex items-center gap-4">
-                      <SubareaSearch
-                        planningAreas={planningAreas}
-                        selectedPlanningAreas={selectedPlanningAreas}
-                        onPlanningAreasChange={setSelectedPlanningAreas}
-                      />
-                      <SortControls 
-                        sortPreset={sortPreset}
-                        onSortPresetChange={setSortPreset}
-                      />
-                    </div>
+                    <SortControls 
+                      sortPreset={sortPreset}
+                      onSortPresetChange={setSortPreset}
+                    />
                   )}
                 </div>
                 {viewMode === 'map' ? (
