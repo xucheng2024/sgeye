@@ -23,6 +23,7 @@ import { FlatTypeFilter } from '@/components/neighbourhoods/FlatTypeFilter'
 import { PlanningAreaFilter } from '@/components/neighbourhoods/PlanningAreaFilter'
 import { MarketTierFilter } from '@/components/neighbourhoods/MarketTierFilter'
 import { PlanningRegionFilter } from '@/components/neighbourhoods/PlanningRegionFilter'
+import { StreetNameSearch } from '@/components/neighbourhoods/StreetNameSearch'
 import { PriceRangeFilter } from '@/components/neighbourhoods/PriceRangeFilter'
 import { LeaseSafetyFilter } from '@/components/neighbourhoods/LeaseSafetyFilter'
 import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter'
@@ -656,6 +657,10 @@ function NeighbourhoodsPageContent() {
             <PlanningRegionFilter 
               majorRegions={majorRegions}
               onMajorRegionsChange={setMajorRegions}
+            />
+            <StreetNameSearch 
+              selectedPlanningAreas={selectedPlanningAreas}
+              onPlanningAreasChange={setSelectedPlanningAreas}
             />
           </div>
         </div>
