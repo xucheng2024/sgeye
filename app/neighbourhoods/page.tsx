@@ -23,7 +23,7 @@ import { FlatTypeFilter } from '@/components/neighbourhoods/FlatTypeFilter'
 import { PlanningAreaFilter } from '@/components/neighbourhoods/PlanningAreaFilter'
 import { MarketTierFilter } from '@/components/neighbourhoods/MarketTierFilter'
 import { PlanningRegionFilter } from '@/components/neighbourhoods/PlanningRegionFilter'
-import { StreetNameSearch } from '@/components/neighbourhoods/StreetNameSearch'
+import { SubareaSearch } from '@/components/neighbourhoods/SubareaSearch'
 import { PriceRangeFilter } from '@/components/neighbourhoods/PriceRangeFilter'
 import { LeaseSafetyFilter } from '@/components/neighbourhoods/LeaseSafetyFilter'
 import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter'
@@ -658,10 +658,6 @@ function NeighbourhoodsPageContent() {
               majorRegions={majorRegions}
               onMajorRegionsChange={setMajorRegions}
             />
-            <StreetNameSearch 
-              selectedPlanningAreas={selectedPlanningAreas}
-              onPlanningAreasChange={setSelectedPlanningAreas}
-            />
           </div>
         </div>
 
@@ -841,10 +837,17 @@ function NeighbourhoodsPageContent() {
                     </div>
                   </div>
                   {viewMode === 'list' && (
-                    <SortControls 
-                      sortPreset={sortPreset}
-                      onSortPresetChange={setSortPreset}
-                    />
+                    <div className="flex items-center gap-4">
+                      <SubareaSearch
+                        planningAreas={planningAreas}
+                        selectedPlanningAreas={selectedPlanningAreas}
+                        onPlanningAreasChange={setSelectedPlanningAreas}
+                      />
+                      <SortControls 
+                        sortPreset={sortPreset}
+                        onSortPresetChange={setSortPreset}
+                      />
+                    </div>
                   )}
                 </div>
                 {viewMode === 'map' ? (

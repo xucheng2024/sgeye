@@ -60,3 +60,5 @@ UPDATE neighbourhood_living_notes SET
   updated_at = NOW()
 WHERE neighbourhood_name = 'CENTRAL SUBZONE';
 
+
+
