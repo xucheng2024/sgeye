@@ -49,9 +49,16 @@ function NeighbourhoodCardComponent({
   const isPlanningAreaLevel = neighbourhood.planning_area && 
     neighbourhood.name.toUpperCase().trim() === neighbourhood.planning_area.name.toUpperCase().trim()
   
-  // Only show not_scored for subzone-level neighbourhoods
+  // Check if neighbourhood has HDB resale data
+  // If it has HDB data, it means there are HDB flats there, so it should be scored
+  const hasHdbData = neighbourhood.summary && 
+    neighbourhood.summary.tx_12m > 0 && 
+    (neighbourhood.summary.median_price_12m != null || neighbourhood.summary.median_lease_years_12m != null)
+  
+  // Only show not_scored for subzone-level neighbourhoods WITHOUT HDB data
   // Planning area / town level neighbourhoods must always be scored
-  if (neighbourhood.rating_mode === 'not_scored' && !isPlanningAreaLevel) {
+  // Neighbourhoods with HDB data should always be scored (they have HDB flats)
+  if (neighbourhood.rating_mode === 'not_scored' && !isPlanningAreaLevel && !hasHdbData) {
     return (
       <div
         id={`neighbourhood-${neighbourhood.id}`}

@@ -55,6 +55,7 @@ export async function fetchNeighbourhoods(
   const result = await query
   
   // Filter city_core zones if not included
+  // BUT: If a neighbourhood has HDB resale data, it means there are HDB flats there, so don't filter it out
   if (!includeCityCore && result.data) {
     // Normalize names for lookup
     function norm(name: string): string {
@@ -81,10 +82,27 @@ export async function fetchNeighbourhoods(
       cache.set(zoneTypeCacheKey, zoneTypeMap, 60 * 60 * 1000)
     }
     
-    // Filter out city_core zones
+    // Check which neighbourhoods have HDB resale data
+    const neighbourhoodIds = result.data.map(n => n.id)
+    const { data: hdbData } = await supabase
+      .from('agg_neighbourhood_monthly')
+      .select('neighbourhood_id')
+      .in('neighbourhood_id', neighbourhoodIds)
+      .gt('tx_count', 0)
+      .limit(10000) // Should be enough
+    
+    const neighbourhoodsWithHdbData = new Set(
+      (hdbData || []).map(d => d.neighbourhood_id)
+    )
+    
+    // Filter out city_core zones ONLY if they don't have HDB data
+    // If they have HDB data, they should be shown (because there are HDB flats there)
     result.data = result.data.filter(n => {
       const zoneType = zoneTypeMap.get(norm(n.name))
-      return zoneType !== 'city_core'
+      const hasHdbData = neighbourhoodsWithHdbData.has(n.id)
+      
+      // Keep if: not city_core, OR is city_core but has HDB data
+      return zoneType !== 'city_core' || hasHdbData
     })
   }
   

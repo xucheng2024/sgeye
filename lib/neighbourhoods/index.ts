@@ -262,7 +262,10 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
   const leaseMin = searchParams.get('lease_min') ? parseFloat(searchParams.get('lease_min')!) : null
   const leaseMax = searchParams.get('lease_max') ? parseFloat(searchParams.get('lease_max')!) : null
   const mrtDistanceMax = searchParams.get('mrt_distance_max') ? parseFloat(searchParams.get('mrt_distance_max')!) : null
-  const includeCityCore = searchParams.get('include_city_core') === 'true'  // Default: false (exclude city_core from explore)
+  // If a specific planning area is selected, include city_core by default
+  // Otherwise, exclude city_core from general explore (default: false)
+  const explicitIncludeCityCore = searchParams.get('include_city_core') === 'true'
+  const includeCityCore = planningAreaIds.length > 0 ? true : explicitIncludeCityCore
   const limit = parseInt(searchParams.get('limit') || '100')
   const offset = parseInt(searchParams.get('offset') || '0')
   
