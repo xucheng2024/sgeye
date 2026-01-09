@@ -25,11 +25,12 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
   limit: number
   offset: number
 }> {
-  const { planningAreaIds, flatTypes, limit, offset } = params
+  const { planningAreaIds, subzoneIds, flatTypes, limit, offset } = params
   
   // Fetch neighbourhoods (exclude city_core by default unless explicitly included)
   const { data: neighbourhoodsData, error } = await fetchNeighbourhoods(
     planningAreaIds,
+    subzoneIds,
     limit,
     offset,
     params.includeCityCore || false
@@ -245,8 +246,10 @@ function transformNeighbourhoods(
 
 export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQueryParams {
   const planningAreaIdParam = searchParams.get('planning_area_id')
+  const subzoneIdParam = searchParams.get('subzone_id')
   const flatTypeParam = searchParams.get('flat_type')
   const planningAreaIds = planningAreaIdParam ? planningAreaIdParam.split(',').filter(id => id.trim() !== '') : []
+  const subzoneIds = subzoneIdParam ? subzoneIdParam.split(',').filter(id => id.trim() !== '') : []
   const flatTypes = flatTypeParam
     ? flatTypeParam
         .split(',')
@@ -271,6 +274,7 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
   
   return {
     planningAreaIds,
+    subzoneIds,
     flatTypes,
     region,
     majorRegions,

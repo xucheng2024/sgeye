@@ -21,6 +21,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function fetchNeighbourhoods(
   planningAreaIds: string[],
+  subzoneIds: string[],
   limit: number,
   offset: number,
   includeCityCore: boolean = false
@@ -44,7 +45,15 @@ export async function fetchNeighbourhoods(
     .order('name', { ascending: true })
     .range(offset, offset + limit - 1)
 
-  if (planningAreaIds.length > 0) {
+  // Filter by subzone (subarea) - takes priority over planning area
+  if (subzoneIds.length > 0) {
+    if (subzoneIds.length === 1) {
+      query = query.eq('parent_subzone_id', subzoneIds[0])
+    } else {
+      query = query.in('parent_subzone_id', subzoneIds)
+    }
+  } else if (planningAreaIds.length > 0) {
+    // Only filter by planning area if no subzone filter is applied
     if (planningAreaIds.length === 1) {
       query = query.eq('planning_area_id', planningAreaIds[0])
     } else {

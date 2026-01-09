@@ -4,6 +4,7 @@
 
 export interface NeighbourhoodQueryParams {
   planningAreaIds: string[]
+  subzoneIds: string[]  // Filter by subzone (subarea)
   flatTypes: string[]
   region?: string | null
   majorRegions: string[]
