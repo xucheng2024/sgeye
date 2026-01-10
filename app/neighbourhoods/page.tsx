@@ -189,6 +189,7 @@ function NeighbourhoodsPageContent() {
   const [regions, setRegions] = useState<Set<string>>(getInitialRegionsFromUrl())
   const [majorRegions, setMajorRegions] = useState<Set<string>>(getInitialMajorRegionsFromUrl())
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
+  const [searchedNeighbourhoodId, setSearchedNeighbourhoodId] = useState<string | null>(null)
   
   // Load saved filters from localStorage on mount (only if no URL params)
   useEffect(() => {
@@ -456,7 +457,7 @@ function NeighbourhoodsPageContent() {
     }
     applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset])
+  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset, searchedNeighbourhoodId])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -682,6 +683,13 @@ function NeighbourhoodsPageContent() {
         }
       }
       
+      // Apply searched neighbourhood filter (highest priority - only show searched neighbourhood)
+      if (searchedNeighbourhoodId) {
+        if (item.id !== searchedNeighbourhoodId) {
+          return false
+        }
+      }
+      
       return true
     })
     
@@ -786,12 +794,26 @@ function NeighbourhoodsPageContent() {
           <EnhancedSearch
             planningAreas={planningAreas}
             selectedPlanningAreas={selectedPlanningAreas}
-            onPlanningAreasChange={setSelectedPlanningAreas}
+            onPlanningAreasChange={(areas) => {
+              setSelectedPlanningAreas(areas)
+              // Clear neighbourhood search when planning area is selected
+              setSearchedNeighbourhoodId(null)
+            }}
             selectedSubzones={selectedSubzones}
-            onSubzonesChange={setSelectedSubzones}
+            onSubzonesChange={(subzones) => {
+              setSelectedSubzones(subzones)
+              // Clear neighbourhood search when subzone is selected
+              setSearchedNeighbourhoodId(null)
+            }}
             neighbourhoods={originalNeighbourhoods}
+            searchedNeighbourhoodId={searchedNeighbourhoodId}
             onNeighbourhoodSelect={(neighbourhoodId) => {
-              // Scroll to the neighbourhood card
+              // Set searched neighbourhood - this will filter to only show this neighbourhood
+              setSearchedNeighbourhoodId(neighbourhoodId)
+              // Clear planning area and subzone filters when neighbourhood is selected
+              setSelectedPlanningAreas(new Set())
+              setSelectedSubzones(new Set())
+              // Scroll to the neighbourhood card after a brief delay
               setTimeout(() => {
                 const element = document.getElementById(`neighbourhood-${neighbourhoodId}`)
                 if (element) {
@@ -803,6 +825,10 @@ function NeighbourhoodsPageContent() {
                 }
               }, 100)
             }}
+            onClear={() => {
+              // Clear all search-related filters
+              setSearchedNeighbourhoodId(null)
+            }}
           />
         </div>
 
@@ -810,12 +836,27 @@ function NeighbourhoodsPageContent() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           {/* Header with Clear All Button */}
           <div className="mb-4 pb-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-600">
                 Only showing neighbourhoods with transactions in the last 12 months
               </span>
+              {searchedNeighbourhoodId && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Showing: {originalNeighbourhoods.find(n => n.id === searchedNeighbourhoodId)?.name || 'Neighbourhood'}
+                </span>
+              )}
+              {selectedPlanningAreas.size > 0 && !searchedNeighbourhoodId && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  {Array.from(selectedPlanningAreas).map(id => planningAreas.find(pa => pa.id === id)?.name).filter(Boolean).join(', ')}
+                </span>
+              )}
+              {selectedSubzones.size > 0 && !searchedNeighbourhoodId && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  {selectedSubzones.size} subarea{selectedSubzones.size > 1 ? 's' : ''} selected
+                </span>
+              )}
             </div>
-            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0 || regions.size > 0 || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
+            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0 || regions.size > 0 || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0 || searchedNeighbourhoodId) && (
               <button
                 onClick={() => {
                   setSelectedFlatTypes(new Set(['All']))
@@ -826,6 +867,7 @@ function NeighbourhoodsPageContent() {
                   setMajorRegions(new Set())
                   setSelectedPlanningAreas(new Set())
                   setSelectedSubzones(new Set())
+                  setSearchedNeighbourhoodId(null)
                 }}
                 className="text-xs text-gray-500 hover:text-gray-700 font-medium transition-colors"
               >
@@ -967,53 +1009,8 @@ function NeighbourhoodsPageContent() {
         {!loading && !error && (
           <>
             {neighbourhoods.length === 0 ? (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
-                <p className="text-amber-900 font-medium mb-2">No neighbourhoods found matching your criteria</p>
-                <p className="text-sm text-amber-700 mb-4">
-                  Try adjusting your filters - remove price, lease, or MRT restrictions to see more options.
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {priceTiers.size > 0 && (
-                    <button
-                      onClick={() => setPriceTiers(new Set())}
-                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
-                    >
-                      Clear Price Filter
-                    </button>
-                  )}
-                  {leaseTiers.size > 0 && (
-                    <button
-                      onClick={() => setLeaseTiers(new Set())}
-                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
-                    >
-                      Clear Lease Filter
-                    </button>
-                  )}
-                  {mrtTiers.size > 0 && (
-                    <button
-                      onClick={() => setMrtTiers(new Set())}
-                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
-                    >
-                      Clear MRT Filter
-                    </button>
-                  )}
-                  {regions.size > 0 && (
-                    <button
-                      onClick={() => setRegions(new Set())}
-                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
-                    >
-                      Clear Market Tier Filter
-                    </button>
-                  )}
-                  {majorRegions.size > 0 && (
-                    <button
-                      onClick={() => setMajorRegions(new Set())}
-                      className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
-                    >
-                      Clear Planning Region Filter
-                    </button>
-                  )}
-                </div>
+              <div className="text-center py-8 text-gray-500">
+                <p>No neighbourhoods found matching your criteria</p>
               </div>
             ) : (
               <>

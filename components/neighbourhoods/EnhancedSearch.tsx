@@ -17,6 +17,8 @@ interface EnhancedSearchProps {
   onSubzonesChange: (subzones: Set<string>) => void
   neighbourhoods?: Neighbourhood[]
   onNeighbourhoodSelect?: (neighbourhoodId: string) => void
+  onClear?: () => void
+  searchedNeighbourhoodId?: string | null
 }
 
 interface SubzoneResult {
@@ -94,9 +96,33 @@ export function EnhancedSearch({
   selectedSubzones,
   onSubzonesChange,
   neighbourhoods = [],
-  onNeighbourhoodSelect
+  onNeighbourhoodSelect,
+  onClear,
+  searchedNeighbourhoodId = null
 }: EnhancedSearchProps) {
+  // Store selected subzone name when user selects a subzone
+  const [selectedSubzoneName, setSelectedSubzoneName] = useState<string>('')
+  
+  // Get current search display value based on selected items
+  const getCurrentSearchDisplay = useCallback((): string => {
+    if (searchedNeighbourhoodId) {
+      const neighbourhood = neighbourhoods.find(n => n.id === searchedNeighbourhoodId)
+      return neighbourhood?.name || ''
+    }
+    if (selectedSubzones.size > 0 && selectedSubzoneName) {
+      // Return the selected subzone name
+      return selectedSubzoneName
+    }
+    if (selectedPlanningAreas.size > 0) {
+      const selectedArea = planningAreas.find(pa => selectedPlanningAreas.has(pa.id))
+      return selectedArea?.name || ''
+    }
+    return ''
+  }, [searchedNeighbourhoodId, selectedSubzones, selectedSubzoneName, selectedPlanningAreas, neighbourhoods, planningAreas])
+
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentSearchDisplay, setCurrentSearchDisplay] = useState<string>('')
+  const [isEditing, setIsEditing] = useState(false)
   const [filteredAreas, setFilteredAreas] = useState<PlanningArea[]>([])
   const [filteredNeighbourhoods, setFilteredNeighbourhoods] = useState<Neighbourhood[]>([])
   const [subzoneResult, setSubzoneResult] = useState<SubzoneResult | null>(null)
@@ -109,6 +135,50 @@ export function EnhancedSearch({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Clear subzone name when subzones are cleared externally
+  useEffect(() => {
+    if (selectedSubzones.size === 0 && selectedSubzoneName) {
+      setSelectedSubzoneName('')
+    }
+  }, [selectedSubzones, selectedSubzoneName])
+
+  // Update search display when selections change (only when user is NOT actively typing)
+  // This effect should NOT interfere with user input - only update after selections are made
+  useEffect(() => {
+    // IMPORTANT: Skip if user is currently editing/typing to avoid overwriting their input
+    if (isEditing || isFocused) {
+      return
+    }
+    
+    // Calculate display based on current selections
+    let display = ''
+    if (searchedNeighbourhoodId) {
+      const neighbourhood = neighbourhoods.find(n => n.id === searchedNeighbourhoodId)
+      display = neighbourhood?.name || ''
+    } else if (selectedSubzones.size > 0 && selectedSubzoneName) {
+      display = selectedSubzoneName
+    } else if (selectedPlanningAreas.size > 0) {
+      const selectedArea = planningAreas.find(pa => selectedPlanningAreas.has(pa.id))
+      display = selectedArea?.name || ''
+    }
+    
+    // Only update if:
+    // 1. Display has actually changed
+    // 2. User is NOT actively typing (isEditing and isFocused are both false)
+    // 3. Search query is empty or matches the previous display (user hasn't typed something new)
+    if (display && display !== currentSearchDisplay) {
+      setCurrentSearchDisplay(display)
+      // Only update searchQuery if it's empty or matches previous display (user hasn't typed yet)
+      if (!searchQuery || searchQuery === currentSearchDisplay || searchQuery === '') {
+        setSearchQuery(display)
+      }
+    } else if (!display && currentSearchDisplay && !searchQuery) {
+      // Selection was cleared and search is empty
+      setCurrentSearchDisplay('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchedNeighbourhoodId, selectedSubzones.size, selectedSubzoneName, selectedPlanningAreas.size])
 
   // Load search history
   useEffect(() => {
@@ -297,9 +367,15 @@ export function EnhancedSearch({
     newSet.add(planningAreaId)
     onPlanningAreasChange(newSet)
     saveToHistory(query, 'planning_area')
+    // Keep the selected area name in search box
+    const selectedArea = planningAreas.find(pa => pa.id === planningAreaId)
+    setSearchQuery(selectedArea?.name || query)
+    setIsEditing(false)
+    setFilteredAreas([])
+    setFilteredNeighbourhoods([])
     setShowResults(false)
     setSearchError(null)
-  }, [selectedPlanningAreas, onPlanningAreasChange, saveToHistory])
+  }, [selectedPlanningAreas, onPlanningAreasChange, saveToHistory, planningAreas])
 
   const handleSelectSubzone = useCallback(() => {
     if (!subzoneResult) return
@@ -307,25 +383,46 @@ export function EnhancedSearch({
     const newSet = new Set(selectedSubzones)
     newSet.add(subzoneResult.id)
     onSubzonesChange(newSet)
-    saveToHistory(searchQuery, 'subzone')
+    // Store the subzone name for display
+    setSelectedSubzoneName(subzoneResult.name)
+    saveToHistory(subzoneResult.name, 'subzone')
+    // Keep the subzone name in search box
+    setSearchQuery(subzoneResult.name)
+    setIsEditing(false)
+    setFilteredAreas([])
+    setFilteredNeighbourhoods([])
+    setSubzoneResult(null)
     setShowResults(false)
     setSearchError(null)
-  }, [subzoneResult, selectedSubzones, onSubzonesChange, searchQuery, saveToHistory])
+  }, [subzoneResult, selectedSubzones, onSubzonesChange, saveToHistory])
 
   const handleClear = useCallback(() => {
     setSearchQuery('')
+    setCurrentSearchDisplay('')
+    setSelectedSubzoneName('')
+    setIsEditing(false)
     setFilteredAreas([])
     setFilteredNeighbourhoods([])
     setSubzoneResult(null)
     setShowResults(false)
     setSearchError(null)
     onSubzonesChange(new Set())
-  }, [onSubzonesChange])
+    onPlanningAreasChange(new Set())
+    // Call parent's onClear callback if provided
+    if (onClear) {
+      onClear()
+    }
+  }, [onSubzonesChange, onPlanningAreasChange, onClear])
 
   const handleSelectNeighbourhood = useCallback((neighbourhoodId: string, name: string) => {
     if (onNeighbourhoodSelect) {
       onNeighbourhoodSelect(neighbourhoodId)
       saveToHistory(name, 'planning_area')
+      // Keep the neighbourhood name in search box
+      setSearchQuery(name)
+      setIsEditing(false)
+      setFilteredAreas([])
+      setFilteredNeighbourhoods([])
       setShowResults(false)
       setSearchError(null)
     }
@@ -338,7 +435,7 @@ export function EnhancedSearch({
 
   const hasResults = filteredAreas.length > 0 || filteredNeighbourhoods.length > 0 || subzoneResult !== null
   const showDropdown = showResults && (hasResults || searchError || isSearching || (isFocused && searchQuery.length === 0))
-  const showClearButton = searchQuery.length > 0 || selectedSubzones.size > 0
+  const showClearButton = searchQuery.length > 0 || selectedSubzones.size > 0 || selectedPlanningAreas.size > 0
 
   // Popular searches
   const popularSearches = [
@@ -356,10 +453,47 @@ export function EnhancedSearch({
           ref={inputRef}
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            const newValue = e.target.value
+            setSearchQuery(newValue)
+            setIsEditing(true)
+            
+            // If user deletes all text, clear all selections to restore full list
+            if (!newValue.trim()) {
+              // User cleared the search - clear all selections to show all results
+              setCurrentSearchDisplay('')
+              setSelectedSubzoneName('')
+              if (onClear) {
+                onClear()
+              }
+              onSubzonesChange(new Set())
+              onPlanningAreasChange(new Set())
+            }
+            // If user is typing something different, allow them to search
+            // Don't automatically clear selections until they complete or clear the search
+          }}
           onFocus={() => {
             setIsFocused(true)
+            setIsEditing(true)
             setShowResults(true)
+          }}
+          onBlur={() => {
+            // Delay to allow click events on dropdown items
+            setTimeout(() => {
+              setIsFocused(false)
+              // Only clear editing state if search is empty
+              // Otherwise keep it true so search filtering continues to work
+              if (!searchQuery.trim()) {
+                setCurrentSearchDisplay('')
+                setIsEditing(false)
+              } else {
+                // If user has typed something, keep isEditing true initially
+                // Set it to false after a short delay so useEffect can handle display updates
+                setTimeout(() => {
+                  setIsEditing(false)
+                }, 300)
+              }
+            }, 200)
           }}
           placeholder="Search area, postal code, or street name..."
           className="w-full pl-12 pr-24 py-3 text-sm text-gray-900 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 transition-all"
