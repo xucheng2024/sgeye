@@ -137,6 +137,8 @@ async function findSubzoneByStreetName(streetName: string) {
   // House numbers are typically 1-4 digits followed by letters/space
   const cleanedStreet = streetName.trim().replace(/^\d+[A-Z]?\s+/i, '')
 
+  console.log(`[Street Search] Original: "${streetName}", Cleaned: "${cleanedStreet}"`)
+
   // Try exact match first, then fallback to partial match
   let transactions = null
   let error = null
@@ -150,6 +152,8 @@ async function findSubzoneByStreetName(streetName: string) {
     .not('longitude', 'is', null)
     .limit(10)
 
+  console.log(`[Street Search] Exact match result:`, exactResult.data?.length || 0, 'records')
+
   if (!exactResult.error && exactResult.data && exactResult.data.length > 0) {
     transactions = exactResult.data
   } else {
@@ -162,6 +166,8 @@ async function findSubzoneByStreetName(streetName: string) {
       .not('longitude', 'is', null)
       .limit(10)
 
+    console.log(`[Street Search] Partial match result:`, partialResult.data?.length || 0, 'records')
+
     if (partialResult.error) {
       throw partialResult.error
     }
@@ -169,8 +175,12 @@ async function findSubzoneByStreetName(streetName: string) {
   }
 
   if (!transactions || transactions.length === 0) {
+    console.log(`[Street Search] No transactions found for "${cleanedStreet}"`)
     return null
   }
+
+  console.log(`[Street Search] Found ${transactions.length} transactions, sample streets:`, 
+    transactions.slice(0, 3).map(t => t.street_name))
 
   // Try to find subzone using the first valid coordinate
   for (const transaction of transactions) {
@@ -183,10 +193,12 @@ async function findSubzoneByStreetName(streetName: string) {
 
     const subzone = await findSubzoneByPoint(lat, lng)
     if (subzone) {
+      console.log(`[Street Search] Found subzone: ${subzone.name}`)
       return subzone
     }
   }
 
+  console.log(`[Street Search] No subzone found for coordinates`)
   return null
 }
 
