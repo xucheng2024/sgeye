@@ -678,9 +678,18 @@ function NeighbourhoodsPageContent() {
       }
       
       // Apply subzone filter (client-side using parent_subzone_id field)
+      // TEMPORARY FIX: If neighbourhoods don't have parent_subzone_id populated,
+      // match by neighbourhood ID (neighbourhoods and subzones share same IDs in some cases)
       if (selectedSubzones.size > 0) {
         const neighbourhoodSubzoneId = item.parent_subzone_id
-        if (!neighbourhoodSubzoneId || !selectedSubzones.has(neighbourhoodSubzoneId)) {
+        const neighbourhoodId = item.id
+        
+        // Check if either parent_subzone_id OR neighbourhood id matches selected subzone
+        // This handles the case where subzone "aljunied" corresponds to neighbourhood "aljunied"
+        const matchesSubzone = (neighbourhoodSubzoneId && selectedSubzones.has(neighbourhoodSubzoneId)) ||
+                               selectedSubzones.has(neighbourhoodId)
+        
+        if (!matchesSubzone) {
           return false
         }
       }
