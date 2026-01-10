@@ -87,6 +87,7 @@ export interface NeighbourhoodResponse {
   name: string
   one_liner: string | null
   planning_area: PlanningAreaData | null
+  parent_subzone_id: string | null
   subzone_region: string | null
   type: string | null
   bbox: any

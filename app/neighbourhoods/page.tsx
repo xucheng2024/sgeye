@@ -31,7 +31,6 @@ import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter
 import { SortControls } from '@/components/neighbourhoods/SortControls'
 import { NeighbourhoodCard } from '@/components/neighbourhoods/NeighbourhoodCard'
 import { FilterWizard } from '@/components/neighbourhoods/FilterWizard'
-import { ActiveFilters } from '@/components/neighbourhoods/ActiveFilters'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -273,6 +272,7 @@ function NeighbourhoodsPageContent() {
     const urlPriceTiers = parseUrlArray(searchParams.get('price_tier') || '')
     const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
     const urlMrtTiers = parseUrlArray(searchParams.get('mrt_tier') || '')
+    const urlMajorRegions = parseUrlArray(searchParams.get('major_region') || '')
     const urlRegion = searchParams.get('region') || 'all'
     const addToCompare = searchParams.get('add_to_compare')
     
@@ -302,6 +302,11 @@ function NeighbourhoodsPageContent() {
     const urlMrtTiersSet = new Set(urlMrtTiers)
     if (Array.from(mrtTiers).sort().join(',') !== Array.from(urlMrtTiersSet).sort().join(',')) {
       setMrtTiers(urlMrtTiersSet)
+    }
+    
+    const urlMajorRegionsSet = new Set(urlMajorRegions)
+    if (Array.from(majorRegions).sort().join(',') !== Array.from(urlMajorRegionsSet).sort().join(',')) {
+      setMajorRegions(urlMajorRegionsSet)
     }
     
     if (urlRegion !== region) {
@@ -431,14 +436,15 @@ function NeighbourhoodsPageContent() {
     return expandNeighbourhoodsToFlatTypes(originalNeighbourhoods)
   }, [originalNeighbourhoods])
   
-  // Load neighbourhoods only when location filters change (planning area or subzone)
-  // Other filters (price, lease, mrt, flat_type, etc.) are applied client-side only
+  // Load neighbourhoods only once on mount - all filters are now client-side
+  // This ensures we fetch all data once and filter everything client-side for better performance
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedSubzones, region, majorRegions])
+  }, [])
   
   // Apply client-side filters when they change - use memoized expanded data
+  // Now includes planning area and subzone filters (all filters are client-side)
   useEffect(() => {
     if (expandedNeighbourhoods.length === 0) {
       setNeighbourhoods([])
@@ -446,7 +452,7 @@ function NeighbourhoodsPageContent() {
     }
     applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedNeighbourhoods, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, sortPreset])
+  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, region, sortPreset])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -484,30 +490,9 @@ function NeighbourhoodsPageContent() {
   }
 
   function getCacheKey(): string {
-    // Create cache key based on location filters (the only filters that affect API response)
-    const parts: string[] = []
-    
-    const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
-    if (subzoneArray.length > 0) {
-      parts.push(`subzone:${subzoneArray.sort().join(',')}`)
-    } else {
-      const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
-      if (planningAreaArray.length > 0) {
-        parts.push(`planning:${planningAreaArray.sort().join(',')}`)
-      }
-    }
-    
-    if (region && region !== 'all') {
-      parts.push(`region:${region}`)
-    }
-    
-    if (majorRegions.size > 0) {
-      const majorRegionArray = Array.from(majorRegions).sort()
-      parts.push(`major:${majorRegionArray.join(',')}`)
-    }
-    
-    // Default key for no filters (all neighbourhoods)
-    return parts.length > 0 ? parts.join('|') : 'all'
+    // All filters are now client-side, so we always cache all data with the same key
+    // This allows us to fetch all data once and filter everything client-side
+    return 'all'
   }
 
   function getCachedData(): Neighbourhood[] | null {
@@ -588,28 +573,8 @@ function NeighbourhoodsPageContent() {
     try {
       const params = new URLSearchParams()
       
-      // Only apply location filters to API (planning area or subzone)
-      const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
-      if (subzoneArray.length > 0) {
-        params.set('subzone_id', subzoneArray.join(','))
-      } else {
-        const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
-        if (planningAreaArray.length > 0) {
-          params.set('planning_area_id', planningAreaArray.join(','))
-        }
-      }
-      
-      // Region filters also need API filtering
-      if (region && region !== 'all') {
-        params.set('region', region)
-      }
-      
-      if (majorRegions.size > 0) {
-        const majorRegionArray = Array.from(majorRegions)
-        params.set('major_region', majorRegionArray.join(','))
-      }
-      
-      // Don't send flat_type, price, lease, mrt filters to API - fetch all data
+      // Don't send any filters to API - fetch all data once
+      // All filters (planning area, subzone, flat_type, price, lease, mrt, region, majorRegions) are applied client-side
       // Set a high limit to get all neighbourhoods with transaction data
       params.set('limit', '1000')
       
@@ -676,6 +641,39 @@ function NeighbourhoodsPageContent() {
         const distance = item.access?.avg_distance_to_mrt != null ? Number(item.access.avg_distance_to_mrt) : null
         const hasStationInArea = !!(item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0)
         if (!matchesMrtTiers(distance, mrtTiers, hasStationInArea)) {
+          return false
+        }
+      }
+      
+      // Apply region filter (CCR/RCR/OCR) - client-side using planning_area.region field
+      if (region && region !== 'all') {
+        const neighbourhoodRegion = item.planning_area?.region
+        if (!neighbourhoodRegion || neighbourhoodRegion !== region) {
+          return false
+        }
+      }
+      
+      // Apply major region filter (client-side using subzone_region field)
+      if (majorRegions.size > 0) {
+        const neighbourhoodMajorRegion = item.subzone_region
+        // Match exact value (case-sensitive): 'Central', 'East', 'North', 'North-East', 'West'
+        if (!neighbourhoodMajorRegion || !majorRegions.has(neighbourhoodMajorRegion)) {
+          return false
+        }
+      }
+      
+      // Apply planning area filter (client-side using planning_area.id field)
+      if (selectedPlanningAreas.size > 0) {
+        const neighbourhoodPlanningAreaId = item.planning_area?.id
+        if (!neighbourhoodPlanningAreaId || !selectedPlanningAreas.has(neighbourhoodPlanningAreaId)) {
+          return false
+        }
+      }
+      
+      // Apply subzone filter (client-side using parent_subzone_id field)
+      if (selectedSubzones.size > 0) {
+        const neighbourhoodSubzoneId = item.parent_subzone_id
+        if (!neighbourhoodSubzoneId || !selectedSubzones.has(neighbourhoodSubzoneId)) {
           return false
         }
       }
@@ -803,27 +801,6 @@ function NeighbourhoodsPageContent() {
             }}
           />
         </div>
-
-        {/* Active Filters Display */}
-        <ActiveFilters
-          selectedFlatTypes={selectedFlatTypes}
-          onFlatTypesChange={setSelectedFlatTypes}
-          priceTiers={priceTiers}
-          onPriceTiersChange={setPriceTiers}
-          leaseTiers={leaseTiers}
-          onLeaseTiersChange={setLeaseTiers}
-          mrtTiers={mrtTiers}
-          onMrtTiersChange={setMrtTiers}
-          region={region}
-          onRegionChange={setRegion}
-          majorRegions={majorRegions}
-          onMajorRegionsChange={setMajorRegions}
-          selectedPlanningAreas={selectedPlanningAreas}
-          onPlanningAreasChange={setSelectedPlanningAreas}
-          selectedSubzones={selectedSubzones}
-          onSubzonesChange={setSelectedSubzones}
-          planningAreas={planningAreas}
-        />
 
         {/* Filters Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">

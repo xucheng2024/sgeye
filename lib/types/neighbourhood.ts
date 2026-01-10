@@ -11,6 +11,7 @@ export interface Neighbourhood {
     name: string
     region?: 'CCR' | 'RCR' | 'OCR' | null
   } | null
+  parent_subzone_id?: string | null
   subzone_region?: 'Central' | 'East' | 'North' | 'North-East' | 'West' | null
   summary: {
     tx_12m: number

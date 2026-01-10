@@ -214,6 +214,7 @@ function transformNeighbourhoods(
         name: planningArea.name,
         region: planningArea.region || null
       } : null,
+      parent_subzone_id: n.parent_subzone_id || null,
       subzone_region: subzoneRegion,
       type: n.type,
       bbox: n.bbox,
