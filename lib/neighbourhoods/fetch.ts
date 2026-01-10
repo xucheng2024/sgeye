@@ -23,8 +23,7 @@ export async function fetchNeighbourhoods(
   planningAreaIds: string[],
   subzoneIds: string[],
   limit: number,
-  offset: number,
-  includeCityCore: boolean = false
+  offset: number
 ): Promise<{ data: NeighbourhoodRawData[] | null; error: any }> {
   let query = supabase
     .from('neighbourhoods')
@@ -41,7 +40,6 @@ export async function fetchNeighbourhoods(
       planning_areas(id, name, region),
       parent_subzone_id
     `)
-    .eq('non_residential', false)  // Exclude non-residential areas from explore/compare
     .order('name', { ascending: true })
     .range(offset, offset + limit - 1)
 
@@ -62,58 +60,6 @@ export async function fetchNeighbourhoods(
   }
 
   const result = await query
-  
-  // Filter city_core zones if not included
-  // BUT: If a neighbourhood has HDB resale data, it means there are HDB flats there, so don't filter it out
-  if (!includeCityCore && result.data) {
-    // Normalize names for lookup
-    function norm(name: string): string {
-      return (name || '').trim().toUpperCase().replace(/\s+/g, ' ')
-    }
-    
-    // Cache zone_type map (rarely changes, cache for 1 hour)
-    const zoneTypeCacheKey = 'zone_type_map'
-    let zoneTypeMap = cache.get<Map<string, string>>(zoneTypeCacheKey)
-    
-    if (!zoneTypeMap) {
-      // Fetch zone_types for all neighbourhoods
-      const { data: livingNotes } = await supabase
-        .from('neighbourhood_living_notes')
-        .select('neighbourhood_name, zone_type')
-      
-      zoneTypeMap = new Map<string, string>()
-      if (livingNotes) {
-        livingNotes.forEach(note => {
-          zoneTypeMap!.set(norm(note.neighbourhood_name), note.zone_type)
-        })
-      }
-      // Cache for 1 hour
-      cache.set(zoneTypeCacheKey, zoneTypeMap, 60 * 60 * 1000)
-    }
-    
-    // Check which neighbourhoods have HDB resale data
-    const neighbourhoodIds = result.data.map(n => n.id)
-    const { data: hdbData } = await supabase
-      .from('agg_neighbourhood_monthly')
-      .select('neighbourhood_id')
-      .in('neighbourhood_id', neighbourhoodIds)
-      .gt('tx_count', 0)
-      .limit(10000) // Should be enough
-    
-    const neighbourhoodsWithHdbData = new Set(
-      (hdbData || []).map(d => d.neighbourhood_id)
-    )
-    
-    // Filter out city_core zones ONLY if they don't have HDB data
-    // If they have HDB data, they should be shown (because there are HDB flats there)
-    result.data = result.data.filter(n => {
-      const zoneType = zoneTypeMap.get(norm(n.name))
-      const hasHdbData = neighbourhoodsWithHdbData.has(n.id)
-      
-      // Keep if: not city_core, OR is city_core but has HDB data
-      return zoneType !== 'city_core' || hasHdbData
-    })
-  }
   
   return result
 }

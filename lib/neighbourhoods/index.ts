@@ -27,13 +27,12 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
 }> {
   const { planningAreaIds, subzoneIds, flatTypes, limit, offset } = params
   
-  // Fetch neighbourhoods (exclude city_core by default unless explicitly included)
+  // Fetch neighbourhoods
   const { data: neighbourhoodsData, error } = await fetchNeighbourhoods(
     planningAreaIds,
     subzoneIds,
     limit,
-    offset,
-    params.includeCityCore || false
+    offset
   )
   
   console.log('API: Fetched neighbourhoods from DB:', {
@@ -102,7 +101,13 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
     livingNotesMetadataMap
   )
   
-  console.log('API: Before filtering, neighbourhoods count:', neighbourhoods.length)
+  // Filter out neighbourhoods without transaction data (only show those with HDB resale data)
+  neighbourhoods = neighbourhoods.filter(n => {
+    const hasTransactionData = n.summary?.tx_12m != null && Number(n.summary.tx_12m) > 0
+    return hasTransactionData
+  })
+  
+  console.log('API: After filtering by transaction data, neighbourhoods count:', neighbourhoods.length)
   console.log('API: Filter params:', { 
     priceMin: params.priceMin, 
     priceMax: params.priceMax, 
@@ -265,10 +270,6 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
   const leaseMin = searchParams.get('lease_min') ? parseFloat(searchParams.get('lease_min')!) : null
   const leaseMax = searchParams.get('lease_max') ? parseFloat(searchParams.get('lease_max')!) : null
   const mrtDistanceMax = searchParams.get('mrt_distance_max') ? parseFloat(searchParams.get('mrt_distance_max')!) : null
-  // If a specific planning area is selected, include city_core by default
-  // Otherwise, exclude city_core from general explore (default: false)
-  const explicitIncludeCityCore = searchParams.get('include_city_core') === 'true'
-  const includeCityCore = planningAreaIds.length > 0 ? true : explicitIncludeCityCore
   const limit = parseInt(searchParams.get('limit') || '100')
   const offset = parseInt(searchParams.get('offset') || '0')
   
@@ -283,7 +284,6 @@ export function parseQueryParams(searchParams: URLSearchParams): NeighbourhoodQu
     leaseMin,
     leaseMax,
     mrtDistanceMax,
-    includeCityCore,
     limit,
     offset
   }

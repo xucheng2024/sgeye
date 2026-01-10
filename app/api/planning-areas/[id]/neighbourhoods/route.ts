@@ -43,12 +43,10 @@ export async function GET(
     }
 
     // Fetch neighbourhoods (only basic info, no metrics)
-    // Exclude non-residential areas from explore/compare
     const { data: neighbourhoods, error: neighbourhoodsError } = await supabase
       .from('neighbourhoods')
       .select('id, name, one_liner, type')
       .eq('planning_area_id', id)
-      .eq('non_residential', false)
       .order('name', { ascending: true })
 
     if (neighbourhoodsError) {

@@ -13,7 +13,6 @@ export interface NeighbourhoodQueryParams {
   leaseMin: number | null
   leaseMax: number | null
   mrtDistanceMax: number | null
-  includeCityCore?: boolean  // Include city_core zones (default: false)
   limit: number
   offset: number
 }
