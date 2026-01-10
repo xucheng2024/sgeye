@@ -12,7 +12,6 @@ import type {
   NeighbourhoodQueryParams, 
   NeighbourhoodResponse, 
   NeighbourhoodRawData,
-  NeighbourhoodSummary,
   AccessData,
   PlanningAreaData,
   SubzoneData,
@@ -64,7 +63,7 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
   // Parallelize independent database queries
   const [
     centerPointsMap,
-    { flatTypeSummaries, neighbourhoodSummaries },
+    { flatTypeSummaries },
     accessData,
     mrtStationsMap,
     planningAreasData,
@@ -84,14 +83,25 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
   const subzoneMap = new Map(subzonesData.map(sz => [sz.id, sz]))
   
   // Create lookup maps
-  const summaryMap = new Map(neighbourhoodSummaries.map(s => [s.neighbourhood_id, s]))
   const accessMap = new Map(accessData.map(a => [a.neighbourhood_id, a]))
+  
+  // Create map of neighbourhood IDs that have transaction data (based on flat_type summaries)
+  const neighbourhoodsWithData = new Set(
+    flatTypeSummaries
+      .filter(ft => ft.tx_12m > 0)
+      .map(ft => ft.neighbourhood_id)
+  )
+  
+  // Filter neighbourhoods to only those with transaction data
+  const filteredNeighbourhoodsData = neighbourhoodsData.filter(n => 
+    neighbourhoodsWithData.has(n.id)
+  )
   
   // Transform data
   let neighbourhoods = transformNeighbourhoods(
-    neighbourhoodsData,
+    filteredNeighbourhoodsData,
     centerPointsMap,
-    summaryMap,
+    null, // No neighbourhood summary needed
     accessMap,
     planningAreaMap,
     subzoneMap,
@@ -100,12 +110,6 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
     flatTypes,
     livingNotesMetadataMap
   )
-  
-  // Filter out neighbourhoods without transaction data (only show those with HDB resale data)
-  neighbourhoods = neighbourhoods.filter(n => {
-    const hasTransactionData = n.summary?.tx_12m != null && Number(n.summary.tx_12m) > 0
-    return hasTransactionData
-  })
   
   console.log('API: After filtering by transaction data, neighbourhoods count:', neighbourhoods.length)
   console.log('API: Filter params:', { 
@@ -158,7 +162,7 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
 function transformNeighbourhoods(
   neighbourhoodsData: NeighbourhoodRawData[],
   centerPointsMap: Map<string, { lat: number; lng: number }>,
-  summaryMap: Map<string, NeighbourhoodSummary>,
+  summaryMap: Map<string, any> | null,
   accessMap: Map<string, AccessData>,
   planningAreaMap: Map<string, PlanningAreaData>,
   subzoneMap: Map<string, SubzoneData>,
@@ -196,10 +200,41 @@ function transformNeighbourhoods(
       }
     }
     
-    const summary = summaryMap.get(n.id) || null
     const access = accessMap.get(n.id) || null
     const flatTypeData = flatTypeSummaries.filter(s => s.neighbourhood_id === n.id)
     const livingNotesMetadata = livingNotesMetadataMap.get(norm(n.name)) || null
+    
+    // Calculate summary from flat_type summaries if needed (for single flat_type filter or "All")
+    let summary = null
+    if (flatTypeData.length > 0) {
+      // If single flat_type filter, use that flat_type's data as summary
+      if (flatTypes.length === 1) {
+        const singleFlatType = flatTypeData.find(ft => ft.flat_type === flatTypes[0])
+        if (singleFlatType) {
+          summary = {
+            tx_12m: singleFlatType.tx_12m,
+            median_price_12m: singleFlatType.median_price_12m,
+            median_psm_12m: singleFlatType.median_psm_12m,
+            median_lease_years_12m: singleFlatType.median_lease_years_12m,
+            avg_floor_area_12m: singleFlatType.avg_floor_area_12m,
+            updated_at: new Date().toISOString()
+          }
+        }
+      } else {
+        // For "All" flat types, calculate totals
+        const totalTx = flatTypeData.reduce((sum, ft) => sum + ft.tx_12m, 0)
+        if (totalTx > 0) {
+          summary = {
+            tx_12m: totalTx,
+            median_price_12m: null, // Not meaningful across different flat types
+            median_psm_12m: null,
+            median_lease_years_12m: null,
+            avg_floor_area_12m: null,
+            updated_at: new Date().toISOString()
+          }
+        }
+      }
+    }
     
     return {
       id: n.id,
@@ -214,16 +249,7 @@ function transformNeighbourhoods(
       type: n.type,
       bbox: n.bbox,
       center: centerPointsMap.get(n.id) || null,
-      summary: summary ? {
-        tx_12m: summary.tx_12m,
-        median_price_12m: summary.median_price_12m,
-        median_psm_12m: summary.median_psm_12m,
-        median_lease_years_12m: summary.median_lease_years_12m,
-        avg_floor_area_12m: flatTypes.length > 0 && flatTypes.length === 1 ? 
-          (flatTypeData.find(ft => ft.flat_type === flatTypes[0])?.avg_floor_area_12m ?? summary.avg_floor_area_12m) :
-          summary.avg_floor_area_12m,
-        updated_at: summary.updated_at
-      } : null,
+      summary: summary,
       flat_type_details: flatTypeData.map(ft => ({
         neighbourhood_id: ft.neighbourhood_id,
         flat_type: ft.flat_type,

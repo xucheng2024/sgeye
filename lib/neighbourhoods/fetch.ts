@@ -89,7 +89,7 @@ export async function fetchMonthlyData(
 
   let query = supabase
     .from('agg_neighbourhood_monthly')
-    .select('neighbourhood_id, flat_type, median_price, median_psm, median_lease_years, tx_count, avg_floor_area, month')
+    .select('neighbourhood_id, flat_type, median_price, p25_price, p75_price, median_psm, median_lease_years, tx_count, avg_floor_area, month')
     .in('neighbourhood_id', neighbourhoodIds)
     .gte('month', startDate.toISOString().split('T')[0])
     .lte('month', endDate.toISOString().split('T')[0])

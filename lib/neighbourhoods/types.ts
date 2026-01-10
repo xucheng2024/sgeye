@@ -39,7 +39,9 @@ export interface FlatTypeSummary {
   neighbourhood_id: string
   flat_type: string
   tx_12m: number
+  p25_price_12m: number | null
   median_price_12m: number | null
+  p75_price_12m: number | null
   median_psm_12m: number | null
   median_lease_years_12m: number | null
   avg_floor_area_12m: number | null
