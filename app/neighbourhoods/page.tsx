@@ -51,6 +51,21 @@ const parseUrlArray = (value: string): string[] => {
 const FILTER_STORAGE_KEY = 'neighbourhood_filters'
 const FILTER_STORAGE_VERSION = '1'
 
+// Cache storage keys
+const NEIGHBOURHOODS_CACHE_PREFIX = 'neighbourhoods_cache_'
+const CACHE_EXPIRY_DAYS = 1 // Cache for 1 day (data updates monthly)
+
+interface CachedData {
+  data: Neighbourhood[]
+  timestamp: number
+  cacheKey: string
+}
+
+// Cache storage keys
+const NEIGHBOURHOODS_CACHE_KEY = 'neighbourhoods_data_cache'
+const NEIGHBOURHOODS_CACHE_VERSION = '1'
+const CACHE_EXPIRY_HOURS = 24 // Cache for 24 hours (data updates monthly)
+
 interface SavedFilters {
   version: string
   flatTypes: string[]
@@ -383,11 +398,20 @@ function NeighbourhoodsPageContent() {
     }
   }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions])
 
-  // Combined effect to load neighbourhoods when filters change (including showOnlyWithData)
+  // Load neighbourhoods only when location filters change (planning area or subzone)
+  // Other filters (price, lease, mrt, flat_type, etc.) are applied client-side only
   useEffect(() => {
     loadNeighbourhoods()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, showOnlyWithData])
+  }, [selectedPlanningAreas, selectedSubzones, region, majorRegions])
+  
+  // Apply client-side filters when they change
+  useEffect(() => {
+    if (originalNeighbourhoods.length > 0) {
+      applyClientSideFiltersAndDisplay()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTier, sortPreset])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -424,13 +448,113 @@ function NeighbourhoodsPageContent() {
     }
   }
 
+  function getCacheKey(): string {
+    // Create cache key based on location filters (the only filters that affect API response)
+    const parts: string[] = []
+    
+    const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
+    if (subzoneArray.length > 0) {
+      parts.push(`subzone:${subzoneArray.sort().join(',')}`)
+    } else {
+      const planningAreaArray = Array.from(selectedPlanningAreas).filter(Boolean)
+      if (planningAreaArray.length > 0) {
+        parts.push(`planning:${planningAreaArray.sort().join(',')}`)
+      }
+    }
+    
+    if (region && region !== 'all') {
+      parts.push(`region:${region}`)
+    }
+    
+    if (majorRegions.size > 0) {
+      const majorRegionArray = Array.from(majorRegions).sort()
+      parts.push(`major:${majorRegionArray.join(',')}`)
+    }
+    
+    // Default key for no filters (all neighbourhoods)
+    return parts.length > 0 ? parts.join('|') : 'all'
+  }
+
+  function getCachedData(): Neighbourhood[] | null {
+    try {
+      const cacheKey = getCacheKey()
+      const storageKey = `${NEIGHBOURHOODS_CACHE_PREFIX}${cacheKey}`
+      const cachedStr = localStorage.getItem(storageKey)
+      
+      if (!cachedStr) return null
+      
+      const cached: CachedData = JSON.parse(cachedStr)
+      
+      // Check if cache is still valid (within expiry time)
+      const now = Date.now()
+      const expiryTime = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000 // Convert days to milliseconds
+      const isExpired = (now - cached.timestamp) > expiryTime
+      
+      if (isExpired) {
+        console.log('Cache expired, will fetch fresh data')
+        localStorage.removeItem(storageKey)
+        return null
+      }
+      
+      console.log('Using cached data', { cacheKey, age: Math.round((now - cached.timestamp) / (1000 * 60 * 60)) + ' hours' })
+      return cached.data
+    } catch (err) {
+      console.error('Error reading cache:', err)
+      return null
+    }
+  }
+
+  function saveToCache(data: Neighbourhood[]) {
+    try {
+      const cacheKey = getCacheKey()
+      const storageKey = `${NEIGHBOURHOODS_CACHE_PREFIX}${cacheKey}`
+      const cached: CachedData = {
+        data,
+        timestamp: Date.now(),
+        cacheKey
+      }
+      localStorage.setItem(storageKey, JSON.stringify(cached))
+      console.log('Data saved to cache', { cacheKey, count: data.length })
+    } catch (err) {
+      console.error('Error saving cache:', err)
+      // If storage is full, try to clear old caches
+      try {
+        const keys = Object.keys(localStorage)
+        keys.filter(k => k.startsWith(NEIGHBOURHOODS_CACHE_PREFIX)).forEach(k => localStorage.removeItem(k))
+        // Retry save
+        const cacheKey = getCacheKey()
+        const storageKey = `${NEIGHBOURHOODS_CACHE_PREFIX}${cacheKey}`
+        const cached: CachedData = {
+          data,
+          timestamp: Date.now(),
+          cacheKey
+        }
+        localStorage.setItem(storageKey, JSON.stringify(cached))
+      } catch (retryErr) {
+        console.error('Failed to save cache after cleanup:', retryErr)
+      }
+    }
+  }
+
   async function loadNeighbourhoods() {
     setLoading(true)
     setError(null)
+    
+    // Check cache first
+    const cachedData = getCachedData()
+    if (cachedData && cachedData.length > 0) {
+      console.log('Loading from cache', { count: cachedData.length })
+      setOriginalNeighbourhoods(cachedData)
+      applyClientSideFiltersAndDisplay(cachedData)
+      setLoading(false)
+      return
+    }
+    
+    // No valid cache, fetch from API
     try {
       const params = new URLSearchParams()
       
-      // Subzone filter takes priority over planning area
+      // Only apply location filters to API (planning area or subzone)
       const subzoneArray = Array.from(selectedSubzones).filter(Boolean)
       if (subzoneArray.length > 0) {
         params.set('subzone_id', subzoneArray.join(','))
@@ -441,37 +565,7 @@ function NeighbourhoodsPageContent() {
         }
       }
       
-      const flatTypeArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
-      if (flatTypeArray.length > 0) {
-        params.set('flat_type', flatTypeArray.join(','))
-      }
-      
-      // Only set API filters if exactly one tier is selected
-      if (priceTiers.size === 1) {
-        const tier = Array.from(priceTiers)[0]
-        const range = FILTER_RANGES.priceRanges[tier]
-        if (range) {
-          params.set('price_min', range[0].toString())
-          params.set('price_max', range[1].toString())
-        }
-      }
-      
-      if (leaseTiers.size === 1) {
-        const tier = Array.from(leaseTiers)[0]
-        const range = FILTER_RANGES.leaseRanges[tier]
-        if (range) {
-          params.set('lease_min', range[0].toString())
-          params.set('lease_max', range[1].toString())
-        }
-      }
-      
-      if (mrtTier && mrtTier !== 'all') {
-        const distance = FILTER_RANGES.mrtDistances[mrtTier]
-        if (distance) {
-          params.set('mrt_distance_max', distance.toString())
-        }
-      }
-      
+      // Region filters also need API filtering
       if (region && region !== 'all') {
         params.set('region', region)
       }
@@ -481,11 +575,12 @@ function NeighbourhoodsPageContent() {
         params.set('major_region', majorRegionArray.join(','))
       }
       
-      // Reduce initial load size for faster first render
-      const initialLimit = neighbourhoods.length === 0 ? 100 : 500
-      params.set('limit', initialLimit.toString())
+      // Don't send flat_type, price, lease, mrt filters to API - fetch all data
+      // Set a high limit to get all neighbourhoods with transaction data
+      params.set('limit', '1000')
       
       const url = `/api/neighbourhoods?${params.toString()}`
+      console.log('Fetching from API', { url })
       const res = await fetch(url)
       const data = await res.json()
       
@@ -496,41 +591,11 @@ function NeighbourhoodsPageContent() {
       const loaded = data.neighbourhoods || []
       setOriginalNeighbourhoods(loaded)
       
-      const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
+      // Save to cache
+      saveToCache(loaded)
       
-      // Expand neighbourhoods to flat types
-      let displayItems = expandNeighbourhoodsToFlatTypes(
-        loaded,
-        selectedFlatTypes,
-        priceTiers,
-        leaseTiers
-      )
-      
-      // Apply client-side filters
-      const mrtTiersForFilter = mrtTier && mrtTier !== 'all' ? new Set([mrtTier]) : new Set<string>()
-      displayItems = applyClientSideFilters(
-        displayItems,
-        priceTiers,
-        leaseTiers,
-        mrtTiersForFilter,
-        isAllFlatTypes
-      )
-      
-      // Apply 12-month data filter
-      if (showOnlyWithData) {
-        displayItems = displayItems.filter(item => {
-          return item.summary?.tx_12m != null && Number(item.summary.tx_12m) > 0
-        })
-      }
-      
-      // Calculate thresholds
-      const thresholds = calculateThresholds(displayItems)
-      setPriceThresholds(thresholds.price)
-      
-      // Apply sorting
-      displayItems = applySortPreset(displayItems, sortPreset)
-      
-      setNeighbourhoods(displayItems)
+      // Apply client-side filters and display
+      applyClientSideFiltersAndDisplay(loaded)
     } catch (err) {
       const error = err as Error
       setError(error.message || 'Failed to load neighbourhoods')
@@ -539,14 +604,54 @@ function NeighbourhoodsPageContent() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (neighbourhoods.length > 0 && sortPreset !== 'default') {
-      const sorted = applySortPreset([...neighbourhoods], sortPreset)
-      setNeighbourhoods(sorted)
+  
+  function applyClientSideFiltersAndDisplay(data?: Neighbourhood[]) {
+    const neighbourhoodsToProcess = data || originalNeighbourhoods
+    if (neighbourhoodsToProcess.length === 0) return
+    
+    const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
+    const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+    
+    // Expand neighbourhoods to flat types - ALWAYS create cards for ALL flat types
+    // This generates all possible cards regardless of filters
+    let displayItems = expandNeighbourhoodsToFlatTypes(
+      neighbourhoodsToProcess,
+      new Set<string>(), // Don't pre-filter by price/lease tiers here
+      new Set<string>()  // We'll filter after expanding
+    )
+    
+    // Filter by selected flat types (if not "All")
+    if (!isAllFlatTypes && selectedFlatTypesArray.length > 0) {
+      displayItems = displayItems.filter(item => 
+        selectedFlatTypesArray.includes(item.display_flat_type)
+      )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortPreset])
+    
+    // Apply client-side filters (price, lease, mrt)
+    const mrtTiersForFilter = mrtTier && mrtTier !== 'all' ? new Set([mrtTier]) : new Set<string>()
+    displayItems = applyClientSideFilters(
+      displayItems,
+      priceTiers,
+      leaseTiers,
+      mrtTiersForFilter,
+      isAllFlatTypes
+    )
+    
+    // Only show neighbourhoods with 12-month transaction data
+    displayItems = displayItems.filter(item => {
+      return item.summary?.tx_12m != null && Number(item.summary.tx_12m) > 0
+    })
+    
+    // Calculate thresholds
+    const thresholds = calculateThresholds(displayItems)
+    setPriceThresholds(thresholds.price)
+    
+    // Apply sorting
+    displayItems = applySortPreset(displayItems, sortPreset)
+    
+    setNeighbourhoods(displayItems)
+  }
+
 
   const toggleCompare = useCallback((uniqueKey: string, e: React.MouseEvent) => {
     e.preventDefault()
@@ -682,17 +787,11 @@ function NeighbourhoodsPageContent() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
           {/* Header with Clear All Button */}
           <div className="mb-4 pb-4 border-b border-gray-200 flex items-center justify-between">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showOnlyWithData}
-                onChange={(e) => setShowOnlyWithData(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">
-                Only show neighbourhoods with 12-month data
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Only showing neighbourhoods with transactions in the last 12 months
               </span>
-            </label>
+            </div>
             {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTier !== 'all' || region !== 'all' || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
               <button
                 onClick={() => {
@@ -897,9 +996,6 @@ function NeighbourhoodsPageContent() {
               <>
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-600">
-                      {neighbourhoods.length} neighbourhood{neighbourhoods.length !== 1 ? 's' : ''} found
-                    </div>
                     <div className="flex items-center gap-1 border border-gray-300 rounded-md overflow-hidden">
                       <button
                         onClick={() => setViewMode('list')}
@@ -923,6 +1019,9 @@ function NeighbourhoodsPageContent() {
                         <MapIcon className="w-4 h-4 inline mr-1" />
                         Map
                       </button>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {neighbourhoods.length} record{neighbourhoods.length !== 1 ? 's' : ''} found
                     </div>
                   </div>
                   {viewMode === 'list' && (
