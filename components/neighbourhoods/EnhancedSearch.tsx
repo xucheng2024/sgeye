@@ -37,8 +37,16 @@ const MAX_HISTORY_ITEMS = 5
 
 // Detect query type
 function detectQueryType(query: string): 'postal' | 'street' | 'name' {
-  if (/^\d{6}$/.test(query.trim().replace(/\s+/g, ''))) return 'postal'
-  if (query.trim().length > 2 && /[a-zA-Z]/.test(query)) return 'street'
+  const trimmed = query.trim()
+  
+  // Check for postal code (6 digits)
+  if (/^\d{6}$/.test(trimmed.replace(/\s+/g, ''))) return 'postal'
+  
+  // Check for full address with block number (e.g., "38 Lorong 30 Geylang", "123A Bukit Batok St 25")
+  // Street address pattern: starts with 1-4 digits, optional letter, then street name
+  if (/^\d{1,4}[A-Z]?\s+[A-Za-z]/i.test(trimmed)) return 'street'
+  
+  // Everything else is a name search (including street names without block numbers)
   return 'name'
 }
 
@@ -193,57 +201,87 @@ export function EnhancedSearch({
     }
 
     const queryType = detectQueryType(query)
-    if (queryType === 'name') {
+    
+    // Only trigger street/postal API search for those types
+    if (queryType === 'postal' || queryType === 'street') {
+      setIsSearching(true)
+      setSearchError(null)
+      
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const type = queryType
+          const response = await fetch('/api/subzones/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type, query }),
+          })
+
+          const data = await response.json()
+
+          if (!response.ok) {
+            setSearchError(data.error || 'Search failed')
+            setSubzoneResult(null)
+            setShowResults(true)
+            return
+          }
+
+          if (data.subzone) {
+            setSubzoneResult(data.subzone)
+            setShowResults(true)
+          } else {
+            setSubzoneResult(null)
+            setSearchError('No subarea found')
+            setShowResults(true)
+          }
+        } catch (error) {
+          console.error('Error searching subzone:', error)
+          setSearchError('Search failed')
+          setSubzoneResult(null)
+          setShowResults(true)
+        } finally {
+          setIsSearching(false)
+        }
+      }, 400)
+    } else {
+      // For name searches, also try street API as fallback if no results
       setSubzoneResult(null)
       setSearchError(null)
-      return
-    }
+      
+      // Debounced street API fallback for name searches
+      if (query.length > 5) { // Only for longer queries that might be street names
+        searchTimeoutRef.current = setTimeout(async () => {
+          // Only trigger if no neighbourhood/area results
+          if (filteredNeighbourhoods.length === 0 && filteredAreas.length === 0) {
+            setIsSearching(true)
+            try {
+              const response = await fetch('/api/subzones/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'street', query }),
+              })
 
-    setIsSearching(true)
-    setSearchError(null)
-    
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const type = queryType
-        const response = await fetch('/api/subzones/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, query }),
-        })
+              const data = await response.json()
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          setSearchError(data.error || 'Search failed')
-          setSubzoneResult(null)
-          setShowResults(true)
-          return
-        }
-
-        if (data.subzone) {
-          setSubzoneResult(data.subzone)
-          setShowResults(true)
-        } else {
-          setSubzoneResult(null)
-          setSearchError('No subarea found')
-          setShowResults(true)
-        }
-      } catch (error) {
-        console.error('Error searching subzone:', error)
-        setSearchError('Search failed')
-        setSubzoneResult(null)
-        setShowResults(true)
-      } finally {
-        setIsSearching(false)
+              if (response.ok && data.subzone) {
+                setSubzoneResult(data.subzone)
+                setShowResults(true)
+              }
+            } catch (error) {
+              console.error('Street API fallback failed:', error)
+            } finally {
+              setIsSearching(false)
+            }
+          }
+        }, 800)
       }
-    }, 400)
+    }
 
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, filteredNeighbourhoods.length, filteredAreas.length])
 
   // Close results when clicking outside
   useEffect(() => {
