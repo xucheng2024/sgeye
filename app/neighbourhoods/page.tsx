@@ -190,6 +190,7 @@ function NeighbourhoodsPageContent() {
   const [majorRegions, setMajorRegions] = useState<Set<string>>(getInitialMajorRegionsFromUrl())
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
   const [searchedNeighbourhoodId, setSearchedNeighbourhoodId] = useState<string | null>(null)
+  const [hasActiveSearch, setHasActiveSearch] = useState<boolean>(false)
   
   // Load saved filters from localStorage on mount (only if no URL params)
   useEffect(() => {
@@ -457,7 +458,7 @@ function NeighbourhoodsPageContent() {
     }
     applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset, searchedNeighbourhoodId])
+  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset, searchedNeighbourhoodId, hasActiveSearch])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -690,6 +691,11 @@ function NeighbourhoodsPageContent() {
         }
       }
       
+      // If user has active search (typing but no selection), filter everything out
+      if (hasActiveSearch) {
+        return false
+      }
+      
       return true
     })
     
@@ -828,6 +834,9 @@ function NeighbourhoodsPageContent() {
             onClear={() => {
               // Clear all search-related filters
               setSearchedNeighbourhoodId(null)
+            }}
+            onActiveSearchChange={(hasActive) => {
+              setHasActiveSearch(hasActive)
             }}
           />
         </div>

@@ -19,6 +19,7 @@ interface EnhancedSearchProps {
   onNeighbourhoodSelect?: (neighbourhoodId: string) => void
   onClear?: () => void
   searchedNeighbourhoodId?: string | null
+  onActiveSearchChange?: (hasActiveSearch: boolean) => void
 }
 
 interface SubzoneResult {
@@ -98,7 +99,8 @@ export function EnhancedSearch({
   neighbourhoods = [],
   onNeighbourhoodSelect,
   onClear,
-  searchedNeighbourhoodId = null
+  searchedNeighbourhoodId = null,
+  onActiveSearchChange
 }: EnhancedSearchProps) {
   // Store selected subzone name when user selects a subzone
   const [selectedSubzoneName, setSelectedSubzoneName] = useState<string>('')
@@ -142,6 +144,39 @@ export function EnhancedSearch({
       setSelectedSubzoneName('')
     }
   }, [selectedSubzones, selectedSubzoneName])
+
+  // Detect if user has active search (typing but no results and no selection made)
+  useEffect(() => {
+    if (!onActiveSearchChange) return
+    
+    // Check if there's a search query
+    const hasSearchQuery = searchQuery.trim().length > 0
+    
+    // Check if user has made a selection
+    const hasActiveSelection = searchedNeighbourhoodId || selectedSubzones.size > 0 || selectedPlanningAreas.size > 0
+    
+    // Calculate what the display should be based on selections
+    // Use currentSearchDisplay which is already calculated and stable
+    const expectedDisplay = currentSearchDisplay
+    
+    // Check if there are any search results available (not selected, but available to select)
+    const hasSearchResults = filteredAreas.length > 0 || filteredNeighbourhoods.length > 0 || subzoneResult !== null
+    
+    // Active search (should show no results) means:
+    // 1. User has typed something
+    // 2. The typed text doesn't match the current selection display
+    // 3. User hasn't made a selection yet
+    // 4. AND there are no search results available (nothing matches)
+    // 5. AND not currently searching (wait for search to complete)
+    const hasActiveSearch = hasSearchQuery && 
+                           searchQuery.trim() !== expectedDisplay && 
+                           !hasActiveSelection && 
+                           !hasSearchResults &&
+                           !isSearching &&
+                           !searchError  // If there's an error, don't treat as active search
+    
+    onActiveSearchChange(hasActiveSearch)
+  }, [searchQuery, searchedNeighbourhoodId, selectedSubzones.size, selectedSubzoneName, selectedPlanningAreas.size, filteredAreas.length, filteredNeighbourhoods.length, subzoneResult?.id, isSearching, searchError, onActiveSearchChange, currentSearchDisplay])
 
   // Update search display when selections change (only when user is NOT actively typing)
   // This effect should NOT interfere with user input - only update after selections are made
