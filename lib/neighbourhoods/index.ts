@@ -101,7 +101,6 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
   let neighbourhoods = transformNeighbourhoods(
     filteredNeighbourhoodsData,
     centerPointsMap,
-    null, // No neighbourhood summary needed
     accessMap,
     planningAreaMap,
     subzoneMap,
@@ -162,7 +161,6 @@ export async function getNeighbourhoods(params: NeighbourhoodQueryParams): Promi
 function transformNeighbourhoods(
   neighbourhoodsData: NeighbourhoodRawData[],
   centerPointsMap: Map<string, { lat: number; lng: number }>,
-  summaryMap: Map<string, any> | null,
   accessMap: Map<string, AccessData>,
   planningAreaMap: Map<string, PlanningAreaData>,
   subzoneMap: Map<string, SubzoneData>,
@@ -204,37 +202,8 @@ function transformNeighbourhoods(
     const flatTypeData = flatTypeSummaries.filter(s => s.neighbourhood_id === n.id)
     const livingNotesMetadata = livingNotesMetadataMap.get(norm(n.name)) || null
     
-    // Calculate summary from flat_type summaries if needed (for single flat_type filter or "All")
-    let summary = null
-    if (flatTypeData.length > 0) {
-      // If single flat_type filter, use that flat_type's data as summary
-      if (flatTypes.length === 1) {
-        const singleFlatType = flatTypeData.find(ft => ft.flat_type === flatTypes[0])
-        if (singleFlatType) {
-          summary = {
-            tx_12m: singleFlatType.tx_12m,
-            median_price_12m: singleFlatType.median_price_12m,
-            median_psm_12m: singleFlatType.median_psm_12m,
-            median_lease_years_12m: singleFlatType.median_lease_years_12m,
-            avg_floor_area_12m: singleFlatType.avg_floor_area_12m,
-            updated_at: new Date().toISOString()
-          }
-        }
-      } else {
-        // For "All" flat types, calculate totals
-        const totalTx = flatTypeData.reduce((sum, ft) => sum + ft.tx_12m, 0)
-        if (totalTx > 0) {
-          summary = {
-            tx_12m: totalTx,
-            median_price_12m: null, // Not meaningful across different flat types
-            median_psm_12m: null,
-            median_lease_years_12m: null,
-            avg_floor_area_12m: null,
-            updated_at: new Date().toISOString()
-          }
-        }
-      }
-    }
+    // No summary calculation needed - client will generate from flat_type_details
+    // Each card displays data for a specific flat_type, not aggregated across all flat types
     
     return {
       id: n.id,
@@ -249,7 +218,7 @@ function transformNeighbourhoods(
       type: n.type,
       bbox: n.bbox,
       center: centerPointsMap.get(n.id) || null,
-      summary: summary,
+      summary: null,
       flat_type_details: flatTypeData.map(ft => ({
         neighbourhood_id: ft.neighbourhood_id,
         flat_type: ft.flat_type,
