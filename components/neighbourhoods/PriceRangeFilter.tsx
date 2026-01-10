@@ -10,7 +10,7 @@ interface PriceRangeFilterProps {
 const PRICE_TIERS = [
   { tier: 'low', label: '<$500k' },
   { tier: 'medium', label: '$500k-$1M' },
-  { tier: 'high', label: '$1M-$2M' }
+  { tier: 'high', label: '>$1M' }
 ] as const
 
 export function PriceRangeFilter({ priceTiers, onPriceTiersChange }: PriceRangeFilterProps) {

@@ -6,14 +6,14 @@
 export interface FilterRanges {
   priceRanges: Record<string, [number, number]>
   leaseRanges: Record<string, [number, number]>
-  mrtDistances: Record<string, number>
+  mrtDistances: Record<string, [number, number]>
 }
 
 export const FILTER_RANGES: FilterRanges = {
   priceRanges: {
     low: [0, 499999],
     medium: [500000, 999999],
-    high: [1000000, 2000000]
+    high: [1000000, Number.MAX_SAFE_INTEGER]
   },
   leaseRanges: {
     low: [0, 59],
@@ -21,9 +21,9 @@ export const FILTER_RANGES: FilterRanges = {
     high: [70, 99]
   },
   mrtDistances: {
-    close: 500,
-    medium: 1000,
-    far: 2000
+    close: [0, 499],      // <500m
+    medium: [500, 1000],  // 500m~1km
+    far: [1001, Number.MAX_SAFE_INTEGER]  // >1km
   }
 }
 
@@ -66,19 +66,19 @@ export function leaseTiersToRange(tiers: Set<string> | string[]): { min: number 
 }
 
 /**
- * Convert MRT tiers to max distance
+ * Convert MRT tiers to max distance (for backward compatibility)
  */
 export function mrtTiersToMaxDistance(tiers: Set<string> | string[]): number | null {
   const tierArray = Array.isArray(tiers) ? tiers : Array.from(tiers)
   if (tierArray.length === 0) return null
   
-  const distances = tierArray
+  const ranges = tierArray
     .map(tier => FILTER_RANGES.mrtDistances[tier])
-    .filter((dist): dist is number => dist !== undefined)
+    .filter((range): range is [number, number] => Array.isArray(range) && range.length === 2)
   
-  if (distances.length === 0) return null
+  if (ranges.length === 0) return null
   
-  return Math.max(...distances)
+  return Math.max(...ranges.map(r => r[1]))
 }
 
 /**
@@ -116,14 +116,25 @@ export function matchesMrtTiers(distance: number | null, mrtTiers: Set<string> |
   const tierArray = Array.isArray(mrtTiers) ? mrtTiers : Array.from(mrtTiers)
   if (tierArray.length === 0) return true
   
-  // If has station in area, always match
-  if (hasStation) return true
+  // If has station in area, treat distance as 0 (within area = <500m)
+  // Only match if "close" tier is selected
+  if (hasStation) {
+    return tierArray.includes('close')
+  }
   
-  if (distance === null || distance <= 0) return false
+  // If no distance data, can't match any tier
+  if (distance === null || isNaN(distance)) {
+    return false
+  }
   
+  // Distance of 0 should match "close" tier (0-499m)
+  // Check if distance matches any selected tier range
   return tierArray.some(tier => {
-    const maxDist = FILTER_RANGES.mrtDistances[tier]
-    return maxDist && distance <= maxDist
+    const range = FILTER_RANGES.mrtDistances[tier]
+    if (!range || !Array.isArray(range)) {
+      return false
+    }
+    return distance >= range[0] && distance <= range[1]
   })
 }
 
@@ -150,7 +161,7 @@ export function matchesLeaseRange(lease: number | null, leaseMin: number | null,
 }
 
 /**
- * Check if MRT distance matches max distance
+ * Check if MRT distance matches max distance (for backward compatibility)
  */
 export function matchesMrtDistance(distance: number | null, mrtDistanceMax: number | null, hasStation: boolean): boolean {
   if (mrtDistanceMax === null) return true

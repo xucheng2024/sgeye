@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ArrowRight, List, Map as MapIcon } from 'lucide-react'
@@ -18,7 +18,8 @@ import { Neighbourhood, PlanningArea, SortPreset, NeighbourhoodWithFlatType } fr
 import { normalizeFlatType } from '@/lib/utils/flat-type-normalizer'
 import { calculateThresholds, formatFlatType } from '@/lib/utils/neighbourhood-utils'
 import { applySortPreset } from '@/lib/utils/neighbourhood-sorting'
-import { expandNeighbourhoodsToFlatTypes, applyClientSideFilters, FILTER_RANGES } from '@/lib/utils/neighbourhood-filters'
+import { expandNeighbourhoodsToFlatTypes, applyClientSideFilters, FILTER_RANGES, matchesPriceTiers, matchesLeaseTiers } from '@/lib/utils/neighbourhood-filters'
+import { matchesMrtTiers } from '@/lib/utils/shared-filters'
 import { FlatTypeFilter } from '@/components/neighbourhoods/FlatTypeFilter'
 import { PlanningAreaFilter } from '@/components/neighbourhoods/PlanningAreaFilter'
 import { MarketTierFilter } from '@/components/neighbourhoods/MarketTierFilter'
@@ -71,7 +72,7 @@ interface SavedFilters {
   flatTypes: string[]
   priceTiers: string[]
   leaseTiers: string[]
-  mrtTier: string
+  mrtTiers: string[]
   region: string
   majorRegions: string[]
   planningAreas: string[]
@@ -144,9 +145,9 @@ function NeighbourhoodsPageContent() {
     return new Set<string>()
   }
   
-  const getInitialMrtTierFromUrl = (): string => {
-    if (mrtTierParam) return mrtTierParam
-    return 'all'
+  const getInitialMrtTiersFromUrl = (): Set<string> => {
+    if (mrtTierParam) return new Set(parseUrlArray(mrtTierParam))
+    return new Set<string>()
   }
   
   const getInitialRegionFromUrl = (): string => {
@@ -185,7 +186,7 @@ function NeighbourhoodsPageContent() {
   const [selectedFlatTypes, setSelectedFlatTypes] = useState<Set<string>>(getInitialFlatTypesFromUrl())
   const [priceTiers, setPriceTiers] = useState<Set<string>>(getInitialPriceTiersFromUrl())
   const [leaseTiers, setLeaseTiers] = useState<Set<string>>(getInitialLeaseTiersFromUrl())
-  const [mrtTier, setMrtTier] = useState<string>(getInitialMrtTierFromUrl())
+  const [mrtTiers, setMrtTiers] = useState<Set<string>>(getInitialMrtTiersFromUrl())
   const [region, setRegion] = useState<string>(getInitialRegionFromUrl())
   const [majorRegions, setMajorRegions] = useState<Set<string>>(getInitialMajorRegionsFromUrl())
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
@@ -208,8 +209,8 @@ function NeighbourhoodsPageContent() {
         if (saved.leaseTiers && saved.leaseTiers.length > 0) {
           setLeaseTiers(new Set(saved.leaseTiers))
         }
-        if (saved.mrtTier) {
-          setMrtTier(saved.mrtTier)
+        if (saved.mrtTiers && saved.mrtTiers.length > 0) {
+          setMrtTiers(new Set(saved.mrtTiers))
         }
         if (saved.region) {
           setRegion(saved.region)
@@ -247,10 +248,10 @@ function NeighbourhoodsPageContent() {
         }
       })
     }
-    if (mrtTier === 'close') {
+    if (mrtTiers.has('close')) {
       recordBehaviorEvent({ type: 'mrt_filter_close' })
     }
-  }, [priceTiers, leaseTiers, mrtTier])
+  }, [priceTiers, leaseTiers, mrtTiers])
 
   useEffect(() => {
     // Track clicks on low-priced neighbourhoods
@@ -271,7 +272,7 @@ function NeighbourhoodsPageContent() {
     const urlFlatTypes = parseUrlArray(searchParams.get('flat_type') || '')
     const urlPriceTiers = parseUrlArray(searchParams.get('price_tier') || '')
     const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
-    const urlMrtTier = searchParams.get('mrt_tier') || 'all'
+    const urlMrtTiers = parseUrlArray(searchParams.get('mrt_tier') || '')
     const urlRegion = searchParams.get('region') || 'all'
     const addToCompare = searchParams.get('add_to_compare')
     
@@ -298,8 +299,9 @@ function NeighbourhoodsPageContent() {
       setLeaseTiers(new Set(urlLeaseTiers))
     }
     
-    if (urlMrtTier !== mrtTier) {
-      setMrtTier(urlMrtTier)
+    const urlMrtTiersSet = new Set(urlMrtTiers)
+    if (Array.from(mrtTiers).sort().join(',') !== Array.from(urlMrtTiersSet).sort().join(',')) {
+      setMrtTiers(urlMrtTiersSet)
     }
     
     if (urlRegion !== region) {
@@ -330,22 +332,39 @@ function NeighbourhoodsPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  // Save filters to localStorage when they change
+  // Track last saved filters to avoid unnecessary saves
+  const lastSavedFiltersRef = useRef<string>('')
+  
+  // Save filters to localStorage when they change (only if actually changed)
   useEffect(() => {
-    saveFilters({
+    const currentFilters = JSON.stringify({
+      flatTypes: Array.from(selectedFlatTypes).sort(),
+      priceTiers: Array.from(priceTiers).sort(),
+      leaseTiers: Array.from(leaseTiers).sort(),
+      mrtTiers: Array.from(mrtTiers).sort(),
+      region,
+      majorRegions: Array.from(majorRegions).sort(),
+      planningAreas: Array.from(selectedPlanningAreas).sort(),
+      showOnlyWithData,
+    })
+    
+    if (currentFilters !== lastSavedFiltersRef.current) {
+      lastSavedFiltersRef.current = currentFilters
+      saveFilters({
       flatTypes: Array.from(selectedFlatTypes),
       priceTiers: Array.from(priceTiers),
       leaseTiers: Array.from(leaseTiers),
-      mrtTier: mrtTier,
+      mrtTiers: Array.from(mrtTiers),
       region: region,
       majorRegions: Array.from(majorRegions),
       planningAreas: Array.from(selectedPlanningAreas),
       showOnlyWithData: showOnlyWithData,
-    })
-  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions, selectedPlanningAreas, showOnlyWithData])
+      })
+    }
+  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions, selectedPlanningAreas, showOnlyWithData])
 
-  // Update URL when filters change
-  useEffect(() => {
+  // Memoize URL params building to avoid recalculation
+  const urlParamsString = useMemo(() => {
     const params = new URLSearchParams()
     
     // Subzone filter takes priority
@@ -374,8 +393,9 @@ function NeighbourhoodsPageContent() {
       params.set('lease_tier', leaseTierArray.join(','))
     }
     
-    if (mrtTier && mrtTier !== 'all') {
-      params.set('mrt_tier', mrtTier)
+    const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
+    if (mrtTierArray.length > 0) {
+      params.set('mrt_tier', mrtTierArray.join(','))
     }
     
     if (region && region !== 'all') params.set('region', region)
@@ -385,19 +405,32 @@ function NeighbourhoodsPageContent() {
       params.set('major_region', majorRegionArray.join(','))
     }
     
-    const currentParams = new URLSearchParams(window.location.search)
-    const newParamsString = params.toString()
-    const currentParamsString = Array.from(currentParams.entries())
-      .filter(([key]) => ['planning_area_id', 'flat_type', 'price_tier', 'lease_tier', 'mrt_tier', 'region', 'major_region'].includes(key))
-      .map(([key, value]) => `${key}=${value}`)
-      .join('&')
+    return params.toString()
+  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
+  
+  // Track last URL to avoid unnecessary updates
+  const lastUrlRef = useRef<string>('')
+  
+  // Update URL when filters change (only if actually changed)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
     
-    if (newParamsString !== currentParamsString) {
-      const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
+    const newParamsString = urlParamsString
+    const newUrl = newParamsString ? `/neighbourhoods?${newParamsString}` : '/neighbourhoods'
+    
+    // Only update if URL actually changed
+    if (lastUrlRef.current !== newUrl) {
+      lastUrlRef.current = newUrl
       window.history.replaceState({}, '', newUrl)
     }
-  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTier, region, majorRegions])
+  }, [urlParamsString])
 
+  // Expand neighbourhoods to flat types - memoized to only recalculate when original data changes
+  const expandedNeighbourhoods = useMemo(() => {
+    if (originalNeighbourhoods.length === 0) return []
+    return expandNeighbourhoodsToFlatTypes(originalNeighbourhoods)
+  }, [originalNeighbourhoods])
+  
   // Load neighbourhoods only when location filters change (planning area or subzone)
   // Other filters (price, lease, mrt, flat_type, etc.) are applied client-side only
   useEffect(() => {
@@ -405,13 +438,15 @@ function NeighbourhoodsPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlanningAreas, selectedSubzones, region, majorRegions])
   
-  // Apply client-side filters when they change
+  // Apply client-side filters when they change - use memoized expanded data
   useEffect(() => {
-    if (originalNeighbourhoods.length > 0) {
-      applyClientSideFiltersAndDisplay()
+    if (expandedNeighbourhoods.length === 0) {
+      setNeighbourhoods([])
+      return
     }
+    applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTier, sortPreset])
+  }, [expandedNeighbourhoods, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, sortPreset])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -545,7 +580,6 @@ function NeighbourhoodsPageContent() {
     if (cachedData && cachedData.length > 0) {
       console.log('Loading from cache', { count: cachedData.length })
       setOriginalNeighbourhoods(cachedData)
-      applyClientSideFiltersAndDisplay(cachedData)
       setLoading(false)
       return
     }
@@ -593,9 +627,6 @@ function NeighbourhoodsPageContent() {
       
       // Save to cache
       saveToCache(loaded)
-      
-      // Apply client-side filters and display
-      applyClientSideFiltersAndDisplay(loaded)
     } catch (err) {
       const error = err as Error
       setError(error.message || 'Failed to load neighbourhoods')
@@ -605,38 +636,54 @@ function NeighbourhoodsPageContent() {
     }
   }
   
-  function applyClientSideFiltersAndDisplay(data?: Neighbourhood[]) {
-    const neighbourhoodsToProcess = data || originalNeighbourhoods
-    if (neighbourhoodsToProcess.length === 0) return
+  function applyClientSideFiltersAndDisplay(expandedData: NeighbourhoodWithFlatType[]) {
+    if (expandedData.length === 0) {
+      setNeighbourhoods([])
+      return
+    }
     
     const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
     const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
     
-    // Expand neighbourhoods to flat types - create cards for all flat types
-    let displayItems = expandNeighbourhoodsToFlatTypes(neighbourhoodsToProcess)
-    
-    // Filter by selected flat types (if not "All")
-    if (!isAllFlatTypes && selectedFlatTypesArray.length > 0) {
-      displayItems = displayItems.filter(item => 
-        selectedFlatTypesArray.includes(item.display_flat_type)
-      )
-    }
-    
-    // Apply client-side filters (price, lease, mrt)
-    const mrtTiersForFilter = mrtTier && mrtTier !== 'all' ? new Set([mrtTier]) : new Set<string>()
-    displayItems = applyClientSideFilters(
-      displayItems,
-      priceTiers,
-      leaseTiers,
-      mrtTiersForFilter
-    )
-    
-    // Only show neighbourhoods with 12-month transaction data
-    displayItems = displayItems.filter(item => {
-      return item.summary?.tx_12m != null && Number(item.summary.tx_12m) > 0
+    // Apply all filters in one pass for better performance
+    let displayItems = expandedData.filter(item => {
+      // Filter by flat type (if not "All")
+      if (!isAllFlatTypes && selectedFlatTypesArray.length > 0) {
+        if (!item.display_flat_type || !selectedFlatTypesArray.includes(item.display_flat_type)) {
+          return false
+        }
+      }
+      
+      // Filter by 12-month transaction data
+      if (!item.summary?.tx_12m || Number(item.summary.tx_12m) === 0) {
+        return false
+      }
+      
+      // Apply price filter
+      if (priceTiers.size > 0) {
+        const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
+        if (!matchesPriceTiers(price, priceTiers)) return false
+      }
+      
+      // Apply lease filter
+      if (leaseTiers.size > 0) {
+        const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
+        if (!matchesLeaseTiers(lease, leaseTiers)) return false
+      }
+      
+      // Apply MRT filter
+      if (mrtTiers.size > 0) {
+        const distance = item.access?.avg_distance_to_mrt != null ? Number(item.access.avg_distance_to_mrt) : null
+        const hasStationInArea = !!(item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0)
+        if (!matchesMrtTiers(distance, mrtTiers, hasStationInArea)) {
+          return false
+        }
+      }
+      
+      return true
     })
     
-    // Calculate thresholds
+    // Calculate thresholds (only after filtering for better performance)
     const thresholds = calculateThresholds(displayItems)
     setPriceThresholds(thresholds.price)
     
@@ -704,7 +751,8 @@ function NeighbourhoodsPageContent() {
     if (priceTierArray.length > 0) params.set('price_tier', priceTierArray.join(','))
     const leaseTierArray = Array.from(leaseTiers).filter(Boolean)
     if (leaseTierArray.length > 0) params.set('lease_tier', leaseTierArray.join(','))
-    if (mrtTier && mrtTier !== 'all') params.set('mrt_tier', mrtTier)
+    const mrtTierArray = Array.from(mrtTiers).filter(Boolean)
+    if (mrtTierArray.length > 0) params.set('mrt_tier', mrtTierArray.join(','))
     return params.toString()
   })()
 
@@ -717,8 +765,8 @@ function NeighbourhoodsPageContent() {
         onPriceTiersChange={setPriceTiers}
         leaseTiers={leaseTiers}
         onLeaseTiersChange={setLeaseTiers}
-        mrtTier={mrtTier}
-        onMrtTierChange={setMrtTier}
+        mrtTiers={mrtTiers}
+        onMrtTiersChange={setMrtTiers}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
@@ -764,8 +812,8 @@ function NeighbourhoodsPageContent() {
           onPriceTiersChange={setPriceTiers}
           leaseTiers={leaseTiers}
           onLeaseTiersChange={setLeaseTiers}
-          mrtTier={mrtTier}
-          onMrtTierChange={setMrtTier}
+          mrtTiers={mrtTiers}
+          onMrtTiersChange={setMrtTiers}
           region={region}
           onRegionChange={setRegion}
           majorRegions={majorRegions}
@@ -786,13 +834,13 @@ function NeighbourhoodsPageContent() {
                 Only showing neighbourhoods with transactions in the last 12 months
               </span>
             </div>
-            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTier !== 'all' || region !== 'all' || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
+            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0 || region !== 'all' || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
               <button
                 onClick={() => {
                   setSelectedFlatTypes(new Set(['All']))
                   setPriceTiers(new Set())
                   setLeaseTiers(new Set())
-                  setMrtTier('all')
+                  setMrtTiers(new Set())
                   setRegion('all')
                   setMajorRegions(new Set())
                   setSelectedPlanningAreas(new Set())
@@ -820,8 +868,8 @@ function NeighbourhoodsPageContent() {
               onLeaseTiersChange={setLeaseTiers}
             />
             <MRTDistanceFilter 
-              mrtTier={mrtTier}
-              onMrtTierChange={setMrtTier}
+              mrtTiers={mrtTiers}
+              onMrtTiersChange={setMrtTiers}
             />
           </div>
 
@@ -960,9 +1008,9 @@ function NeighbourhoodsPageContent() {
                       Clear Lease Filter
                     </button>
                   )}
-                  {mrtTier && mrtTier !== 'all' && (
+                  {mrtTiers.size > 0 && (
                     <button
-                      onClick={() => setMrtTier('all')}
+                      onClick={() => setMrtTiers(new Set())}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear MRT Filter

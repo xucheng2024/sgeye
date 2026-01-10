@@ -16,8 +16,8 @@ interface ActiveFiltersProps {
   onPriceTiersChange: (tiers: Set<string>) => void
   leaseTiers: Set<string>
   onLeaseTiersChange: (tiers: Set<string>) => void
-  mrtTier: string
-  onMrtTierChange: (tier: string) => void
+  mrtTiers: Set<string>
+  onMrtTiersChange: (tiers: Set<string>) => void
   region: string
   onRegionChange: (region: string) => void
   majorRegions: Set<string>
@@ -42,9 +42,9 @@ const LEASE_TIER_LABELS: Record<string, string> = {
 }
 
 const MRT_TIER_LABELS: Record<string, string> = {
-  close: 'Near MRT',
-  walkable: 'Walkable to MRT',
-  accessible: 'MRT accessible',
+  close: '<500m',
+  medium: '500m~1km',
+  far: '>1km',
 }
 
 const REGION_LABELS: Record<string, string> = {
@@ -68,8 +68,8 @@ export function ActiveFilters({
   onPriceTiersChange,
   leaseTiers,
   onLeaseTiersChange,
-  mrtTier,
-  onMrtTierChange,
+  mrtTiers,
+  onMrtTiersChange,
   region,
   onRegionChange,
   majorRegions,
@@ -84,7 +84,7 @@ export function ActiveFilters({
     (selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All')) ||
     priceTiers.size > 0 ||
     leaseTiers.size > 0 ||
-    (mrtTier && mrtTier !== 'all') ||
+    mrtTiers.size > 0 ||
     (region && region !== 'all') ||
     majorRegions.size > 0 ||
     selectedPlanningAreas.size > 0 ||
@@ -116,7 +116,13 @@ export function ActiveFilters({
         }
         break
       case 'mrtTier':
-        onMrtTierChange('all')
+        if (value) {
+          const newSet = new Set(mrtTiers)
+          newSet.delete(value)
+          onMrtTiersChange(newSet)
+        } else {
+          onMrtTiersChange(new Set())
+        }
         break
       case 'region':
         onRegionChange('all')
@@ -188,16 +194,17 @@ export function ActiveFilters({
             </button>
           ))}
           
-          {/* MRT Tier */}
-          {mrtTier && mrtTier !== 'all' && (
+          {/* MRT Tiers */}
+          {Array.from(mrtTiers).map(tier => (
             <button
-              onClick={() => removeFilter('mrtTier')}
+              key={tier}
+              onClick={() => removeFilter('mrtTier', tier)}
               className="inline-flex items-center gap-1 px-2 py-1 bg-white text-blue-700 text-xs font-medium rounded border border-blue-200 hover:bg-blue-100 transition-colors"
             >
-              {MRT_TIER_LABELS[mrtTier] || mrtTier}
+              {MRT_TIER_LABELS[tier] || tier}
               <X className="w-3 h-3" />
             </button>
-          )}
+          ))}
           
           {/* Region */}
           {region && region !== 'all' && (

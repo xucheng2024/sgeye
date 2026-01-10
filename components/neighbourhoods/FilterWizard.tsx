@@ -21,8 +21,8 @@ interface FilterWizardProps {
   onPriceTiersChange: (tiers: Set<string>) => void
   leaseTiers: Set<string>
   onLeaseTiersChange: (tiers: Set<string>) => void
-  mrtTier: string
-  onMrtTierChange: (tier: string) => void
+  mrtTiers: Set<string>
+  onMrtTiersChange: (tiers: Set<string>) => void
 }
 
 const STEPS = [
@@ -63,8 +63,8 @@ export function FilterWizard({
   onPriceTiersChange,
   leaseTiers,
   onLeaseTiersChange,
-  mrtTier,
-  onMrtTierChange,
+  mrtTiers,
+  onMrtTiersChange,
 }: FilterWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
@@ -98,7 +98,7 @@ export function FilterWizard({
       case 'lease':
         return leaseTiers.size > 0
       case 'mrt':
-        return mrtTier && mrtTier !== 'all'
+        return mrtTiers.size > 0
       default:
         return false
     }
@@ -192,8 +192,8 @@ export function FilterWizard({
             )}
             {currentStepData.filterKey === 'mrt' && (
               <MRTDistanceFilter
-                mrtTier={mrtTier}
-                onMrtTierChange={onMrtTierChange}
+                mrtTiers={mrtTiers}
+                onMrtTiersChange={onMrtTiersChange}
               />
             )}
           </div>
