@@ -692,7 +692,9 @@ function NeighbourhoodsPageContent() {
       }
       
       // If user has active search (typing but no selection), filter everything out
-      if (hasActiveSearch) {
+      // BUT only if no filters are selected (subzones, planning areas, etc.)
+      // This prevents race conditions where selection is made but hasActiveSearch hasn't cleared yet
+      if (hasActiveSearch && selectedSubzones.size === 0 && selectedPlanningAreas.size === 0 && !searchedNeighbourhoodId) {
         return false
       }
       
@@ -802,14 +804,16 @@ function NeighbourhoodsPageContent() {
             selectedPlanningAreas={selectedPlanningAreas}
             onPlanningAreasChange={(areas) => {
               setSelectedPlanningAreas(areas)
-              // Clear neighbourhood search when planning area is selected
+              // Clear neighbourhood search and active search when planning area is selected
               setSearchedNeighbourhoodId(null)
+              setHasActiveSearch(false)
             }}
             selectedSubzones={selectedSubzones}
             onSubzonesChange={(subzones) => {
               setSelectedSubzones(subzones)
-              // Clear neighbourhood search when subzone is selected
+              // Clear neighbourhood search and active search when subzone is selected
               setSearchedNeighbourhoodId(null)
+              setHasActiveSearch(false)
             }}
             neighbourhoods={originalNeighbourhoods}
             searchedNeighbourhoodId={searchedNeighbourhoodId}
@@ -819,6 +823,8 @@ function NeighbourhoodsPageContent() {
               // Clear planning area and subzone filters when neighbourhood is selected
               setSelectedPlanningAreas(new Set())
               setSelectedSubzones(new Set())
+              // Clear active search state immediately
+              setHasActiveSearch(false)
               // Scroll to the neighbourhood card after a brief delay
               setTimeout(() => {
                 const element = document.getElementById(`neighbourhood-${neighbourhoodId}`)
@@ -834,8 +840,11 @@ function NeighbourhoodsPageContent() {
             onClear={() => {
               // Clear all search-related filters
               setSearchedNeighbourhoodId(null)
+              setHasActiveSearch(false)
             }}
             onActiveSearchChange={(hasActive) => {
+              // Directly set hasActiveSearch state
+              // EnhancedSearch component already checks for selections before calling this
               setHasActiveSearch(hasActive)
             }}
           />

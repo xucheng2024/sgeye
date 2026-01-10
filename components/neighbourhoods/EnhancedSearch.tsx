@@ -29,6 +29,26 @@ interface SubzoneResult {
   region: string
 }
 
+interface ResolvedAddressResult {
+  resolved_address: string
+  postal?: string
+  latlng: { lat: number; lng: number }
+  subzone_id: string
+  subzone_name: string
+  planning_area_id?: string
+  planning_area_name?: string
+  confidence: 'High' | 'Medium' | 'Low'
+  source_chain: string[]
+  candidates?: Array<{
+    address: string
+    postal?: string
+    latlng: { lat: number; lng: number }
+    score?: number
+  }>
+  raw_query: string
+  normalized_query: string
+}
+
 interface SearchHistoryItem {
   query: string
   timestamp: number
@@ -38,8 +58,8 @@ interface SearchHistoryItem {
 const SEARCH_HISTORY_KEY = 'search_history'
 const MAX_HISTORY_ITEMS = 5
 
-// Detect query type
-function detectQueryType(query: string): 'postal' | 'street' | 'name' {
+// Detect query type - aligned with unified address resolver classifier
+function detectQueryType(query: string): 'postal' | 'street' | 'name' | 'mixed' | 'project' {
   const trimmed = query.trim()
   const lowerQuery = trimmed.toLowerCase()
   
@@ -72,6 +92,35 @@ function detectQueryType(query: string): 'postal' | 'street' | 'name' {
     lowerQuery.startsWith(keyword + ' ') || lowerQuery === keyword
   )
   if (startsWithStreetKeyword) return 'street'
+  
+  // Check for project/POI indicators
+  const projectIndicators = [
+    'edge', 'estate', 'residence', 'condo', 'condominium', 'apartment', 
+    'apartments', 'villa', 'villas', 'park', 'gardens', 'court', 'plaza',
+    'centre', 'center', 'mall', 'complex', 'tower', 'towers', 'heights',
+    'view', 'cove', 'bay', 'island', 'point', 'hill', 'hills', 'vale',
+    'green', 'village', 'town', 'city', 'place', 'square'
+  ]
+  
+  const hasProjectIndicator = projectIndicators.some(indicator => 
+    lowerQuery.includes(indicator)
+  )
+  
+  // Check for location indicators (near, at, around)
+  const locationIndicators = ['near', 'at', 'around', 'beside', 'next to']
+  const hasLocationIndicator = locationIndicators.some(indicator => 
+    lowerQuery.includes(indicator)
+  )
+  
+  // If has project indicators or location indicators, likely a project/mixed query
+  if (hasProjectIndicator || hasLocationIndicator) {
+    return 'mixed'
+  }
+  
+  // If has numbers but no street keywords, might be a project name
+  if (hasNumbers && !hasStreetKeyword) {
+    return 'project'
+  }
   
   // Everything else is a name search (neighbourhoods, planning areas)
   return 'name'
@@ -160,6 +209,7 @@ export function EnhancedSearch({
     const expectedDisplay = currentSearchDisplay
     
     // Check if there are any search results available (not selected, but available to select)
+    // Include subzoneResult check - if subzoneResult exists, it means we have a result ready to select
     const hasSearchResults = filteredAreas.length > 0 || filteredNeighbourhoods.length > 0 || subzoneResult !== null
     
     // Active search (should show no results) means:
@@ -168,15 +218,18 @@ export function EnhancedSearch({
     // 3. User hasn't made a selection yet
     // 4. AND there are no search results available (nothing matches)
     // 5. AND not currently searching (wait for search to complete)
+    // 6. AND no subzoneResult (if subzoneResult exists, we have a result ready to select)
+    // 7. AND no search error (if there's an error, we show error message instead)
     const hasActiveSearch = hasSearchQuery && 
                            searchQuery.trim() !== expectedDisplay && 
                            !hasActiveSelection && 
                            !hasSearchResults &&
                            !isSearching &&
-                           !searchError  // If there's an error, don't treat as active search
+                           !searchError &&
+                           subzoneResult === null  // If subzoneResult exists, we have a result ready to select
     
     onActiveSearchChange(hasActiveSearch)
-  }, [searchQuery, searchedNeighbourhoodId, selectedSubzones.size, selectedSubzoneName, selectedPlanningAreas.size, filteredAreas.length, filteredNeighbourhoods.length, subzoneResult?.id, isSearching, searchError, onActiveSearchChange, currentSearchDisplay])
+  }, [searchQuery, searchedNeighbourhoodId, selectedSubzones.size, selectedSubzoneName, selectedPlanningAreas.size, filteredAreas.length, filteredNeighbourhoods.length, subzoneResult, isSearching, searchError, onActiveSearchChange, currentSearchDisplay])
 
   // Update search display when selections change (only when user is NOT actively typing)
   // This effect should NOT interfere with user input - only update after selections are made
@@ -306,17 +359,26 @@ export function EnhancedSearch({
     setFilteredAreas(filteredPA)
 
     // Search neighbourhoods if available
+    let filteredNH: typeof neighbourhoods = []
     if (neighbourhoods.length > 0) {
-      const filteredNH = neighbourhoods
+      filteredNH = neighbourhoods
         .filter(n => fuzzyMatch(n.name, query))
         .slice(0, 8)
       setFilteredNeighbourhoods(filteredNH)
+    } else {
+      setFilteredNeighbourhoods([])
+    }
+    
+    // If we have results, immediately clear hasActiveSearch
+    // This ensures content is not filtered out before user clicks
+    if ((filteredPA.length > 0 || filteredNH.length > 0) && onActiveSearchChange) {
+      onActiveSearchChange(false)
     }
 
-    setShowResults((filteredPA.length > 0 || filteredNeighbourhoods.length > 0) || isFocused)
-  }, [searchQuery, planningAreas, neighbourhoods, isFocused])
+    setShowResults((filteredPA.length > 0 || filteredNH.length > 0) || isFocused)
+  }, [searchQuery, planningAreas, neighbourhoods, isFocused, onActiveSearchChange])
 
-  // Search for subzone by postal code or street name
+  // Search for subzone using unified address resolver API
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
@@ -331,18 +393,19 @@ export function EnhancedSearch({
 
     const queryType = detectQueryType(query)
     
-    // Only trigger street/postal API search for those types
-    if (queryType === 'postal' || queryType === 'street') {
+    // Use unified address resolver for postal/street/mixed queries
+    // For name-only queries (planning areas/neighbourhoods), use local fuzzy matching
+    if (queryType === 'postal' || queryType === 'street' || queryType === 'mixed' || queryType === 'project') {
       setIsSearching(true)
       setSearchError(null)
       
       searchTimeoutRef.current = setTimeout(async () => {
         try {
-          const type = queryType
-          const response = await fetch('/api/subzones/search', {
+          // Use new unified address resolver API
+          const response = await fetch('/api/address/resolve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, query }),
+            body: JSON.stringify({ query }),
           })
 
           const data = await response.json()
@@ -354,16 +417,37 @@ export function EnhancedSearch({
             return
           }
 
-          if (data.subzone) {
-            setSubzoneResult(data.subzone)
+          if (data.resolved_address) {
+            const resolved = data.resolved_address as ResolvedAddressResult
+            // Convert resolved address to SubzoneResult format
+            setSubzoneResult({
+              id: resolved.subzone_id,
+              name: resolved.subzone_name,
+              planning_area_id: resolved.planning_area_id || '',
+              region: '' // Will be filled from planning area if needed
+            })
             setShowResults(true)
+            
+            // Immediately clear hasActiveSearch when result is found
+            // This ensures content is not filtered out before user clicks
+            if (onActiveSearchChange) {
+              onActiveSearchChange(false)
+            }
+            
+            // If there are candidates (Low confidence), we could show them in UI
+            // For now, we just set the top result
+            if (resolved.confidence === 'Low' && resolved.candidates && resolved.candidates.length > 0) {
+              console.log('[EnhancedSearch] Low confidence result with', resolved.candidates.length, 'candidates')
+              // Could enhance UI to show candidates for user selection
+            }
           } else {
             setSubzoneResult(null)
             setSearchError('No subarea found')
             setShowResults(true)
+            // Keep hasActiveSearch as true if no result found (will show "no results" message)
           }
         } catch (error) {
-          console.error('Error searching subzone:', error)
+          console.error('Error resolving address:', error)
           setSearchError('Search failed')
           setSubzoneResult(null)
           setShowResults(true)
@@ -372,7 +456,8 @@ export function EnhancedSearch({
         }
       }, 400)
     } else {
-      // For name searches, clear any previous subzone results
+      // For name searches (planning areas/neighbourhoods), clear any previous subzone results
+      // These are handled by the name-based fuzzy matching above
       setSubzoneResult(null)
       setSearchError(null)
     }
@@ -408,9 +493,14 @@ export function EnhancedSearch({
     setIsEditing(false)
     setFilteredAreas([])
     setFilteredNeighbourhoods([])
+    setSubzoneResult(null)
     setShowResults(false)
     setSearchError(null)
-  }, [selectedPlanningAreas, onPlanningAreasChange, saveToHistory, planningAreas])
+    // Clear active search state immediately when selection is made
+    if (onActiveSearchChange) {
+      onActiveSearchChange(false)
+    }
+  }, [selectedPlanningAreas, onPlanningAreasChange, saveToHistory, planningAreas, onActiveSearchChange])
 
   const handleSelectSubzone = useCallback(() => {
     if (!subzoneResult) return
@@ -429,7 +519,11 @@ export function EnhancedSearch({
     setSubzoneResult(null)
     setShowResults(false)
     setSearchError(null)
-  }, [subzoneResult, selectedSubzones, onSubzonesChange, saveToHistory])
+    // Clear active search state immediately when selection is made
+    if (onActiveSearchChange) {
+      onActiveSearchChange(false)
+    }
+  }, [subzoneResult, selectedSubzones, onSubzonesChange, saveToHistory, onActiveSearchChange])
 
   const handleClear = useCallback(() => {
     setSearchQuery('')
@@ -458,10 +552,15 @@ export function EnhancedSearch({
       setIsEditing(false)
       setFilteredAreas([])
       setFilteredNeighbourhoods([])
+      setSubzoneResult(null)
       setShowResults(false)
       setSearchError(null)
+      // Clear active search state immediately when selection is made
+      if (onActiveSearchChange) {
+        onActiveSearchChange(false)
+      }
     }
-  }, [onNeighbourhoodSelect, saveToHistory])
+  }, [onNeighbourhoodSelect, saveToHistory, onActiveSearchChange])
 
   const handleHistoryClick = useCallback((query: string) => {
     setSearchQuery(query)
