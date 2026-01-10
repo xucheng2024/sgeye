@@ -8,7 +8,7 @@
 
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense, useTransition } from 'react'
 import { flushSync } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -115,6 +115,7 @@ function saveFilters(filters: Omit<SavedFilters, 'version'>): void {
 function NeighbourhoodsPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   
   // Read filter states from URL params (priority 1)
   const planningAreaIdParam = searchParams.get('planning_area_id') || ''
@@ -192,6 +193,7 @@ function NeighbourhoodsPageContent() {
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
   const [searchedNeighbourhoodId, setSearchedNeighbourhoodId] = useState<string | null>(null)
   const [hasActiveSearch, setHasActiveSearch] = useState<boolean>(false)
+  const [livingNotesMap, setLivingNotesMap] = useState<Map<string, any>>(new Map())
   
   // Load saved filters from localStorage on mount (only if no URL params)
   useEffect(() => {
@@ -344,7 +346,7 @@ function NeighbourhoodsPageContent() {
   // Track last saved filters to avoid unnecessary saves
   const lastSavedFiltersRef = useRef<string>('')
   
-  // Save filters to localStorage when they change (only if actually changed)
+  // Save filters to localStorage when they change (only if actually changed) - async to avoid blocking
   useEffect(() => {
     const currentFilters = JSON.stringify({
       flatTypes: Array.from(selectedFlatTypes).sort(),
@@ -359,16 +361,34 @@ function NeighbourhoodsPageContent() {
     
     if (currentFilters !== lastSavedFiltersRef.current) {
       lastSavedFiltersRef.current = currentFilters
-      saveFilters({
-      flatTypes: Array.from(selectedFlatTypes),
-      priceTiers: Array.from(priceTiers),
-      leaseTiers: Array.from(leaseTiers),
-      mrtTiers: Array.from(mrtTiers),
-      regions: Array.from(regions),
-      majorRegions: Array.from(majorRegions),
-      planningAreas: Array.from(selectedPlanningAreas),
-      showOnlyWithData: showOnlyWithData,
-      })
+      // Use requestIdleCallback or setTimeout for non-blocking save
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          saveFilters({
+            flatTypes: Array.from(selectedFlatTypes),
+            priceTiers: Array.from(priceTiers),
+            leaseTiers: Array.from(leaseTiers),
+            mrtTiers: Array.from(mrtTiers),
+            regions: Array.from(regions),
+            majorRegions: Array.from(majorRegions),
+            planningAreas: Array.from(selectedPlanningAreas),
+            showOnlyWithData: showOnlyWithData,
+          })
+        })
+      } else {
+        setTimeout(() => {
+          saveFilters({
+            flatTypes: Array.from(selectedFlatTypes),
+            priceTiers: Array.from(priceTiers),
+            leaseTiers: Array.from(leaseTiers),
+            mrtTiers: Array.from(mrtTiers),
+            regions: Array.from(regions),
+            majorRegions: Array.from(majorRegions),
+            planningAreas: Array.from(selectedPlanningAreas),
+            showOnlyWithData: showOnlyWithData,
+          })
+        }, 0)
+      }
     }
   }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, regions, majorRegions, selectedPlanningAreas, showOnlyWithData])
 
@@ -443,6 +463,29 @@ function NeighbourhoodsPageContent() {
     return expandNeighbourhoodsToFlatTypes(originalNeighbourhoods)
   }, [originalNeighbourhoods])
   
+  // Batch fetch living notes for all visible neighbourhoods
+  useEffect(() => {
+    if (originalNeighbourhoods.length === 0) return
+    
+    // Get unique neighbourhood names
+    const uniqueNames = Array.from(new Set(originalNeighbourhoods.map(n => n.name)))
+    
+    // Batch fetch living notes
+    const fetchLivingNotes = async () => {
+      const { getLivingNotesForNeighbourhood } = await import('@/lib/neighbourhood-living-notes')
+      const notesPromises = uniqueNames.map(async (name) => {
+        const notes = await getLivingNotesForNeighbourhood(name)
+        return [name, notes] as [string, any]
+      })
+      
+      const notesResults = await Promise.all(notesPromises)
+      const notesMap = new Map<string, any>(notesResults)
+      setLivingNotesMap(notesMap)
+    }
+    
+    fetchLivingNotes()
+  }, [originalNeighbourhoods])
+  
   // Load neighbourhoods only once on mount - all filters are now client-side
   // This ensures we fetch all data once and filter everything client-side for better performance
   useEffect(() => {
@@ -452,12 +495,17 @@ function NeighbourhoodsPageContent() {
   
   // Apply client-side filters when they change - use memoized expanded data
   // Now includes planning area and subzone filters (all filters are client-side)
+  // Use startTransition for non-blocking updates (no debounce needed as filtering is fast)
   useEffect(() => {
     if (expandedNeighbourhoods.length === 0) {
       setNeighbourhoods([])
       return
     }
-    applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
+    
+    // Use startTransition to mark filter updates as non-urgent, preventing UI blocking
+    startTransition(() => {
+      applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset, searchedNeighbourhoodId, hasActiveSearch])
 
@@ -608,17 +656,13 @@ function NeighbourhoodsPageContent() {
     }
   }
   
-  function applyClientSideFiltersAndDisplay(expandedData: NeighbourhoodWithFlatType[]) {
-    if (expandedData.length === 0) {
-      setNeighbourhoods([])
-      return
-    }
-    
-    const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
-    const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
-    
-    // Apply all filters in one pass for better performance
-    let displayItems = expandedData.filter(item => {
+  // Memoize filter predicate for better performance
+  // Note: This callback will be recreated when dependencies change, which is fine for filter function
+  const filterPredicate = useMemo(() => {
+    return (item: NeighbourhoodWithFlatType): boolean => {
+      const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
+      const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
+      
       // Filter by flat type (if not "All")
       if (!isAllFlatTypes && selectedFlatTypesArray.length > 0) {
         if (!item.display_flat_type || !selectedFlatTypesArray.includes(item.display_flat_type)) {
@@ -626,9 +670,49 @@ function NeighbourhoodsPageContent() {
         }
       }
       
-      // Filter by 12-month transaction data
+      // Filter by 12-month transaction data - early exit for better performance
       if (!item.summary?.tx_12m || Number(item.summary.tx_12m) === 0) {
         return false
+      }
+      
+      // Apply searched neighbourhood filter first (highest priority)
+      if (searchedNeighbourhoodId && item.id !== searchedNeighbourhoodId) {
+        return false
+      }
+      
+      // Apply planning area filter early (reduces dataset quickly)
+      if (selectedPlanningAreas.size > 0) {
+        const neighbourhoodPlanningAreaId = item.planning_area?.id
+        if (!neighbourhoodPlanningAreaId || !selectedPlanningAreas.has(neighbourhoodPlanningAreaId)) {
+          return false
+        }
+      }
+      
+      // Apply subzone filter early
+      if (selectedSubzones.size > 0) {
+        const neighbourhoodSubzoneId = item.parent_subzone_id
+        const neighbourhoodId = item.id
+        const matchesSubzone = (neighbourhoodSubzoneId && selectedSubzones.has(neighbourhoodSubzoneId)) ||
+                               selectedSubzones.has(neighbourhoodId)
+        if (!matchesSubzone) {
+          return false
+        }
+      }
+      
+      // Apply region filter (CCR/RCR/OCR)
+      if (regions.size > 0) {
+        const neighbourhoodRegion = item.planning_area?.region
+        if (!neighbourhoodRegion || !regions.has(neighbourhoodRegion)) {
+          return false
+        }
+      }
+      
+      // Apply major region filter
+      if (majorRegions.size > 0) {
+        const neighbourhoodMajorRegion = item.subzone_region
+        if (!neighbourhoodMajorRegion || !majorRegions.has(neighbourhoodMajorRegion)) {
+          return false
+        }
       }
       
       // Apply price filter
@@ -652,61 +736,8 @@ function NeighbourhoodsPageContent() {
         }
       }
       
-      // Apply region filter (CCR/RCR/OCR) - client-side using planning_area.region field
-      if (regions.size > 0) {
-        const neighbourhoodRegion = item.planning_area?.region
-        if (!neighbourhoodRegion || !regions.has(neighbourhoodRegion)) {
-          return false
-        }
-      }
-      
-      // Apply major region filter (client-side using subzone_region field)
-      if (majorRegions.size > 0) {
-        const neighbourhoodMajorRegion = item.subzone_region
-        // Match exact value (case-sensitive): 'Central', 'East', 'North', 'North-East', 'West'
-        if (!neighbourhoodMajorRegion || !majorRegions.has(neighbourhoodMajorRegion)) {
-          return false
-        }
-      }
-      
-      // Apply planning area filter (client-side using planning_area.id field)
-      if (selectedPlanningAreas.size > 0) {
-        const neighbourhoodPlanningAreaId = item.planning_area?.id
-        if (!neighbourhoodPlanningAreaId || !selectedPlanningAreas.has(neighbourhoodPlanningAreaId)) {
-          return false
-        }
-      }
-      
-      // Apply subzone filter (client-side using parent_subzone_id field)
-      // TEMPORARY FIX: If neighbourhoods don't have parent_subzone_id populated,
-      // match by neighbourhood ID (neighbourhoods and subzones share same IDs in some cases)
-      if (selectedSubzones.size > 0) {
-        const neighbourhoodSubzoneId = item.parent_subzone_id
-        const neighbourhoodId = item.id
-        
-        // Check if either parent_subzone_id OR neighbourhood id matches selected subzone
-        // This handles the case where subzone "aljunied" corresponds to neighbourhood "aljunied"
-        const matchesSubzone = (neighbourhoodSubzoneId && selectedSubzones.has(neighbourhoodSubzoneId)) ||
-                               selectedSubzones.has(neighbourhoodId)
-        
-        if (!matchesSubzone) {
-          return false
-        }
-      }
-      
-      // Apply searched neighbourhood filter (highest priority - only show searched neighbourhood)
-      if (searchedNeighbourhoodId) {
-        if (item.id !== searchedNeighbourhoodId) {
-          return false
-        }
-      }
-      
       // If user has active search (typing but no selection), filter everything out
-      // BUT only if no filters are selected (subzones, planning areas, etc.)
-      // IMPORTANT: Only filter if hasActiveSearch is true AND no other filters are active
-      // The order is important: check hasActiveSearch LAST, after all other filters
-      // This ensures that if any filter is active (selectedSubzones, selectedPlanningAreas, etc.),
-      // content will not be filtered by hasActiveSearch
+      // BUT only if no filters are selected
       const shouldFilterByActiveSearch = hasActiveSearch && 
                                          selectedSubzones.size === 0 && 
                                          selectedPlanningAreas.size === 0 && 
@@ -717,11 +748,25 @@ function NeighbourhoodsPageContent() {
       }
       
       return true
-    })
+    }
+  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, regions, majorRegions, selectedPlanningAreas, selectedSubzones, searchedNeighbourhoodId, hasActiveSearch])
+
+  function applyClientSideFiltersAndDisplay(expandedData: NeighbourhoodWithFlatType[]) {
+    if (expandedData.length === 0) {
+      setNeighbourhoods([])
+      return
+    }
     
-    // Calculate thresholds (only after filtering for better performance)
-    const thresholds = calculateThresholds(displayItems)
-    setPriceThresholds(thresholds.price)
+    // Apply all filters in one pass (already wrapped in startTransition, so no need for setTimeout)
+    let displayItems = expandedData.filter(filterPredicate)
+    
+    // Calculate thresholds only if we have filtered results (optimize calculation)
+    if (displayItems.length > 0) {
+      const thresholds = calculateThresholds(displayItems)
+      setPriceThresholds(thresholds.price)
+    } else {
+      setPriceThresholds({ p25: 550000, p50: 650000, p75: 745000 })
+    }
     
     // Apply sorting
     displayItems = applySortPreset(displayItems, sortPreset)
@@ -1039,7 +1084,7 @@ function NeighbourhoodsPageContent() {
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading State - Only show for initial data loading, not filtering */}
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1049,7 +1094,7 @@ function NeighbourhoodsPageContent() {
 
         {/* Neighbourhood List */}
         {!loading && !error && (
-          <>
+          <div className={isPending ? 'opacity-60 transition-opacity duration-150' : 'opacity-100 transition-opacity duration-150'}>
             {neighbourhoods.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No neighbourhoods found matching your criteria</p>
@@ -1128,6 +1173,7 @@ function NeighbourhoodsPageContent() {
                           onToggleCompare={toggleCompare}
                           filterParams={filterParams}
                           uniqueKey={uniqueKey}
+                          livingNotes={livingNotesMap.get(neighbourhood.name) || null}
                         />
                       )
                     })}
@@ -1135,7 +1181,7 @@ function NeighbourhoodsPageContent() {
                 )}
               </>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

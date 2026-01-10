@@ -84,37 +84,60 @@ export function getMRTAccessLabel(
   }
 }
 
-// Calculate thresholds for price and lease
+// Calculate thresholds for price and lease (optimized version)
 export function calculateThresholds(data: Neighbourhood[]): {
   price: { p25: number; p50: number; p75: number }
   lease: { p25: number; p50: number; p75: number }
 } {
-  const prices = data
-    .map(n => n.summary?.median_price_12m)
-    .filter((p): p is number => p != null && p > 0)
-    .sort((a, b) => a - b)
+  // Early return for empty data
+  if (data.length === 0) {
+    return {
+      price: { p25: 550000, p50: 650000, p75: 745000 },
+      lease: { p25: 54, p50: 61, p75: 75 }
+    }
+  }
   
-  const leases = data
-    .map(n => n.summary?.median_lease_years_12m)
-    .filter((l): l is number => l != null && l > 0)
-    .sort((a, b) => a - b)
+  // Use single pass for better performance
+  const prices: number[] = []
+  const leases: number[] = []
   
-  const getPercentile = (arr: number[], percentile: number): number => {
-    if (arr.length === 0) return 0
+  for (let i = 0; i < data.length; i++) {
+    const price = data[i].summary?.median_price_12m
+    const lease = data[i].summary?.median_lease_years_12m
+    
+    if (price != null && price > 0 && typeof price === 'number') {
+      prices.push(price)
+    }
+    
+    if (lease != null && lease > 0 && typeof lease === 'number') {
+      leases.push(lease)
+    }
+  }
+  
+  // Sort only if we have data (avoid unnecessary sorting)
+  if (prices.length > 0) {
+    prices.sort((a, b) => a - b)
+  }
+  if (leases.length > 0) {
+    leases.sort((a, b) => a - b)
+  }
+  
+  const getPercentile = (arr: number[], percentile: number, fallback: number): number => {
+    if (arr.length === 0) return fallback
     const index = Math.floor((arr.length - 1) * percentile)
-    return arr[index] || 0
+    return arr[index] ?? fallback
   }
   
   return {
     price: {
-      p25: prices.length > 0 ? getPercentile(prices, 0.25) : 550000,
-      p50: prices.length > 0 ? getPercentile(prices, 0.5) : 650000,
-      p75: prices.length > 0 ? getPercentile(prices, 0.75) : 745000,
+      p25: getPercentile(prices, 0.25, 550000),
+      p50: getPercentile(prices, 0.5, 650000),
+      p75: getPercentile(prices, 0.75, 745000),
     },
     lease: {
-      p25: leases.length > 0 ? getPercentile(leases, 0.25) : 54,
-      p50: leases.length > 0 ? getPercentile(leases, 0.5) : 61,
-      p75: leases.length > 0 ? getPercentile(leases, 0.75) : 75,
+      p25: getPercentile(leases, 0.25, 54),
+      p50: getPercentile(leases, 0.5, 61),
+      p75: getPercentile(leases, 0.75, 75),
     }
   }
 }

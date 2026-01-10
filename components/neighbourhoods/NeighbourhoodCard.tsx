@@ -17,6 +17,7 @@ interface NeighbourhoodCardProps {
   onToggleCompare: (uniqueKey: string, e: React.MouseEvent) => void
   filterParams: string
   uniqueKey: string
+  livingNotes?: LivingNotes | null
 }
 
 function NeighbourhoodCardComponent({ 
@@ -24,14 +25,21 @@ function NeighbourhoodCardComponent({
   isSelected, 
   onToggleCompare, 
   filterParams,
-  uniqueKey
+  uniqueKey,
+  livingNotes: propLivingNotes
 }: NeighbourhoodCardProps) {
   const displayFlatType = neighbourhood.display_flat_type
-  const [livingNotes, setLivingNotes] = useState<LivingNotes | null>(null)
+  const [livingNotesState, setLivingNotesState] = useState<LivingNotes | null>(propLivingNotes || null)
+  
+  // Use prop if provided, otherwise fetch (fallback for backward compatibility)
+  const livingNotes = propLivingNotes !== undefined ? propLivingNotes : livingNotesState
 
   useEffect(() => {
-    getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
-  }, [neighbourhood.name])
+    // Only fetch if not provided as prop
+    if (propLivingNotes === undefined) {
+      getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotesState)
+    }
+  }, [neighbourhood.name, propLivingNotes])
 
   // Helper function to get variance level text
   const getVarianceLevelText = (level: string | null | undefined): string | null => {
@@ -305,6 +313,7 @@ export const NeighbourhoodCard = memo(NeighbourhoodCardComponent, (prevProps, ne
     prevProps.neighbourhood.id === nextProps.neighbourhood.id &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.filterParams === nextProps.filterParams &&
+    prevProps.livingNotes === nextProps.livingNotes &&
     prevProps.neighbourhood.summary?.median_price_12m === nextProps.neighbourhood.summary?.median_price_12m &&
     prevProps.neighbourhood.summary?.median_lease_years_12m === nextProps.neighbourhood.summary?.median_lease_years_12m &&
     prevProps.neighbourhood.access?.mrt_station_count === nextProps.neighbourhood.access?.mrt_station_count
