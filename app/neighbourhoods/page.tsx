@@ -72,7 +72,7 @@ interface SavedFilters {
   priceTiers: string[]
   leaseTiers: string[]
   mrtTiers: string[]
-  region: string
+  regions: string[]
   majorRegions: string[]
   planningAreas: string[]
   showOnlyWithData: boolean
@@ -149,9 +149,9 @@ function NeighbourhoodsPageContent() {
     return new Set<string>()
   }
   
-  const getInitialRegionFromUrl = (): string => {
-    if (regionParam) return regionParam
-    return 'all'
+  const getInitialRegionsFromUrl = (): Set<string> => {
+    if (regionParam) return new Set(parseUrlArray(regionParam))
+    return new Set<string>()
   }
   
   const getInitialMajorRegionsFromUrl = (): Set<string> => {
@@ -186,7 +186,7 @@ function NeighbourhoodsPageContent() {
   const [priceTiers, setPriceTiers] = useState<Set<string>>(getInitialPriceTiersFromUrl())
   const [leaseTiers, setLeaseTiers] = useState<Set<string>>(getInitialLeaseTiersFromUrl())
   const [mrtTiers, setMrtTiers] = useState<Set<string>>(getInitialMrtTiersFromUrl())
-  const [region, setRegion] = useState<string>(getInitialRegionFromUrl())
+  const [regions, setRegions] = useState<Set<string>>(getInitialRegionsFromUrl())
   const [majorRegions, setMajorRegions] = useState<Set<string>>(getInitialMajorRegionsFromUrl())
   const [showOnlyWithData, setShowOnlyWithData] = useState<boolean>(true)
   
@@ -211,8 +211,8 @@ function NeighbourhoodsPageContent() {
         if (saved.mrtTiers && saved.mrtTiers.length > 0) {
           setMrtTiers(new Set(saved.mrtTiers))
         }
-        if (saved.region) {
-          setRegion(saved.region)
+        if (saved.regions && saved.regions.length > 0) {
+          setRegions(new Set(saved.regions))
         }
         if (saved.majorRegions && saved.majorRegions.length > 0) {
           setMajorRegions(new Set(saved.majorRegions))
@@ -273,7 +273,7 @@ function NeighbourhoodsPageContent() {
     const urlLeaseTiers = parseUrlArray(searchParams.get('lease_tier') || '')
     const urlMrtTiers = parseUrlArray(searchParams.get('mrt_tier') || '')
     const urlMajorRegions = parseUrlArray(searchParams.get('major_region') || '')
-    const urlRegion = searchParams.get('region') || 'all'
+    const urlRegions = parseUrlArray(searchParams.get('region') || '')
     const addToCompare = searchParams.get('add_to_compare')
     
     const urlPlanningAreaSet = new Set(urlPlanningAreas)
@@ -304,13 +304,14 @@ function NeighbourhoodsPageContent() {
       setMrtTiers(urlMrtTiersSet)
     }
     
+    const urlRegionsSet = new Set(urlRegions)
+    if (Array.from(regions).sort().join(',') !== Array.from(urlRegionsSet).sort().join(',')) {
+      setRegions(urlRegionsSet)
+    }
+    
     const urlMajorRegionsSet = new Set(urlMajorRegions)
     if (Array.from(majorRegions).sort().join(',') !== Array.from(urlMajorRegionsSet).sort().join(',')) {
       setMajorRegions(urlMajorRegionsSet)
-    }
-    
-    if (urlRegion !== region) {
-      setRegion(urlRegion)
     }
     
     // Handle add_to_compare parameter (expects neighbourhood ID only, not unique key)
@@ -347,7 +348,7 @@ function NeighbourhoodsPageContent() {
       priceTiers: Array.from(priceTiers).sort(),
       leaseTiers: Array.from(leaseTiers).sort(),
       mrtTiers: Array.from(mrtTiers).sort(),
-      region,
+      regions: Array.from(regions).sort(),
       majorRegions: Array.from(majorRegions).sort(),
       planningAreas: Array.from(selectedPlanningAreas).sort(),
       showOnlyWithData,
@@ -360,13 +361,13 @@ function NeighbourhoodsPageContent() {
       priceTiers: Array.from(priceTiers),
       leaseTiers: Array.from(leaseTiers),
       mrtTiers: Array.from(mrtTiers),
-      region: region,
+      regions: Array.from(regions),
       majorRegions: Array.from(majorRegions),
       planningAreas: Array.from(selectedPlanningAreas),
       showOnlyWithData: showOnlyWithData,
       })
     }
-  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions, selectedPlanningAreas, showOnlyWithData])
+  }, [selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, regions, majorRegions, selectedPlanningAreas, showOnlyWithData])
 
   // Memoize URL params building to avoid recalculation
   const urlParamsString = useMemo(() => {
@@ -403,7 +404,10 @@ function NeighbourhoodsPageContent() {
       params.set('mrt_tier', mrtTierArray.join(','))
     }
     
-    if (region && region !== 'all') params.set('region', region)
+    if (regions.size > 0) {
+      const regionArray = Array.from(regions)
+      params.set('region', regionArray.join(','))
+    }
     
     if (majorRegions.size > 0) {
       const majorRegionArray = Array.from(majorRegions)
@@ -411,7 +415,7 @@ function NeighbourhoodsPageContent() {
     }
     
     return params.toString()
-  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, region, majorRegions])
+  }, [selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, regions, majorRegions])
   
   // Track last URL to avoid unnecessary updates
   const lastUrlRef = useRef<string>('')
@@ -452,7 +456,7 @@ function NeighbourhoodsPageContent() {
     }
     applyClientSideFiltersAndDisplay(expandedNeighbourhoods)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, region, sortPreset])
+  }, [expandedNeighbourhoods, selectedPlanningAreas, selectedSubzones, selectedFlatTypes, priceTiers, leaseTiers, mrtTiers, majorRegions, regions, sortPreset])
 
   async function loadPlanningAreas() {
     // Check localStorage cache first (planning areas rarely change)
@@ -646,9 +650,9 @@ function NeighbourhoodsPageContent() {
       }
       
       // Apply region filter (CCR/RCR/OCR) - client-side using planning_area.region field
-      if (region && region !== 'all') {
+      if (regions.size > 0) {
         const neighbourhoodRegion = item.planning_area?.region
-        if (!neighbourhoodRegion || neighbourhoodRegion !== region) {
+        if (!neighbourhoodRegion || !regions.has(neighbourhoodRegion)) {
           return false
         }
       }
@@ -811,14 +815,14 @@ function NeighbourhoodsPageContent() {
                 Only showing neighbourhoods with transactions in the last 12 months
               </span>
             </div>
-            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0 || region !== 'all' || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
+            {(selectedFlatTypes.size > 0 && !selectedFlatTypes.has('All') || priceTiers.size > 0 || leaseTiers.size > 0 || mrtTiers.size > 0 || regions.size > 0 || majorRegions.size > 0 || selectedPlanningAreas.size > 0 || selectedSubzones.size > 0) && (
               <button
                 onClick={() => {
                   setSelectedFlatTypes(new Set(['All']))
                   setPriceTiers(new Set())
                   setLeaseTiers(new Set())
                   setMrtTiers(new Set())
-                  setRegion('all')
+                  setRegions(new Set())
                   setMajorRegions(new Set())
                   setSelectedPlanningAreas(new Set())
                   setSelectedSubzones(new Set())
@@ -858,8 +862,8 @@ function NeighbourhoodsPageContent() {
               onPlanningAreasChange={setSelectedPlanningAreas}
             />
             <MarketTierFilter 
-              region={region}
-              onRegionChange={setRegion}
+              regions={regions}
+              onRegionsChange={setRegions}
             />
             <PlanningRegionFilter 
               majorRegions={majorRegions}
@@ -993,9 +997,9 @@ function NeighbourhoodsPageContent() {
                       Clear MRT Filter
                     </button>
                   )}
-                  {region !== 'all' && (
+                  {regions.size > 0 && (
                     <button
-                      onClick={() => setRegion('all')}
+                      onClick={() => setRegions(new Set())}
                       className="px-4 py-2 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition-colors text-sm"
                     >
                       Clear Market Tier Filter
