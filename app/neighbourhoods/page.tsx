@@ -612,13 +612,8 @@ function NeighbourhoodsPageContent() {
     const isAllFlatTypes = selectedFlatTypes.has('All') || selectedFlatTypes.size === 0
     const selectedFlatTypesArray = Array.from(selectedFlatTypes).filter(ft => ft !== 'All')
     
-    // Expand neighbourhoods to flat types - ALWAYS create cards for ALL flat types
-    // This generates all possible cards regardless of filters
-    let displayItems = expandNeighbourhoodsToFlatTypes(
-      neighbourhoodsToProcess,
-      new Set<string>(), // Don't pre-filter by price/lease tiers here
-      new Set<string>()  // We'll filter after expanding
-    )
+    // Expand neighbourhoods to flat types - create cards for all flat types
+    let displayItems = expandNeighbourhoodsToFlatTypes(neighbourhoodsToProcess)
     
     // Filter by selected flat types (if not "All")
     if (!isAllFlatTypes && selectedFlatTypesArray.length > 0) {
@@ -633,8 +628,7 @@ function NeighbourhoodsPageContent() {
       displayItems,
       priceTiers,
       leaseTiers,
-      mrtTiersForFilter,
-      isAllFlatTypes
+      mrtTiersForFilter
     )
     
     // Only show neighbourhoods with 12-month transaction data

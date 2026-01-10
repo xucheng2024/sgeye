@@ -17,13 +17,12 @@ export function applyClientSideFilters(
   displayItems: NeighbourhoodWithFlatType[],
   priceTiers: Set<string>,
   leaseTiers: Set<string>,
-  mrtTiers: Set<string>,
-  isAllFlatTypes: boolean
+  mrtTiers: Set<string>
 ): NeighbourhoodWithFlatType[] {
   const needsClientSideFiltering = (
-    (priceTiers.size > 1) ||
-    (leaseTiers.size > 1) ||
-    (mrtTiers.size > 1)
+    (priceTiers.size > 0) ||
+    (leaseTiers.size > 0) ||
+    (mrtTiers.size > 0)
   )
   
   if (!needsClientSideFiltering) {
@@ -31,38 +30,20 @@ export function applyClientSideFilters(
   }
 
   return displayItems.filter(item => {
-    // For "Any size" mode, check if ANY flat type meets criteria
-    if (isAllFlatTypes && item.flat_type_details && item.flat_type_details.length > 0) {
-      const hasMatchingFlatType = item.flat_type_details.some(ftDetail => {
-        if (priceTiers.size > 1) {
-          const price = ftDetail.median_price_12m ? Number(ftDetail.median_price_12m) : null
-          if (!matchesPriceTiers(price, priceTiers as Set<string>)) return false
-        }
-        
-        if (leaseTiers.size > 1) {
-          const lease = ftDetail.median_lease_years_12m ? Number(ftDetail.median_lease_years_12m) : null
-          if (!matchesLeaseTiers(lease, leaseTiers as Set<string>)) return false
-        }
-        
-        return true
-      })
-      
-      if (!hasMatchingFlatType) return false
-    } else {
-      // Specific flat type mode: check the item's summary
-      if (priceTiers.size > 1) {
-        const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
-        if (!matchesPriceTiers(price, priceTiers as Set<string>)) return false
-      }
-      
-      if (leaseTiers.size > 1) {
-        const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
-        if (!matchesLeaseTiers(lease, leaseTiers as Set<string>)) return false
-      }
+    // After expansion, each item represents one specific flat type
+    // Check the item's summary directly
+    if (priceTiers.size > 0) {
+      const price = item.summary?.median_price_12m ? Number(item.summary.median_price_12m) : null
+      if (!matchesPriceTiers(price, priceTiers as Set<string>)) return false
+    }
+    
+    if (leaseTiers.size > 0) {
+      const lease = item.summary?.median_lease_years_12m ? Number(item.summary.median_lease_years_12m) : null
+      if (!matchesLeaseTiers(lease, leaseTiers as Set<string>)) return false
     }
     
     // MRT filter
-    if (mrtTiers.size > 1) {
+    if (mrtTiers.size > 0) {
       const distance = item.access?.avg_distance_to_mrt ? Number(item.access.avg_distance_to_mrt) : null
       const hasStationInArea = !!(item.access?.mrt_station_count && Number(item.access.mrt_station_count) > 0)
       
@@ -74,19 +55,15 @@ export function applyClientSideFilters(
 }
 
 export function expandNeighbourhoodsToFlatTypes(
-  neighbourhoods: Neighbourhood[],
-  priceTiers: Set<string>,
-  leaseTiers: Set<string>
+  neighbourhoods: Neighbourhood[]
 ): NeighbourhoodWithFlatType[] {
-  // Always expand ALL flat types - don't filter here
-  // Filtering by flat_type will be done later in applyClientSideFiltersAndDisplay
+  // Always expand ALL flat types - filtering will be done later
   let displayItems: NeighbourhoodWithFlatType[] = []
   
   neighbourhoods.forEach((neighbourhood) => {
     if (!neighbourhood.flat_type_details || neighbourhood.flat_type_details.length === 0) return
     
     neighbourhood.flat_type_details.forEach(ftDetail => {
-      // Generate card for every flat type - no filtering here
       displayItems.push({
         ...neighbourhood,
         display_flat_type: ftDetail.flat_type,
