@@ -133,18 +133,39 @@ async function findSubzoneByStreetName(streetName: string) {
     throw new Error('Supabase client not initialized')
   }
 
-  // Find transactions with this street name to get coordinates
-  // Use DISTINCT to get unique coordinates
-  const { data: transactions, error } = await supabase
+  // Clean the input: remove house numbers if present (e.g., "38 Lorong 30 Geylang" -> "Lorong 30 Geylang")
+  // House numbers are typically 1-4 digits followed by letters/space
+  const cleanedStreet = streetName.trim().replace(/^\d+[A-Z]?\s+/i, '')
+
+  // Try exact match first, then fallback to partial match
+  let transactions = null
+  let error = null
+
+  // Try 1: Exact cleaned street name
+  const exactResult = await supabase
     .from('raw_resale_2017')
     .select('latitude, longitude, street_name')
-    .ilike('street_name', `%${streetName}%`)
+    .ilike('street_name', cleanedStreet)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
     .limit(10)
 
-  if (error) {
-    throw error
+  if (!exactResult.error && exactResult.data && exactResult.data.length > 0) {
+    transactions = exactResult.data
+  } else {
+    // Try 2: Partial match with original query
+    const partialResult = await supabase
+      .from('raw_resale_2017')
+      .select('latitude, longitude, street_name')
+      .ilike('street_name', `%${cleanedStreet}%`)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .limit(10)
+
+    if (partialResult.error) {
+      throw partialResult.error
+    }
+    transactions = partialResult.data
   }
 
   if (!transactions || transactions.length === 0) {
