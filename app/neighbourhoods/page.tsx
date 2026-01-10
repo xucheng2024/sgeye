@@ -9,6 +9,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
+import { flushSync } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ArrowRight, List, Map as MapIcon } from 'lucide-react'
@@ -693,8 +694,16 @@ function NeighbourhoodsPageContent() {
       
       // If user has active search (typing but no selection), filter everything out
       // BUT only if no filters are selected (subzones, planning areas, etc.)
-      // This prevents race conditions where selection is made but hasActiveSearch hasn't cleared yet
-      if (hasActiveSearch && selectedSubzones.size === 0 && selectedPlanningAreas.size === 0 && !searchedNeighbourhoodId) {
+      // IMPORTANT: Only filter if hasActiveSearch is true AND no other filters are active
+      // The order is important: check hasActiveSearch LAST, after all other filters
+      // This ensures that if any filter is active (selectedSubzones, selectedPlanningAreas, etc.),
+      // content will not be filtered by hasActiveSearch
+      const shouldFilterByActiveSearch = hasActiveSearch && 
+                                         selectedSubzones.size === 0 && 
+                                         selectedPlanningAreas.size === 0 && 
+                                         !searchedNeighbourhoodId
+      
+      if (shouldFilterByActiveSearch) {
         return false
       }
       
@@ -803,17 +812,23 @@ function NeighbourhoodsPageContent() {
             planningAreas={planningAreas}
             selectedPlanningAreas={selectedPlanningAreas}
             onPlanningAreasChange={(areas) => {
+              // Use flushSync to synchronously update hasActiveSearch first
+              flushSync(() => {
+                setHasActiveSearch(false)
+                setSearchedNeighbourhoodId(null)
+              })
+              // Then update selectedPlanningAreas
               setSelectedPlanningAreas(areas)
-              // Clear neighbourhood search and active search when planning area is selected
-              setSearchedNeighbourhoodId(null)
-              setHasActiveSearch(false)
             }}
             selectedSubzones={selectedSubzones}
             onSubzonesChange={(subzones) => {
-              setSelectedSubzones(subzones)
-              // Clear neighbourhood search and active search when subzone is selected
-              setSearchedNeighbourhoodId(null)
-              setHasActiveSearch(false)
+              // Use flushSync to synchronously update hasActiveSearch and selectedSubzones together
+              // This ensures that when filtering runs, both states are already updated
+              flushSync(() => {
+                setHasActiveSearch(false)
+                setSearchedNeighbourhoodId(null)
+                setSelectedSubzones(subzones)
+              })
             }}
             neighbourhoods={originalNeighbourhoods}
             searchedNeighbourhoodId={searchedNeighbourhoodId}

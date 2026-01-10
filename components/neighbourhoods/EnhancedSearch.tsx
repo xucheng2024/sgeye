@@ -186,6 +186,7 @@ export function EnhancedSearch({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isSelectingRef = useRef<boolean>(false) // Flag to prevent new searches when selecting a result
 
   // Clear subzone name when subzones are cleared externally
   useEffect(() => {
@@ -369,8 +370,8 @@ export function EnhancedSearch({
       setFilteredNeighbourhoods([])
     }
     
-    // If we have results, immediately clear hasActiveSearch
-    // This ensures content is not filtered out before user clicks
+    // If we have local results, immediately clear hasActiveSearch
+    // If no local results, API fallback will be triggered in the other useEffect
     if ((filteredPA.length > 0 || filteredNH.length > 0) && onActiveSearchChange) {
       onActiveSearchChange(false)
     }
@@ -391,10 +392,24 @@ export function EnhancedSearch({
       return
     }
 
+    // Don't trigger new search if we're currently selecting a result
+    if (isSelectingRef.current) {
+      return
+    }
+    
+    // Don't trigger new search if query matches selected subzone name
+    // This prevents re-searching when user clicks on a result (which sets searchQuery to subzone name)
+    // Also check if subzone is already selected to prevent race conditions
+    if ((selectedSubzoneName && query.toLowerCase() === selectedSubzoneName.toLowerCase()) ||
+        (selectedSubzones.size > 0 && selectedSubzoneName && query.toLowerCase() === selectedSubzoneName.toLowerCase())) {
+      // Query matches selected subzone, don't trigger new search
+      return
+    }
+
     const queryType = detectQueryType(query)
     
-    // Use unified address resolver for postal/street/mixed queries
-    // For name-only queries (planning areas/neighbourhoods), use local fuzzy matching
+    // Use unified address resolver for postal/street/mixed/project queries
+    // Also use API for name queries that didn't match locally (fallback to API search)
     if (queryType === 'postal' || queryType === 'street' || queryType === 'mixed' || queryType === 'project') {
       setIsSearching(true)
       setSearchError(null)
@@ -455,9 +470,51 @@ export function EnhancedSearch({
           setIsSearching(false)
         }
       }, 400)
+    } else if (queryType === 'name') {
+      // For name searches, use local fuzzy matching first (handled by another useEffect)
+      // Also try API as fallback to see if it's a location/project name (like "dairy farm")
+      // Use a shorter delay to trigger API search quickly if it's not a known planning area/neighbourhood
+      setSearchError(null)
+      
+      searchTimeoutRef.current = setTimeout(async () => {
+        setIsSearching(true)
+        try {
+          const response = await fetch('/api/address/resolve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+          })
+
+          const data = await response.json()
+
+          if (response.ok && data.resolved_address) {
+            const resolved = data.resolved_address as ResolvedAddressResult
+            setSubzoneResult({
+              id: resolved.subzone_id,
+              name: resolved.subzone_name,
+              planning_area_id: resolved.planning_area_id || '',
+              region: ''
+            })
+            setShowResults(true)
+            // Immediately clear hasActiveSearch when API result is found
+            if (onActiveSearchChange) {
+              onActiveSearchChange(false)
+            }
+          } else {
+            // No result from API, local search might have results or show no results
+            setSubzoneResult(null)
+            setSearchError(null)
+          }
+        } catch (error) {
+          console.error('Error resolving address via API fallback:', error)
+          setSearchError(null)
+          setSubzoneResult(null)
+        } finally {
+          setIsSearching(false)
+        }
+      }, 400) // Same delay as other API calls
     } else {
-      // For name searches (planning areas/neighbourhoods), clear any previous subzone results
-      // These are handled by the name-based fuzzy matching above
+      // For other query types, clear any previous subzone results
       setSubzoneResult(null)
       setSearchError(null)
     }
@@ -467,7 +524,7 @@ export function EnhancedSearch({
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, selectedSubzoneName])
 
   // Close results when clicking outside
   useEffect(() => {
@@ -505,24 +562,51 @@ export function EnhancedSearch({
   const handleSelectSubzone = useCallback(() => {
     if (!subzoneResult) return
     
-    const newSet = new Set(selectedSubzones)
-    newSet.add(subzoneResult.id)
-    onSubzonesChange(newSet)
-    // Store the subzone name for display
-    setSelectedSubzoneName(subzoneResult.name)
-    saveToHistory(subzoneResult.name, 'subzone')
-    // Keep the subzone name in search box
-    setSearchQuery(subzoneResult.name)
-    setIsEditing(false)
-    setFilteredAreas([])
-    setFilteredNeighbourhoods([])
-    setSubzoneResult(null)
-    setShowResults(false)
-    setSearchError(null)
-    // Clear active search state immediately when selection is made
+    // Set flag to prevent new searches while selecting
+    isSelectingRef.current = true
+    
+    // Save the selected subzone values before any state updates that might trigger new searches
+    const selectedId = subzoneResult.id
+    const selectedName = subzoneResult.name
+    
+    // IMPORTANT: Clear hasActiveSearch FIRST and immediately, before any other state updates
+    // This ensures content is not filtered out on first click
     if (onActiveSearchChange) {
       onActiveSearchChange(false)
     }
+    
+    // Store the subzone name FIRST before updating other states
+    setSelectedSubzoneName(selectedName)
+    
+    // Build the new set with the selected subzone
+    const newSet = new Set(selectedSubzones)
+    newSet.add(selectedId)
+    
+    // Clear subzoneResult immediately to prevent new searches from overwriting the selection
+    setSubzoneResult(null)
+    setShowResults(false)
+    setSearchError(null)
+    setFilteredAreas([])
+    setFilteredNeighbourhoods([])
+    setIsEditing(false)
+    
+    // Update the selected subzones (this will trigger onSubzonesChange which also clears hasActiveSearch)
+    // This should happen after clearing hasActiveSearch to ensure correct order
+    onSubzonesChange(newSet)
+    
+    saveToHistory(selectedName, 'subzone')
+    
+    // Set search query to show selected subzone name
+    // The isSelectingRef flag will prevent new API calls
+    setSearchQuery(selectedName)
+    
+    // Clear the flag after state updates complete
+    // Use requestAnimationFrame to ensure state updates have been processed
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        isSelectingRef.current = false
+      })
+    })
   }, [subzoneResult, selectedSubzones, onSubzonesChange, saveToHistory, onActiveSearchChange])
 
   const handleClear = useCallback(() => {
