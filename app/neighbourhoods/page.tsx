@@ -925,7 +925,7 @@ function NeighbourhoodsPageContent() {
           <div className="mb-4 pb-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-600">
-                Only showing neighbourhoods with transactions in the last 12 months
+                Recent transactions only (12 months)
               </span>
               {searchedNeighbourhoodId && (
                 <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
