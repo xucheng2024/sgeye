@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, Suspense, useTransit
 import { flushSync } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { ArrowRight, List, Map as MapIcon } from 'lucide-react'
+import { ArrowRight, List, Map as MapIcon, Circle } from 'lucide-react'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { Neighbourhood, PlanningArea, SortPreset, NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
@@ -1037,81 +1037,6 @@ function NeighbourhoodsPageContent() {
           </div>
         </div>
 
-        {/* Compare Status Bar */}
-        {selectedForCompare.size >= 1 && (
-          <div className="mb-6 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-4">
-            {selectedForCompare.size >= 2 ? (
-              <>
-                <div>
-                  <div className="text-base font-semibold text-gray-900">
-                    Compare: {Array.from(selectedForCompare)
-                      .map(uniqueKey => {
-                        const neighbourhood = neighbourhoods.find(n => {
-                          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
-                          return nKey === uniqueKey
-                        })
-                        if (!neighbourhood) return null
-                        return neighbourhood.display_flat_type 
-                          ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
-                          : neighbourhood.name
-                      })
-                      .filter(Boolean)
-                      .join(' vs ')}
-                  </div>
-                  <div className="text-sm text-gray-600 mt-0.5">
-                    See housing, lease, commute, and school trade-offs side by side.
-                  </div>
-                </div>
-                <button
-                  onClick={handleCompareSelected}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors whitespace-nowrap"
-                >
-                  Compare now
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
-              <>
-                <div>
-                  <div className="text-base font-semibold text-gray-900">
-                    {Array.from(selectedForCompare)
-                      .map(uniqueKey => {
-                        const neighbourhood = neighbourhoods.find(n => {
-                          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
-                          return nKey === uniqueKey
-                        })
-                        if (!neighbourhood) return null
-                        return neighbourhood.display_flat_type 
-                          ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
-                          : neighbourhood.name
-                      })
-                      .filter(Boolean)
-                      .join('')} selected
-                  </div>
-                  <div className="text-sm text-gray-600 mt-0.5">
-                    Select one more to compare side by side.
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    if (selectedForCompare.size < 2) {
-                      const firstCard = document.querySelector('[id^="neighbourhood-"]')
-                      if (firstCard) {
-                        firstCard.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }
-                    } else {
-                      handleCompareSelected()
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  {selectedForCompare.size >= 2 ? 'Compare now' : 'Select one more'}
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
-        )}
 
         {/* Error State */}
         {error && (
@@ -1236,6 +1161,79 @@ function NeighbourhoodsPageContent() {
           scrollThreshold={300}
         />
       </div>
+
+      {/* Fixed Bottom Compare Bar */}
+      {selectedForCompare.size >= 1 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-3.5 lg:py-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Status */}
+              <div className="flex items-center gap-2 min-w-0">
+                <Circle className="w-4 h-4 text-green-600 fill-green-600 shrink-0" />
+                <div className="min-w-0">
+                  {selectedForCompare.size >= 2 ? (
+                    <div className="text-sm md:text-base font-medium text-gray-900 truncate">
+                      {selectedForCompare.size} selected: {Array.from(selectedForCompare)
+                        .slice(0, 2)
+                        .map(uniqueKey => {
+                          const neighbourhood = neighbourhoods.find(n => {
+                            const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+                            return nKey === uniqueKey
+                          })
+                          if (!neighbourhood) return null
+                          return neighbourhood.display_flat_type 
+                            ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
+                            : neighbourhood.name
+                        })
+                        .filter(Boolean)
+                        .join(' · ')}
+                      {selectedForCompare.size > 2 && ` +${selectedForCompare.size - 2}`}
+                    </div>
+                  ) : (
+                    <div className="text-sm md:text-base font-medium text-gray-900">
+                      {selectedForCompare.size} selected
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedForCompare.size < 2 && (
+                  <button
+                    onClick={() => {
+                      const firstCard = document.querySelector('[id^="neighbourhood-"]')
+                      if (firstCard) {
+                        firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }
+                    }}
+                    className="text-xs md:text-sm text-gray-600 hover:text-gray-900 font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors hidden sm:inline-flex"
+                  >
+                    + Select one more
+                  </button>
+                )}
+                <button
+                  onClick={handleCompareSelected}
+                  disabled={selectedForCompare.size < 2}
+                  className={`inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-semibold text-xs md:text-sm transition-colors whitespace-nowrap ${
+                    selectedForCompare.size >= 2
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Compare side by side
+                  <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spacer for fixed bottom bar */}
+      {selectedForCompare.size >= 1 && (
+        <div className="h-14 md:h-16 lg:h-14" />
+      )}
     </div>
   )
 }

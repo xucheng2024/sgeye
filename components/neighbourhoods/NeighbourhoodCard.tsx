@@ -4,7 +4,7 @@
 
 import { useState, useEffect, memo, useMemo, useCallback } from 'react'
 import Link from 'next/link'
-import { Plus, ArrowRight } from 'lucide-react'
+import { Plus, ArrowRight, Check } from 'lucide-react'
 import { NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
 import { toTitleCase, formatFlatType, formatCurrency, getMRTAccessLabel } from '@/lib/utils/neighbourhood-utils'
 import { getRegionInfo, getMajorRegionInfo, type RegionType } from '@/lib/region-mapping'
@@ -142,14 +142,18 @@ function NeighbourhoodCardComponent({
         </div>
         <button
           onClick={(e) => onToggleCompare(uniqueKey, e)}
-          className={`ml-2 p-2 rounded-lg transition-colors ${
+          className={`ml-2 p-1.5 rounded-md transition-colors ${
             isSelected
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-blue-50 text-blue-600 border border-blue-200'
+              : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 border border-transparent'
           }`}
           title={isSelected ? 'Remove from compare' : 'Add to compare'}
         >
-          <Plus className={`w-4 h-4 ${isSelected ? 'rotate-45' : ''} transition-transform`} />
+          {isSelected ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Plus className="w-4 h-4" />
+          )}
         </button>
       </div>
 
