@@ -32,6 +32,7 @@ import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter
 import { SortControls } from '@/components/neighbourhoods/SortControls'
 import { NeighbourhoodCard } from '@/components/neighbourhoods/NeighbourhoodCard'
 import { FilterWizard } from '@/components/neighbourhoods/FilterWizard'
+import FloatingButton from '@/components/FloatingButton'
 
 // Dynamically import map component to avoid SSR issues
 const NeighbourhoodMap = dynamic(() => import('@/components/NeighbourhoodMap'), {
@@ -1218,6 +1219,22 @@ function NeighbourhoodsPageContent() {
             )}
           </div>
         )}
+
+        {/* Floating Button - Ask the builder */}
+        <FloatingButton
+          context={{
+            page: 'Explore Neighbourhoods',
+            filters_used: [
+              selectedFlatTypes.size > 0 && `Flat types: ${Array.from(selectedFlatTypes).join(', ')}`,
+              priceTiers.size > 0 && `Price: ${Array.from(priceTiers).join(', ')}`,
+              leaseTiers.size > 0 && `Lease: ${Array.from(leaseTiers).join(', ')}`,
+              mrtTiers.size > 0 && `MRT: ${Array.from(mrtTiers).join(', ')}`,
+              selectedPlanningAreas.size > 0 && `Areas: ${Array.from(selectedPlanningAreas).join(', ')}`
+            ].filter(Boolean)
+          }}
+          triggerAfterScroll={true}
+          scrollThreshold={300}
+        />
       </div>
     </div>
   )
