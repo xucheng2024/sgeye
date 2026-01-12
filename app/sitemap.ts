@@ -100,14 +100,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       supabaseKey !== 'placeholder-key'
     ) {
       const supabase = createClient(supabaseUrl, supabaseKey)
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('neighbourhoods')
         .select('id')
         .order('id', { ascending: true })
-        .range(0, 4999)
+        .limit(5000) // Use limit instead of range for better compatibility
 
-      if (data && data.length > 0) {
-        for (const row of data as Array<{ id: string }>) {
+      if (error) {
+        console.error('Supabase query error in sitemap:', error.message)
+      } else if (data && Array.isArray(data) && data.length > 0) {
+        for (const row of data) {
           if (!row?.id) continue
           neighbourhoodDetailPages.push({
             url: withTrailingSlash(`${baseUrl}/neighbourhood/${row.id}`),
@@ -119,7 +121,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   } catch (err) {
-    console.error('Failed to generate neighbourhood detail sitemap entries:', err)
+    // Silently fail - sitemap will still work with static pages
+    // Log error in development but don't break sitemap generation
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to generate neighbourhood detail sitemap entries:', err)
+    }
   }
 
   return [...staticPages, ...guidePages, ...neighbourhoodDetailPages]
