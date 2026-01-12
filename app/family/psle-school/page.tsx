@@ -269,7 +269,7 @@ function PSLESchoolPageContent() {
                 </p>
               </div>
               <Link
-                href="/family/psle-school"
+                href="/family/psle-school/"
                 className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
                 ← Back to explore mode

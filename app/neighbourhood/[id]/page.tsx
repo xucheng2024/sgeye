@@ -550,7 +550,7 @@ export default function NeighbourhoodDetailPage() {
                     )}
                   </p>
                   <Link
-                    href="/hdb/lease-price"
+                    href="/hdb/lease-price/"
                     className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
                     Understand lease decay and long-term risk
@@ -579,7 +579,7 @@ export default function NeighbourhoodDetailPage() {
                 <option value="EXECUTIVE">EXECUTIVE</option>
               </select>
               <Link
-                href="/hdb"
+                href="/hdb/"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 View broader market trends →

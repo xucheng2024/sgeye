@@ -33,7 +33,7 @@ export function PlanningAreaFilter({
             <p className="mb-2">Why planning area?</p>
             <p className="mb-2 text-gray-300">Primary school competition is evaluated at the planning area level.</p>
             <Link
-              href="/family/psle-school"
+              href="/family/psle-school/"
               className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
               onClick={(e) => e.stopPropagation()}
             >

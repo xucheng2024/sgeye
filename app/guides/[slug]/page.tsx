@@ -49,7 +49,7 @@ const guideContent: Record<string, GuideData> = {
         </ul>
         <p className="text-gray-700 mb-6">
           Remember: The cheapest HDB neighbourhood may not offer the best value when you consider 
-          transport burden, amenities, and long-term living comfort. <Link href="/guides/why-cheap-hdb-feel-uncomfortable" className="text-blue-600 hover:text-blue-700 underline">Learn how to judge living comfort beyond price</Link>.
+          transport burden, amenities, and long-term living comfort. <Link href="/guides/why-cheap-hdb-feel-uncomfortable/" className="text-blue-600 hover:text-blue-700 underline">Learn how to judge living comfort beyond price</Link>.
         </p>
 
         <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Step 3: Check transport access and real convenience</h2>
@@ -65,7 +65,7 @@ const guideContent: Record<string, GuideData> = {
           <li>Peak hour crowding and reliability of transport options</li>
         </ul>
         <p className="text-gray-700 mb-6">
-          Understanding <Link href="/guides/does-mrt-distance-really-matter" className="text-blue-600 hover:text-blue-700 underline">MRT distance vs real convenience</Link> helps you evaluate true transport convenience 
+          Understanding <Link href="/guides/does-mrt-distance-really-matter/" className="text-blue-600 hover:text-blue-700 underline">MRT distance vs real convenience</Link> helps you evaluate true transport convenience 
           for daily living in Singapore. A neighbourhood with good bus connectivity may offer better 
           real convenience than one slightly closer to MRT.
         </p>
@@ -125,7 +125,7 @@ const guideContent: Record<string, GuideData> = {
             transport convenience, lease safety, and school pressure to make an informed decision.
           </p>
           <Link
-            href="/neighbourhoods"
+            href="/neighbourhoods/"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Explore HDB neighbourhoods in Singapore
@@ -163,7 +163,7 @@ const guideContent: Record<string, GuideData> = {
         </ul>
         <p className="text-gray-700 mb-6">
           When evaluating HDB resale flats, consider the Transport Burden Index (TBI) rather than 
-          just MRT distance. <Link href="/guides/does-mrt-distance-really-matter" className="text-blue-600 hover:text-blue-700 underline">Understanding MRT distance vs real convenience</Link> helps you see that a neighbourhood 
+          just MRT distance. <Link href="/guides/does-mrt-distance-really-matter/" className="text-blue-600 hover:text-blue-700 underline">Understanding MRT distance vs real convenience</Link> helps you see that a neighbourhood 
           with good bus connectivity and multiple transport options may offer better living comfort 
           than one that's slightly closer to MRT but lacks alternatives.
         </p>
@@ -199,7 +199,7 @@ const guideContent: Record<string, GuideData> = {
         <p className="text-gray-700 mb-6">
           When judging living comfort beyond price, check PSLE cutoff trends and school oversubscription 
           rates in the planning area. This data helps families understand the real daily experience beyond 
-          just HDB flat prices. <Link href="/guides/how-to-choose-hdb-neighbourhood" className="text-blue-600 hover:text-blue-700 underline">Learn more about choosing HDB neighbourhoods</Link>.
+          just HDB flat prices. <Link href="/guides/how-to-choose-hdb-neighbourhood/" className="text-blue-600 hover:text-blue-700 underline">Learn more about choosing HDB neighbourhoods</Link>.
         </p>
 
         <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Lease safety and long-term living comfort</h2>
@@ -243,7 +243,7 @@ const guideContent: Record<string, GuideData> = {
             lease safety, amenities, and school pressure to make an informed HDB buying decision.
           </p>
           <Link
-            href="/neighbourhoods"
+            href="/neighbourhoods/"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Compare HDB neighbourhoods
@@ -297,7 +297,7 @@ const guideContent: Record<string, GuideData> = {
         </ul>
         <p className="text-gray-700 mb-6">
           A neighbourhood 800m from an MRT station with excellent bus connectivity may offer better 
-          real convenience than one 400m away with poor bus options. This is why <Link href="/guides/why-cheap-hdb-feel-uncomfortable" className="text-blue-600 hover:text-blue-700 underline">judging living comfort beyond price</Link> requires looking at the full transport picture.
+          real convenience than one 400m away with poor bus options. This is why <Link href="/guides/why-cheap-hdb-feel-uncomfortable/" className="text-blue-600 hover:text-blue-700 underline">judging living comfort beyond price</Link> requires looking at the full transport picture.
         </p>
 
         <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">Transport Burden Index: Measuring real convenience</h2>
@@ -350,7 +350,7 @@ const guideContent: Record<string, GuideData> = {
         </ul>
         <p className="text-gray-700 mb-6">
           Choosing an HDB neighbourhood with good transport infrastructure (not just MRT distance) provides 
-          better long-term real convenience and flexibility for changing needs. This is part of <Link href="/guides/how-to-choose-hdb-neighbourhood" className="text-blue-600 hover:text-blue-700 underline">choosing the right HDB neighbourhood</Link> for your family.
+          better long-term real convenience and flexibility for changing needs. This is part of <Link href="/guides/how-to-choose-hdb-neighbourhood/" className="text-blue-600 hover:text-blue-700 underline">choosing the right HDB neighbourhood</Link> for your family.
         </p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8">
@@ -361,7 +361,7 @@ const guideContent: Record<string, GuideData> = {
             burden, MRT access, and bus connectivity to make informed decisions about daily living comfort.
           </p>
           <Link
-            href="/transport"
+            href="/transport/"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Explore Singapore HDB transport access
@@ -401,13 +401,13 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link
-          href="/guides"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to guides
-        </Link>
+          <Link
+            href="/guides/"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to guides
+          </Link>
 
         <article className="bg-white rounded-lg border border-gray-200 p-8 md:p-12">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
@@ -426,7 +426,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                   return (
                     <Link
                       key={relatedSlug}
-                      href={`/guides/${relatedSlug}`}
+                      href={`/guides/${relatedSlug}/`}
                       className="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <h3 className="font-semibold text-gray-900 mb-1">{relatedGuide.title}</h3>

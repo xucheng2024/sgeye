@@ -30,7 +30,7 @@ export function LeaseSafetyFilter({ leaseTiers, onLeaseTiersChange }: LeaseSafet
             <p className="mb-2">Why lease safety matters?</p>
             <p className="mb-2 text-gray-300">Shorter leases may face resale and financing constraints.</p>
             <Link
-              href="/hdb/lease-price"
+              href="/hdb/lease-price/"
               className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
               onClick={(e) => e.stopPropagation()}
             >

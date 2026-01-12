@@ -199,7 +199,7 @@ function NeighbourhoodCardComponent({
                     <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                       <p className="mb-2">Flats with shorter leases may face resale and financing constraints.</p>
                       <Link
-                        href="/hdb/lease-price"
+                        href="/hdb/lease-price/"
                         className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -217,7 +217,7 @@ function NeighbourhoodCardComponent({
                     <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                       <p className="mb-2">Typical remaining lease length with moderate resale and financing flexibility.</p>
                       <Link
-                        href="/hdb/lease-price"
+                        href="/hdb/lease-price/"
                         className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -235,7 +235,7 @@ function NeighbourhoodCardComponent({
                     <div className="absolute right-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                       <p className="mb-2">Longer remaining leases provide more flexibility for resale and financing.</p>
                       <Link
-                        href="/hdb/lease-price"
+                        href="/hdb/lease-price/"
                         className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >

@@ -63,10 +63,10 @@ export default function GlobalNav() {
               {isHouseMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1.5 min-w-[180px] z-50">
                   <Link
-                    href="/hdb"
+                    href="/hdb/"
                     onClick={() => setIsHouseMenuOpen(false)}
                     className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                      pathname === '/hdb'
+                      pathname === '/hdb' || pathname === '/hdb/'
                         ? 'bg-blue-50 text-blue-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
@@ -75,10 +75,10 @@ export default function GlobalNav() {
                     <span>Trends</span>
                   </Link>
                   <Link
-                    href="/hdb/lease-price"
+                    href="/hdb/lease-price/"
                     onClick={() => setIsHouseMenuOpen(false)}
                     className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                      pathname === '/hdb/lease-price'
+                      pathname === '/hdb/lease-price' || pathname === '/hdb/lease-price/'
                         ? 'bg-blue-50 text-blue-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
@@ -92,7 +92,7 @@ export default function GlobalNav() {
 
             {/* Transport */}
             <Link
-              href="/transport"
+              href="/transport/"
               className={`px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isTransportActive
                   ? 'bg-blue-100 text-blue-700'
@@ -104,7 +104,7 @@ export default function GlobalNav() {
 
             {/* Family with Children */}
             <Link
-              href="/family/psle-school"
+              href="/family/psle-school/"
               className={`px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isFamilyActive
                   ? 'bg-blue-100 text-blue-700'

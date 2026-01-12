@@ -799,7 +799,7 @@ function ComparePageContent() {
             /compare?ids=neighbourhood-id-1,neighbourhood-id-2
           </code>
           <Link
-            href="/neighbourhoods"
+            href="/neighbourhoods/"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Browse Neighbourhoods
@@ -814,7 +814,7 @@ function ComparePageContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/neighbourhoods" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4">
+          <Link href="/neighbourhoods/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4">
             <ArrowLeft className="w-4 h-4" />
             Back to Neighbourhoods
           </Link>

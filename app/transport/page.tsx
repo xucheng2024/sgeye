@@ -130,7 +130,7 @@ function TransportPageContent() {
             <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 relative">
               <div className="absolute top-4 right-4">
                 <Link
-                  href="/neighbourhoods"
+                  href="/neighbourhoods/"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                 >
                   Compare with another neighbourhood

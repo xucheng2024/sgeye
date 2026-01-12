@@ -15,7 +15,7 @@ export default function CompareTownsCTA({ text }: CompareTownsCTAProps) {
     <div className="mt-12 pt-8 border-t border-gray-200">
       <div className="bg-gray-50 rounded-lg p-5 text-center">
         <Link
-          href="/compare"
+          href="/compare/"
           className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
           {text}
