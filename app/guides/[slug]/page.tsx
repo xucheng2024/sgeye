@@ -373,8 +373,9 @@ const guideContent: Record<string, GuideData> = {
   },
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const guide = guideContent[params.slug]
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }): Promise<Metadata> {
+  const resolvedParams = await params
+  const guide = guideContent[resolvedParams.slug]
 
   if (!guide) {
     return {
@@ -389,8 +390,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default function GuidePage({ params }: { params: { slug: string } }) {
-  const guide = guideContent[params.slug]
+export default async function GuidePage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+  const resolvedParams = await params
+  const guide = guideContent[resolvedParams.slug]
 
   if (!guide) {
     notFound()
