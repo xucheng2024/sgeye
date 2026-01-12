@@ -15,8 +15,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Singapore Data Eye | Living in Singapore",
-  description: "Data-driven insights into HDB prices and real housing affordability in Singapore",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://sgeye.vercel.app"),
+  title: {
+    default: "Singapore Data Eye",
+    template: "%s | Singapore Data Eye",
+  },
+  description:
+    "Data-driven insights into HDB prices, transport burden, school pressure, and real housing affordability in Singapore.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    title: "Singapore Data Eye",
+    description:
+      "Data-driven insights into HDB prices, transport burden, school pressure, and real housing affordability in Singapore.",
+    url: "/",
+    siteName: "Singapore Data Eye",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Singapore Data Eye",
+    description:
+      "Data-driven insights into HDB prices, transport burden, school pressure, and real housing affordability in Singapore.",
+  },
 };
 
 export default function RootLayout({
@@ -24,8 +50,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sgeye.vercel.app";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Singapore Data Eye",
+    url: siteUrl,
+  };
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

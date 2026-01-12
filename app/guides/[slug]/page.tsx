@@ -387,6 +387,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${guide.title} | Singapore Data Eye`,
     description: guide.description,
+    alternates: {
+      canonical: `/guides/${resolvedParams.slug}/`,
+    },
+    openGraph: {
+      title: guide.title,
+      description: guide.description,
+      url: `/guides/${resolvedParams.slug}/`,
+    },
+    twitter: {
+      title: guide.title,
+      description: guide.description,
+    },
   }
 }
 

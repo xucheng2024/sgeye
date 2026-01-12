@@ -8,6 +8,7 @@ interface FloatingButtonProps {
   context: Record<string, any>
   triggerAfterScroll?: boolean
   scrollThreshold?: number
+  hasCompareBar?: boolean
 }
 
 function formatTimeOnPage(seconds: number): string {
