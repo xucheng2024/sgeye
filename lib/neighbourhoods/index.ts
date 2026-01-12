@@ -224,7 +224,9 @@ function transformNeighbourhoods(
         neighbourhood_id: ft.neighbourhood_id,
         flat_type: ft.flat_type,
         tx_12m: ft.tx_12m,
+        p25_price_12m: ft.p25_price_12m,
         median_price_12m: ft.median_price_12m,
+        p75_price_12m: ft.p75_price_12m,
         median_psm_12m: ft.median_psm_12m,
         median_lease_years_12m: ft.median_lease_years_12m,
         avg_floor_area_12m: ft.avg_floor_area_12m
