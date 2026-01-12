@@ -86,11 +86,11 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-8 right-8 z-[9999] flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] h-11 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100"
+        className="fixed right-4 md:right-6 bottom-20 md:bottom-20 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white border-2 border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700 shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center"
         aria-label="Ask the builder"
+        title="Ask the builder"
       >
-        <HelpCircle className="w-3.5 h-3.5" />
-        <span className="text-sm font-medium">Ask the builder</span>
+        <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
       </button>
 
       <BuilderMessageModal

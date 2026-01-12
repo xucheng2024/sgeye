@@ -1164,15 +1164,15 @@ function NeighbourhoodsPageContent() {
 
       {/* Fixed Bottom Compare Bar */}
       {selectedForCompare.size >= 1 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-blue-600 text-white shadow-lg z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-3.5 lg:py-3">
             <div className="flex items-center justify-between gap-4">
               {/* Status */}
               <div className="flex items-center gap-2 min-w-0">
-                <Circle className="w-4 h-4 text-green-600 fill-green-600 shrink-0" />
+                <Circle className="w-4 h-4 text-green-400 fill-green-400 shrink-0" />
                 <div className="min-w-0">
                   {selectedForCompare.size >= 2 ? (
-                    <div className="text-sm md:text-base font-medium text-gray-900 truncate">
+                    <div className="text-sm md:text-base font-medium text-white truncate">
                       {selectedForCompare.size} selected: {Array.from(selectedForCompare)
                         .slice(0, 2)
                         .map(uniqueKey => {
@@ -1190,7 +1190,7 @@ function NeighbourhoodsPageContent() {
                       {selectedForCompare.size > 2 && ` +${selectedForCompare.size - 2}`}
                     </div>
                   ) : (
-                    <div className="text-sm md:text-base font-medium text-gray-900">
+                    <div className="text-sm md:text-base font-medium text-white">
                       {selectedForCompare.size} selected
                     </div>
                   )}
@@ -1207,7 +1207,7 @@ function NeighbourhoodsPageContent() {
                         firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
                       }
                     }}
-                    className="text-xs md:text-sm text-gray-600 hover:text-gray-900 font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors hidden sm:inline-flex"
+                    className="text-xs md:text-sm text-blue-100 hover:text-white font-medium px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors hidden sm:inline-flex"
                   >
                     + Select one more
                   </button>
@@ -1217,8 +1217,8 @@ function NeighbourhoodsPageContent() {
                   disabled={selectedForCompare.size < 2}
                   className={`inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-semibold text-xs md:text-sm transition-colors whitespace-nowrap ${
                     selectedForCompare.size >= 2
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'bg-white text-blue-600 hover:bg-blue-50'
+                      : 'bg-blue-700 text-blue-200 cursor-not-allowed'
                   }`}
                 >
                   Compare side by side
