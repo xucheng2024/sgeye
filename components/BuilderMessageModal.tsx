@@ -97,7 +97,7 @@ export default function BuilderMessageModal({ isOpen, onClose, context }: Builde
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder='e.g. "The area feels fine, but I'm unsure about long-term resale."'
+                  placeholder="e.g. The area feels fine, but I'm unsure about long-term resale."
                   rows={3}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                   disabled={submitting}
