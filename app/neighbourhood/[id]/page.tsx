@@ -20,6 +20,7 @@ import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes
 import FeedbackForm from '@/components/FeedbackForm'
 import FitProfile from '@/components/FitProfile'
 import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import FloatingButton from '@/components/FloatingButton'
 
 interface Neighbourhood {
   id: string
@@ -666,6 +667,34 @@ export default function NeighbourhoodDetailPage() {
         </div>
 
       </div>
+
+      {/* Floating Button - Ask the builder */}
+      {neighbourhood && (
+        <FloatingButton
+          context={{
+            page: 'Neighbourhood Detail',
+            neighbourhood: toTitleCase(neighbourhood.name),
+            neighbourhood_id: neighbourhood.id,
+            flat_type: flatType,
+            price_range: neighbourhood.summary?.median_price_12m 
+              ? `$${Math.round(neighbourhood.summary.median_price_12m / 1000)}k`
+              : undefined,
+            lease_bucket: neighbourhood.summary?.median_lease_years_12m
+              ? getLeaseLabel(neighbourhood.summary.median_lease_years_12m)
+              : undefined,
+            mrt_access: neighbourhood.access?.mrt_station_count 
+              ? `${neighbourhood.access.mrt_station_count} station${neighbourhood.access.mrt_station_count > 1 ? 's' : ''} in area`
+              : neighbourhood.access?.avg_distance_to_mrt
+              ? `${formatDistance(neighbourhood.access.avg_distance_to_mrt)} outside area`
+              : 'None',
+            planning_area: neighbourhood.planning_area?.name 
+              ? toTitleCase(neighbourhood.planning_area.name)
+              : undefined
+          }}
+          triggerAfterScroll={true}
+          scrollThreshold={400}
+        />
+      )}
     </div>
   )
 }

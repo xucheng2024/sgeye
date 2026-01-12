@@ -17,6 +17,7 @@ import { AnalyticsEvents } from '@/lib/analytics'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import type { LivingRating } from '@/lib/neighbourhood-living-notes'
 import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import FloatingButton from '@/components/FloatingButton'
 
 interface NeighbourhoodComparison {
   id: string
@@ -1311,6 +1312,21 @@ function ComparePageContent() {
               className="mt-8"
             />
           </>
+        )}
+
+        {/* Floating Button - Ask the builder */}
+        {comparisons.length >= 2 && (
+          <FloatingButton
+            context={{
+              page: 'Compare Neighbourhoods',
+              comparing_neighbourhoods: comparisons.map(c => toTitleCase(c.name)).join(', '),
+              neighbourhood_ids: ids,
+              flat_type: flatType,
+              months: months
+            }}
+            triggerAfterScroll={true}
+            scrollThreshold={200}
+          />
         )}
       </div>
     </div>
