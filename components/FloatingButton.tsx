@@ -93,10 +93,10 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 animate-fade-in-up ${
           isCollapsed
-            ? 'w-12 h-12 p-0 justify-center bg-[#F9FAFB] border-[#E5E7EB] text-[#111827] hover:bg-[#F3F4F6]'
-            : 'bg-[#F9FAFB] border-[#E5E7EB] text-[#111827] hover:bg-[#F3F4F6] shadow-sm'
+            ? 'w-14 h-14 p-0 justify-center bg-blue-600 text-white hover:bg-blue-700'
+            : 'bg-blue-600 text-white hover:bg-blue-700 font-semibold min-w-[160px]'
         }`}
         aria-label="Ask the builder"
       >
@@ -104,8 +104,8 @@ export default function FloatingButton({
           <Mail className="w-5 h-5" />
         ) : (
           <>
-            <Mail className="w-4 h-4" />
-            <span className="text-sm font-medium">Ask the builder</span>
+            <Mail className="w-5 h-5" />
+            <span className="text-sm font-semibold">Ask the builder</span>
           </>
         )}
       </button>
