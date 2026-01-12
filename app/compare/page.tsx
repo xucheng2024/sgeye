@@ -998,12 +998,12 @@ function ComparePageContent() {
                   <tbody className="divide-y divide-gray-200">
                     <tr>
                       <td className="px-4 py-3 text-sm font-medium text-gray-700">MRT</td>
-                      {comparisons.map(c => {
+                      {comparisons.map((c, idx) => {
                         const mrtInfo = getMRTAccessLabelForCard(c)
                         const hasAccess = mrtInfo.text !== 'None'
                         
                         return (
-                          <td key={`${c.id}-mrt`} className="px-4 py-3 text-sm">
+                          <td key={`${c.id}-mrt-${idx}`} className="px-4 py-3 text-sm">
                             {mrtInfo.isInArea ? (
                               <span className="font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
                                 ✓ {mrtInfo.text}
