@@ -21,6 +21,7 @@ import FeedbackForm from '@/components/FeedbackForm'
 import FitProfile from '@/components/FitProfile'
 import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import FloatingButton from '@/components/FloatingButton'
+import GuideCard from '@/components/GuideCard'
 
 interface Neighbourhood {
   id: string
@@ -663,6 +664,23 @@ export default function NeighbourhoodDetailPage() {
               Compare now
               <ArrowRight className="w-5 h-5" />
             </Link>
+          </div>
+        </div>
+
+        {/* Related Guides */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Related guides</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <GuideCard
+              slug="does-mrt-distance-really-matter"
+              title="MRT distance vs real convenience"
+              description="Understanding MRT distance vs real convenience when choosing HDB neighbourhoods. Learn what factors affect daily transport convenience beyond just proximity."
+            />
+            <GuideCard
+              slug="why-cheap-hdb-feel-uncomfortable"
+              title="How to judge living comfort beyond price"
+              description="Learn what factors beyond price affect daily comfort and long-term satisfaction in a neighbourhood."
+            />
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, Database, Home as HomeIcon, Users } from 'lucide-react'
 import HomeCTAs from '@/components/HomeCTAs'
 import FeedbackForm from '@/components/FeedbackForm'
+import GuideCard from '@/components/GuideCard'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { useEffect } from 'react'
 
@@ -135,6 +136,35 @@ export default function Home() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 3: Guides */}
+      <section className="bg-white py-12 md:py-14">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-3">
+            Learn how to make better HDB decisions
+          </h2>
+          <p className="text-base md:text-lg text-gray-600 text-center mb-10 max-w-2xl mx-auto">
+            Data-driven guides to help you understand trade-offs and make informed choices.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <GuideCard
+              slug="how-to-choose-hdb-neighbourhood"
+              title="How to choose a HDB neighbourhood"
+              description="A step-by-step guide to evaluating neighbourhoods based on your family's priorities."
+            />
+            <GuideCard
+              slug="why-cheap-hdb-feel-uncomfortable"
+              title="How to judge living comfort beyond price"
+              description="Learn what factors beyond price affect daily comfort and long-term satisfaction in Singapore HDB neighbourhoods."
+            />
+            <GuideCard
+              slug="does-mrt-distance-really-matter"
+              title="MRT distance vs real convenience"
+              description="Understanding MRT distance vs real convenience and what affects daily transport convenience beyond just proximity."
+            />
           </div>
         </div>
       </section>
