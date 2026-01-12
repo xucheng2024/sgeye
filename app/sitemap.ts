@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: withTrailingSlash(baseUrl),
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 1,
+      priority: 1.0,
     },
     {
       url: withTrailingSlash(`${baseUrl}/neighbourhoods`),
@@ -32,25 +32,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: withTrailingSlash(`${baseUrl}/transport`),
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
     },
     {
       url: withTrailingSlash(`${baseUrl}/family/psle-school`),
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
     },
     {
       url: withTrailingSlash(`${baseUrl}/hdb`),
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
     },
     {
       url: withTrailingSlash(`${baseUrl}/hdb/lease-price`),
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
     },
   ]
 
