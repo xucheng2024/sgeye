@@ -45,7 +45,7 @@ export default function FloatingButton({
     const interval = setInterval(updateTime, 1000)
     updateTime() // Initial update
 
-    // Show after 5 seconds on first visit
+    // Show after 5 seconds on first visit (always, regardless of scroll)
     const timer = setTimeout(() => {
       if (!hasShownRef.current) {
         setIsVisible(true)
@@ -53,27 +53,20 @@ export default function FloatingButton({
       }
     }, 5000)
 
+    // Also show immediately if triggerAfterScroll is false
+    if (!triggerAfterScroll) {
+      setIsVisible(true)
+      hasShownRef.current = true
+    }
+
     return () => {
       clearTimeout(timer)
       clearInterval(interval)
     }
-  }, [])
+  }, [triggerAfterScroll])
 
   useEffect(() => {
-    if (!triggerAfterScroll) return
-
     const handleScroll = () => {
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-
-      // Show if scrolled past threshold
-      if (window.scrollY > scrollThreshold && !hasShownRef.current) {
-        setIsVisible(true)
-        hasShownRef.current = true
-      }
-
       // Collapse on scroll
       if (window.scrollY > 50) {
         setIsCollapsed(true)
@@ -81,18 +74,16 @@ export default function FloatingButton({
         setIsCollapsed(false)
       }
 
-      // Debounce collapse state
-      scrollTimeoutRef.current = setTimeout(() => {
-        // Keep collapsed state
-      }, 100)
+      // If triggerAfterScroll is enabled, show when scrolled past threshold
+      if (triggerAfterScroll && window.scrollY > scrollThreshold && !hasShownRef.current) {
+        setIsVisible(true)
+        hasShownRef.current = true
+      }
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
     }
   }, [triggerAfterScroll, scrollThreshold])
 
@@ -102,7 +93,7 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className={`fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all duration-300 ${
           isCollapsed
             ? 'w-12 h-12 p-0 justify-center bg-[#F9FAFB] border-[#E5E7EB] text-[#111827] hover:bg-[#F3F4F6]'
             : 'bg-[#F9FAFB] border-[#E5E7EB] text-[#111827] hover:bg-[#F3F4F6] shadow-sm'
