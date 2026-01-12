@@ -1145,22 +1145,24 @@ function NeighbourhoodsPageContent() {
           </div>
         )}
 
-        {/* Floating Button - Ask the builder */}
-        <FloatingButton
-          context={{
-            page: 'Explore Neighbourhoods',
-            filters_used: [
-              selectedFlatTypes.size > 0 && `Flat types: ${Array.from(selectedFlatTypes).join(', ')}`,
-              priceTiers.size > 0 && `Price: ${Array.from(priceTiers).join(', ')}`,
-              leaseTiers.size > 0 && `Lease: ${Array.from(leaseTiers).join(', ')}`,
-              mrtTiers.size > 0 && `MRT: ${Array.from(mrtTiers).join(', ')}`,
-              selectedPlanningAreas.size > 0 && `Areas: ${Array.from(selectedPlanningAreas).join(', ')}`
-            ].filter(Boolean)
-          }}
-          triggerAfterScroll={true}
-          scrollThreshold={300}
-        />
       </div>
+
+      {/* Floating Button - Ask the builder (positioned above Compare Bar) */}
+      <FloatingButton
+        context={{
+          page: 'Explore Neighbourhoods',
+          filters_used: [
+            selectedFlatTypes.size > 0 && `Flat types: ${Array.from(selectedFlatTypes).join(', ')}`,
+            priceTiers.size > 0 && `Price: ${Array.from(priceTiers).join(', ')}`,
+            leaseTiers.size > 0 && `Lease: ${Array.from(leaseTiers).join(', ')}`,
+            mrtTiers.size > 0 && `MRT: ${Array.from(mrtTiers).join(', ')}`,
+            selectedPlanningAreas.size > 0 && `Areas: ${Array.from(selectedPlanningAreas).join(', ')}`
+          ].filter(Boolean)
+        }}
+        triggerAfterScroll={true}
+        scrollThreshold={300}
+        hasCompareBar={selectedForCompare.size >= 1}
+      />
 
       {/* Fixed Bottom Compare Bar */}
       {selectedForCompare.size >= 1 && (
