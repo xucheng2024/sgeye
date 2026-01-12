@@ -86,7 +86,7 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
+        className="fixed bottom-8 right-8 z-[9999] flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] h-11 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100"
         aria-label="Ask the builder"
       >
         <HelpCircle className="w-3.5 h-3.5" />
