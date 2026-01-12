@@ -69,7 +69,7 @@ export default function Home() {
                 School pressure is shaped by neighbourhood — not the flat.
               </p>
               <Link
-                href="/family/psle-school"
+                href="/family/psle-school/"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 View school demand by area
@@ -89,7 +89,7 @@ export default function Home() {
                 Commute friction compounds over time.
               </p>
               <Link
-                href="/transport"
+                href="/transport/"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Explore transport access by neighbourhood
@@ -109,7 +109,7 @@ export default function Home() {
                 Noise patterns are shaped by neighbourhood layout.
               </p>
               <Link
-                href="/neighbourhoods"
+                href="/neighbourhoods/"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Check noise & density patterns
@@ -129,7 +129,7 @@ export default function Home() {
                 Long-term comfort is a neighbourhood decision.
               </p>
               <Link
-                href="/hdb/lease-price"
+                href="/hdb/lease-price/"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 View long-term comfort & lease safety

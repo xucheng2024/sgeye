@@ -15,7 +15,7 @@ export default function HomeCTAs() {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4">
       <Link
-        href="/neighbourhoods"
+        href="/neighbourhoods/"
         onClick={() => AnalyticsEvents.ctaBrowseDirect()}
         className="inline-flex items-center justify-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg w-full sm:w-auto sm:min-w-[280px]"
       >

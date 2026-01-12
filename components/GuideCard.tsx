@@ -11,7 +11,7 @@ interface GuideCardProps {
 export default function GuideCard({ slug, title, description, className = '' }: GuideCardProps) {
   return (
     <Link
-      href={`/guides/${slug}`}
+      href={`/guides/${slug}/`}
       className={`block bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all ${className}`}
     >
       <h3 className="text-lg font-semibold text-gray-900 mb-2">
