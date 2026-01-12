@@ -52,7 +52,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sgeye.vercel.app";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sgeye.vercel.app").replace(/\/+$/, "");
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
