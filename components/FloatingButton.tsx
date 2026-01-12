@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Mail } from 'lucide-react'
 import BuilderMessageModal from './BuilderMessageModal'
 
 interface FloatingButtonProps {
@@ -28,10 +27,8 @@ export default function FloatingButton({
   scrollThreshold = 200 
 }: FloatingButtonProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [isCollapsed, setIsCollapsed] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const hasShownRef = useRef(false)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(Date.now())
   const [timeOnPage, setTimeOnPage] = useState<string>('')
 
@@ -66,16 +63,11 @@ export default function FloatingButton({
   }, [triggerAfterScroll])
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Collapse on scroll
-      if (window.scrollY > 50) {
-        setIsCollapsed(true)
-      } else {
-        setIsCollapsed(false)
-      }
+    if (!triggerAfterScroll) return
 
+    const handleScroll = () => {
       // If triggerAfterScroll is enabled, show when scrolled past threshold
-      if (triggerAfterScroll && window.scrollY > scrollThreshold && !hasShownRef.current) {
+      if (window.scrollY > scrollThreshold && !hasShownRef.current) {
         setIsVisible(true)
         hasShownRef.current = true
       }
@@ -93,21 +85,10 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 animate-fade-in-up ${
-          isCollapsed
-            ? 'w-14 h-14 p-0 justify-center bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-blue-600 text-white hover:bg-blue-700 font-semibold min-w-[160px]'
-        }`}
+        className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center px-5 py-2.5 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] bg-[#F9FAFB] border border-[#E5E7EB] text-[#374151] hover:bg-gray-50"
         aria-label="Ask the builder"
       >
-        {isCollapsed ? (
-          <Mail className="w-5 h-5" />
-        ) : (
-          <>
-            <Mail className="w-5 h-5" />
-            <span className="text-sm font-semibold">Ask the builder</span>
-          </>
-        )}
+        <span className="text-sm font-medium">Ask the builder</span>
       </button>
 
       <BuilderMessageModal
