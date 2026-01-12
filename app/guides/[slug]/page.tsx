@@ -410,6 +410,24 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
     notFound()
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sgeye.vercel.app'
+  const canonicalPath = `/guides/${resolvedParams.slug}/`
+  const nowIso = new Date().toISOString()
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.title,
+    description: guide.description,
+    mainEntityOfPage: `${siteUrl}${canonicalPath}`,
+    datePublished: nowIso,
+    dateModified: nowIso,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Singapore Data Eye',
+      url: siteUrl,
+    },
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -422,6 +440,10 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           </Link>
 
         <article className="bg-white rounded-lg border border-gray-200 p-8 md:p-12">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+          />
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
             {guide.title}
           </h1>

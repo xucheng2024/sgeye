@@ -16,6 +16,8 @@ async function getNeighbourhoodSeoData(id: string): Promise<{
   name: string | null;
   one_liner: string | null;
   planning_area_name: string | null;
+  median_price_12m: number | null;
+  avg_distance_to_mrt: number | null;
 }> {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
@@ -31,7 +33,13 @@ async function getNeighbourhoodSeoData(id: string): Promise<{
     !supabaseKey ||
     supabaseKey === "placeholder-key"
   ) {
-    return { name: null, one_liner: null, planning_area_name: null };
+    return {
+      name: null,
+      one_liner: null,
+      planning_area_name: null,
+      median_price_12m: null,
+      avg_distance_to_mrt: null,
+    };
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -42,14 +50,22 @@ async function getNeighbourhoodSeoData(id: string): Promise<{
       `
         name,
         one_liner,
-        planning_areas(id, name)
+        planning_areas(id, name),
+        neighbourhood_summary(median_price_12m),
+        neighbourhood_access(avg_distance_to_mrt)
       `
     )
     .eq("id", id)
     .single();
 
   if (error || !data) {
-    return { name: null, one_liner: null, planning_area_name: null };
+    return {
+      name: null,
+      one_liner: null,
+      planning_area_name: null,
+      median_price_12m: null,
+      avg_distance_to_mrt: null,
+    };
   }
 
   const planningArea =
@@ -58,10 +74,24 @@ async function getNeighbourhoodSeoData(id: string): Promise<{
       ? (data as any).planning_areas[0]
       : null;
 
+  const summary =
+    Array.isArray((data as any).neighbourhood_summary) &&
+    (data as any).neighbourhood_summary.length > 0
+      ? (data as any).neighbourhood_summary[0]
+      : null;
+
+  const access =
+    Array.isArray((data as any).neighbourhood_access) &&
+    (data as any).neighbourhood_access.length > 0
+      ? (data as any).neighbourhood_access[0]
+      : null;
+
   return {
     name: (data as any).name ?? null,
     one_liner: (data as any).one_liner ?? null,
     planning_area_name: planningArea?.name ?? null,
+    median_price_12m: summary?.median_price_12m ?? null,
+    avg_distance_to_mrt: access?.avg_distance_to_mrt ?? null,
   };
 }
 
@@ -81,10 +111,24 @@ export async function generateMetadata({
     ? ` (${toTitleCase(data.planning_area_name)})`
     : "";
 
-  const title = `${titleName}${planningAreaSuffix}`;
-  const description =
+  const title = `${titleName} Neighbourhood – Prices, Living Comfort & Transport${planningAreaSuffix}`;
+
+  const parts: string[] = [];
+  if (data.planning_area_name) {
+    parts.push(`Planning area: ${toTitleCase(data.planning_area_name)}.`);
+  }
+  if (typeof data.median_price_12m === "number" && data.median_price_12m > 0) {
+    const priceK = Math.round(data.median_price_12m / 1000);
+    parts.push(`Median resale price (12m): ~$${priceK}k.`);
+  }
+  if (typeof data.avg_distance_to_mrt === "number" && data.avg_distance_to_mrt > 0) {
+    parts.push(`Avg MRT distance: ${Math.round(data.avg_distance_to_mrt)}m.`);
+  }
+
+  const fallback =
     data.one_liner?.trim() ||
     `Neighbourhood-level profile for ${titleName}: prices, lease safety, transport access, and living notes.`;
+  const description = parts.length > 0 ? parts.join(" ") : fallback;
 
   return {
     title,

@@ -36,12 +36,14 @@ export const metadata: Metadata = {
       "Data-driven insights into HDB prices, transport burden, school pressure, and real housing affordability in Singapore.",
     url: "/",
     siteName: "Singapore Data Eye",
+    images: [{ url: "/opengraph-image" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Singapore Data Eye",
     description:
       "Data-driven insights into HDB prices, transport burden, school pressure, and real housing affordability in Singapore.",
+    images: ["/twitter-image"],
   },
 };
 
@@ -53,9 +55,18 @@ export default function RootLayout({
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sgeye.vercel.app";
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "Singapore Data Eye",
-    url: siteUrl,
+    "@graph": [
+      {
+        "@type": "WebSite",
+        name: "Singapore Data Eye",
+        url: siteUrl,
+      },
+      {
+        "@type": "Organization",
+        name: "Singapore Data Eye",
+        url: siteUrl,
+      },
+    ],
   };
 
   return (
