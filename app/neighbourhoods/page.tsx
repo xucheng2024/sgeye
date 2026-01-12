@@ -463,27 +463,41 @@ function NeighbourhoodsPageContent() {
     return expandNeighbourhoodsToFlatTypes(originalNeighbourhoods)
   }, [originalNeighbourhoods])
   
-  // Batch fetch living notes for all visible neighbourhoods
+  // Batch fetch living notes for all visible neighbourhoods (lazy load after initial render)
   useEffect(() => {
     if (originalNeighbourhoods.length === 0) return
     
     // Get unique neighbourhood names
     const uniqueNames = Array.from(new Set(originalNeighbourhoods.map(n => n.name)))
     
-    // Batch fetch living notes
-    const fetchLivingNotes = async () => {
-      const { getLivingNotesForNeighbourhood } = await import('@/lib/neighbourhood-living-notes')
-      const notesPromises = uniqueNames.map(async (name) => {
-        const notes = await getLivingNotesForNeighbourhood(name)
-        return [name, notes] as [string, any]
-      })
+    // Lazy load living notes after a short delay to prioritize initial render
+    const timeoutId = setTimeout(() => {
+      const fetchLivingNotes = async () => {
+        const { getLivingNotesForNeighbourhood } = await import('@/lib/neighbourhood-living-notes')
+        // Batch in smaller chunks to avoid blocking
+        const chunkSize = 20
+        for (let i = 0; i < uniqueNames.length; i += chunkSize) {
+          const chunk = uniqueNames.slice(i, i + chunkSize)
+          const notesPromises = chunk.map(async (name) => {
+            const notes = await getLivingNotesForNeighbourhood(name)
+            return [name, notes] as [string, any]
+          })
+          
+          const notesResults = await Promise.all(notesPromises)
+          const newNotesMap = new Map(notesResults)
+          setLivingNotesMap(prev => new Map([...prev, ...newNotesMap]))
+          
+          // Yield to browser between chunks
+          if (i + chunkSize < uniqueNames.length) {
+            await new Promise(resolve => setTimeout(resolve, 0))
+          }
+        }
+      }
       
-      const notesResults = await Promise.all(notesPromises)
-      const notesMap = new Map<string, any>(notesResults)
-      setLivingNotesMap(notesMap)
-    }
+      fetchLivingNotes()
+    }, 100) // Small delay to let initial render complete
     
-    fetchLivingNotes()
+    return () => clearTimeout(timeoutId)
   }, [originalNeighbourhoods])
   
   // Load neighbourhoods only once on mount - all filters are now client-side
@@ -624,34 +638,55 @@ function NeighbourhoodsPageContent() {
       return
     }
     
-    // No valid cache, fetch from API
+    // No valid cache, fetch from API with progressive loading
     try {
-      const params = new URLSearchParams()
+      // First, load initial batch (300 items) for faster first render
+      const initialParams = new URLSearchParams()
+      initialParams.set('limit', '300')
       
-      // Don't send any filters to API - fetch all data once
-      // All filters (planning area, subzone, flat_type, price, lease, mrt, region, majorRegions) are applied client-side
-      // Set a high limit to get all neighbourhoods with transaction data
-      params.set('limit', '1000')
+      const initialUrl = `/api/neighbourhoods?${initialParams.toString()}`
+      console.log('Fetching initial batch from API', { url: initialUrl })
+      const initialRes = await fetch(initialUrl)
+      const initialData = await initialRes.json()
       
-      const url = `/api/neighbourhoods?${params.toString()}`
-      console.log('Fetching from API', { url })
-      const res = await fetch(url)
-      const data = await res.json()
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load neighbourhoods')
+      if (!initialRes.ok) {
+        throw new Error(initialData.error || 'Failed to load neighbourhoods')
       }
       
-      const loaded = data.neighbourhoods || []
-      setOriginalNeighbourhoods(loaded)
+      const initialLoaded = initialData.neighbourhoods || []
+      // Set initial data immediately for faster first render
+      setOriginalNeighbourhoods(initialLoaded)
+      setLoading(false)
       
-      // Save to cache
-      saveToCache(loaded)
+      // Then load full dataset in background if initial batch was smaller
+      if (initialLoaded.length >= 300) {
+        // Load full dataset in background
+        const fullParams = new URLSearchParams()
+        fullParams.set('limit', '1000')
+        
+        const fullUrl = `/api/neighbourhoods?${fullParams.toString()}`
+        console.log('Loading full dataset in background', { url: fullUrl })
+        fetch(fullUrl)
+          .then(res => res.json())
+          .then(data => {
+            if (data.neighbourhoods && data.neighbourhoods.length > initialLoaded.length) {
+              console.log('Full dataset loaded', { count: data.neighbourhoods.length })
+              setOriginalNeighbourhoods(data.neighbourhoods)
+              saveToCache(data.neighbourhoods)
+            }
+          })
+          .catch(err => {
+            console.error('Error loading full dataset (non-critical):', err)
+            // Non-critical error, initial data is already displayed
+          })
+      } else {
+        // If we got less than 300, we probably have all data already
+        saveToCache(initialLoaded)
+      }
     } catch (err) {
       const error = err as Error
       setError(error.message || 'Failed to load neighbourhoods')
       console.error('Error loading neighbourhoods:', err)
-    } finally {
       setLoading(false)
     }
   }
