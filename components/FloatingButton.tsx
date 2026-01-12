@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { HelpCircle } from 'lucide-react'
 import BuilderMessageModal from './BuilderMessageModal'
 
 interface FloatingButtonProps {
@@ -85,9 +86,10 @@ export default function FloatingButton({
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center px-5 py-2.5 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] bg-[#F9FAFB] border border-[#E5E7EB] text-[#374151] hover:bg-gray-50"
+        className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-2.5 rounded-full transition-all duration-300 animate-fade-in-up min-w-[140px] bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
         aria-label="Ask the builder"
       >
+        <HelpCircle className="w-3.5 h-3.5" />
         <span className="text-sm font-medium">Ask the builder</span>
       </button>
 
