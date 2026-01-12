@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, Suspense, useTransit
 import { flushSync } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { ArrowRight, List, Map as MapIcon, Circle } from 'lucide-react'
+import { ArrowRight, List, Map as MapIcon, Circle, X } from 'lucide-react'
 import { recordBehaviorEvent } from '@/lib/decision-profile'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { Neighbourhood, PlanningArea, SortPreset, NeighbourhoodWithFlatType } from '@/lib/types/neighbourhood'
@@ -1170,12 +1170,15 @@ function NeighbourhoodsPageContent() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-3.5 lg:py-3">
             <div className="flex items-center justify-between gap-4">
               {/* Status */}
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Circle className="w-4 h-4 text-green-400 fill-green-400 shrink-0" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   {selectedForCompare.size >= 2 ? (
-                    <div className="text-sm md:text-base font-medium text-white truncate">
-                      {selectedForCompare.size} selected: {Array.from(selectedForCompare)
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm md:text-base font-medium text-white">
+                        {selectedForCompare.size} selected:
+                      </span>
+                      {Array.from(selectedForCompare)
                         .slice(0, 2)
                         .map(uniqueKey => {
                           const neighbourhood = neighbourhoods.find(n => {
@@ -1183,17 +1186,62 @@ function NeighbourhoodsPageContent() {
                             return nKey === uniqueKey
                           })
                           if (!neighbourhood) return null
-                          return neighbourhood.display_flat_type 
+                          const displayName = neighbourhood.display_flat_type 
                             ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
                             : neighbourhood.name
+                          return (
+                            <button
+                              key={uniqueKey}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                toggleCompare(uniqueKey, e as any)
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs md:text-sm font-medium transition-colors group"
+                              title="Remove from compare"
+                            >
+                              <span>{displayName}</span>
+                              <X className="w-3 h-3 md:w-3.5 md:h-3.5 opacity-70 group-hover:opacity-100" />
+                            </button>
+                          )
                         })
-                        .filter(Boolean)
-                        .join(' · ')}
-                      {selectedForCompare.size > 2 && ` +${selectedForCompare.size - 2}`}
+                        .filter(Boolean)}
+                      {selectedForCompare.size > 2 && (
+                        <span className="text-sm md:text-base font-medium text-blue-200">
+                          +{selectedForCompare.size - 2}
+                        </span>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-sm md:text-base font-medium text-white">
-                      {selectedForCompare.size} selected
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm md:text-base font-medium text-white">
+                        {selectedForCompare.size} selected
+                      </span>
+                      {Array.from(selectedForCompare).map(uniqueKey => {
+                        const neighbourhood = neighbourhoods.find(n => {
+                          const nKey = n.display_flat_type ? `${n.id}-${n.display_flat_type}` : n.id
+                          return nKey === uniqueKey
+                        })
+                        if (!neighbourhood) return null
+                        const displayName = neighbourhood.display_flat_type 
+                          ? `${neighbourhood.name} (${formatFlatType(neighbourhood.display_flat_type)})`
+                          : neighbourhood.name
+                        return (
+                          <button
+                            key={uniqueKey}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleCompare(uniqueKey, e as any)
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-700 hover:bg-blue-800 text-white text-xs md:text-sm font-medium transition-colors group"
+                            title="Remove from compare"
+                          >
+                            <span>{displayName}</span>
+                            <X className="w-3 h-3 md:w-3.5 md:h-3.5 opacity-70 group-hover:opacity-100" />
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
