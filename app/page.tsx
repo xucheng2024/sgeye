@@ -198,7 +198,7 @@ export default function Home() {
       </section>
 
       {/* Feedback Form */}
-      <section className="bg-white py-8">
+      <section id="feedback" className="bg-white py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <FeedbackForm
             context="home"
@@ -215,6 +215,14 @@ export default function Home() {
             <div>
               <p className="text-sm">Singapore Data Eye</p>
               <p className="text-xs mt-1">Built with official public data</p>
+            </div>
+            <div className="text-center md:text-right">
+              <Link 
+                href="#feedback" 
+                className="text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Have a question or spotted something odd? → Talk to the builder
+              </Link>
             </div>
           </div>
         </div>

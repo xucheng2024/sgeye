@@ -74,8 +74,8 @@ export default function FeedbackForm({
               <span className="text-xs text-gray-400">
                 Anonymous • {feedback.length}/500
               </span>
-              <span className="text-xs text-gray-400 mt-0.5">
-                Used only to improve guidance. No replies.
+              <span className="text-xs text-gray-500 mt-0.5 italic">
+                I read every message personally. This goes directly to the builder.
               </span>
             </div>
             <button
