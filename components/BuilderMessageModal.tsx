@@ -105,7 +105,7 @@ export default function BuilderMessageModal({ isOpen, onClose, context }: Builde
                 <p className="mt-2 text-xs text-gray-500">
                   One sentence is enough.
                   <br />
-                  No agents. No follow-up. Just context.
+                  Anonymous. Used only to improve guidance. No replies.
                 </p>
               </div>
 

@@ -70,9 +70,14 @@ export default function FeedbackForm({
             disabled={submitting}
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">
-              Anonymous • {feedback.length}/500
-            </span>
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-400">
+                Anonymous • {feedback.length}/500
+              </span>
+              <span className="text-xs text-gray-400 mt-0.5">
+                Used only to improve guidance. No replies.
+              </span>
+            </div>
             <button
               type="submit"
               disabled={!feedback.trim() || submitting}

@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-const builderEmail = process.env.BUILDER_EMAIL || 'eatfreshapple@gmail.com'
+const builderEmail = process.env.BUILDER_EMAIL
 const resendApiKey = process.env.RESEND_API_KEY
 
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Send email using Resend
     const emailContent = formatEmail(message.trim(), context)
     
-    if (resendApiKey) {
+    if (resendApiKey && builderEmail) {
       try {
         const resendResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -74,12 +74,20 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Fallback: log email content if Resend is not configured
-      console.log('=== Builder Message (Resend not configured) ===')
-      console.log('To:', builderEmail)
+      if (!resendApiKey) {
+        console.log('=== Builder Message (Resend not configured) ===')
+        console.log('To enable email sending, set RESEND_API_KEY in environment variables')
+      }
+      if (!builderEmail) {
+        console.log('=== Builder Message (BUILDER_EMAIL not configured) ===')
+        console.log('To enable email sending, set BUILDER_EMAIL in environment variables')
+      }
+      if (builderEmail) {
+        console.log('To:', builderEmail)
+      }
       console.log('Subject:', emailContent.subject)
       console.log('Body:', emailContent.body)
       console.log('===============================================')
-      console.log('To enable email sending, set RESEND_API_KEY in environment variables')
     }
 
     return NextResponse.json({ success: true })
