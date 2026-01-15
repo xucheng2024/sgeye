@@ -169,6 +169,34 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Section 4: Start Here - Internal Links */}
+      <section className="bg-gray-50 py-12 md:py-14">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-3">
+            Start here
+          </h2>
+          <p className="text-base md:text-lg text-gray-600 text-center mb-10 max-w-2xl mx-auto">
+            Explore neighbourhoods and learn how to choose.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link
+              href="/neighbourhoods/"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Browse neighbourhoods
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              href="/guides/how-to-choose-hdb-neighbourhood/"
+              className="inline-flex items-center gap-2 bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+            >
+              How to choose a HDB neighbourhood
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Feedback Form */}
       <section className="bg-white py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

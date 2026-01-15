@@ -684,6 +684,31 @@ export default function NeighbourhoodDetailPage() {
           </div>
         </div>
 
+        {/* Explore More */}
+        <div className="mb-8 bg-gray-50 rounded-lg border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Explore more</h2>
+          <ul className="space-y-3">
+            <li>
+              <Link
+                href="/neighbourhoods/"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Browse all neighbourhoods
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/guides/how-to-choose-hdb-neighbourhood/"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                How to choose a HDB neighbourhood
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </li>
+          </ul>
+        </div>
+
       </div>
 
       {/* Floating Button - Ask the builder */}

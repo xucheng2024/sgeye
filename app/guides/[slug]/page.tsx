@@ -471,6 +471,25 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </div>
             </div>
           )}
+
+          {/* Next Steps */}
+          <div className="mt-12 pt-8 border-t border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Next steps</h2>
+            <ul className="space-y-3">
+              <li>
+                <Link
+                  href="/neighbourhoods/"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Browse all neighbourhoods
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </li>
+            </ul>
+            <p className="text-sm text-gray-600 mt-4">
+              Explore neighbourhoods to see price trends, transport access, lease safety, and school pressure data.
+            </p>
+          </div>
         </article>
       </div>
     </div>
