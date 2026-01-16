@@ -69,7 +69,8 @@ function toTitleCase(str: string): string {
 export default function NeighbourhoodDetailPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const id = params.id as string
+  // Ensure ID doesn't have trailing slash (API routes don't support it)
+  const id = (params.id as string)?.replace(/\/$/, '') || ''
   const returnTo = searchParams.get('return_to')
   
   const [neighbourhood, setNeighbourhood] = useState<Neighbourhood | null>(null)
