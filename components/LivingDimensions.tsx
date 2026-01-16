@@ -190,7 +190,7 @@ export default function LivingDimensions({
           <span className="text-sm font-medium text-gray-900">Living comfort</span>
           {neighbourhoodId ? (
             <Link
-              href={`/neighbourhood/${neighbourhoodId}`}
+              href={`/neighbourhood/${neighbourhoodId}/`}
               className={`text-sm font-medium ${labelColor} hover:underline transition-colors`}
             >
               {label}
@@ -200,7 +200,7 @@ export default function LivingDimensions({
           )}
           {neighbourhoodId && (
             <Link
-              href={`/neighbourhood/${neighbourhoodId}`}
+              href={`/neighbourhood/${neighbourhoodId}/`}
               className="text-gray-400 hover:text-gray-600 transition-colors flex items-center"
               title="View details"
             >

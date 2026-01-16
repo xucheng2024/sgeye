@@ -324,7 +324,7 @@ export default function NeighbourhoodDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error || 'Neighbourhood not found'}</p>
-          <Link href={returnTo || '/neighbourhoods'} className="text-blue-600 hover:text-blue-700">
+          <Link href={returnTo || '/neighbourhoods/'} className="text-blue-600 hover:text-blue-700">
             ← Back to Neighbourhoods
           </Link>
         </div>
@@ -340,7 +340,7 @@ export default function NeighbourhoodDetailPage() {
         {/* Header */}
         <div className="mb-6">
           <Link 
-            href={returnTo || '/neighbourhoods'} 
+            href={returnTo || '/neighbourhoods/'} 
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4" />

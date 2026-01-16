@@ -1245,7 +1245,7 @@ function ComparePageContent() {
                         </div>
                       )}
                       <Link
-                        href={`/neighbourhood/${item.id}`}
+                        href={`/neighbourhood/${item.id}/`}
                         className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 pt-3 border-t border-gray-200"
                       >
                         View details →

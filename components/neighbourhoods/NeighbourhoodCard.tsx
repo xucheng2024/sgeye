@@ -101,7 +101,7 @@ function NeighbourhoodCardComponent({
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <Link 
-            href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
+            href={`/neighbourhood/${neighbourhood.id}/${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
             className="group inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{toTitleCase(neighbourhood.name)}</h3>
@@ -165,7 +165,7 @@ function NeighbourhoodCardComponent({
         {/* Price */}
         {neighbourhood.summary?.median_price_12m != null && Number(neighbourhood.summary.median_price_12m) > 0 && (
           <Link 
-            href={`/neighbourhood/${neighbourhood.id}${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
+            href={`/neighbourhood/${neighbourhood.id}/${filterParams ? `?return_to=${encodeURIComponent('/neighbourhoods?' + filterParams)}` : ''}`}
             className="flex items-center justify-between group hover:bg-blue-50 -mx-2 px-2 py-1 rounded transition-colors"
           >
             <span className="text-gray-600">Price:</span>
