@@ -16,7 +16,7 @@ import FeedbackForm from '@/components/FeedbackForm'
 import { AnalyticsEvents } from '@/lib/analytics'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import type { LivingRating } from '@/lib/neighbourhood-living-notes'
-import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import FloatingButton from '@/components/FloatingButton'
 
 interface NeighbourhoodComparison {
@@ -217,7 +217,10 @@ function ComparePageContent() {
       // Load transport profiles and calculate TBI for all comparisons
       const tbiPromises = comparisonData.map(async (c: NeighbourhoodComparison) => {
         try {
-          const profile = await getNeighbourhoodTransportProfile(c.id)
+          const res = await fetch(`/api/neighbourhoods/${c.id}/transport-profile`)
+          if (!res.ok) return { id: c.id, tbi: null, level: null, label: null, profile: null }
+          
+          const profile = await res.json()
           if (profile) {
             const tbi = calculateTBI(profile)
             const level = getTBILevel(tbi)
@@ -799,7 +802,7 @@ function ComparePageContent() {
             /compare?ids=neighbourhood-id-1,neighbourhood-id-2
           </code>
           <Link
-            href="/neighbourhoods/"
+            href="/neighbourhoods"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Browse Neighbourhoods
@@ -814,7 +817,7 @@ function ComparePageContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/neighbourhoods/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4">
+          <Link href="/neighbourhoods" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4">
             <ArrowLeft className="w-4 h-4" />
             Back to Neighbourhoods
           </Link>

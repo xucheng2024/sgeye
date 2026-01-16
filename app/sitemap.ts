@@ -4,57 +4,52 @@ import { createClient } from '@supabase/supabase-js'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sgeye.vercel.app').replace(/\/+$/, '')
   
-  // Helper function to ensure trailing slash
-  const withTrailingSlash = (path: string): string => {
-    return path.endsWith('/') ? path : `${path}/`
-  }
-  
-  // Static pages
+  // Static pages (without trailing slashes to avoid redirect errors)
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: withTrailingSlash(baseUrl),
+      url: baseUrl,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1.0,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/neighbourhoods`),
+      url: `${baseUrl}/neighbourhoods`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/guides`),
+      url: `${baseUrl}/guides`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/transport`),
+      url: `${baseUrl}/transport`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/family/psle-school`),
+      url: `${baseUrl}/family/psle-school`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/hdb`),
+      url: `${baseUrl}/hdb`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/hdb/lease-price`),
+      url: `${baseUrl}/hdb/lease-price`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/compare`),
+      url: `${baseUrl}/compare`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
@@ -64,19 +59,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Guide pages
   const guidePages: MetadataRoute.Sitemap = [
     {
-      url: withTrailingSlash(`${baseUrl}/guides/how-to-choose-hdb-neighbourhood`),
+      url: `${baseUrl}/guides/how-to-choose-hdb-neighbourhood`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/guides/why-cheap-hdb-feel-uncomfortable`),
+      url: `${baseUrl}/guides/why-cheap-hdb-feel-uncomfortable`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
-      url: withTrailingSlash(`${baseUrl}/guides/does-mrt-distance-really-matter`),
+      url: `${baseUrl}/guides/does-mrt-distance-really-matter`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
@@ -112,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         for (const row of data) {
           if (!row?.id) continue
           neighbourhoodDetailPages.push({
-            url: withTrailingSlash(`${baseUrl}/neighbourhood/${row.id}`),
+            url: `${baseUrl}/neighbourhood/${row.id}`,
             lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.6,

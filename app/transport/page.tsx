@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Clock, MapPin, Train, Navigation, ChevronDown } from 'lucide-react'
-import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import type { NeighbourhoodTransportProfile } from '@/lib/hdb-data'
 
 interface Neighbourhood {
@@ -65,7 +65,12 @@ function TransportPageContent() {
       
       setLoading(true)
       try {
-        const profile = await getNeighbourhoodTransportProfile(selectedNeighbourhoodId)
+        const res = await fetch(`/api/neighbourhoods/${selectedNeighbourhoodId}/transport-profile`)
+        if (!res.ok) {
+          setTransportProfile(null)
+          return
+        }
+        const profile = await res.json()
         setTransportProfile(profile)
       } catch (error) {
         console.error('Error loading transport profile:', error)
@@ -130,7 +135,7 @@ function TransportPageContent() {
             <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 relative">
               <div className="absolute top-4 right-4">
                 <Link
-                  href="/neighbourhoods/"
+                  href="/neighbourhoods"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                 >
                   Compare with another neighbourhood

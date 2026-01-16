@@ -19,7 +19,7 @@ import LivingDimensions from '@/components/LivingDimensions'
 import { getLivingNotesForNeighbourhood } from '@/lib/neighbourhood-living-notes'
 import FeedbackForm from '@/components/FeedbackForm'
 import FitProfile from '@/components/FitProfile'
-import { getNeighbourhoodTransportProfile, calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
+import { calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import FloatingButton from '@/components/FloatingButton'
 import GuideCard from '@/components/GuideCard'
 
@@ -101,10 +101,20 @@ export default function NeighbourhoodDetailPage() {
 
   useEffect(() => {
     if (id) {
-      getNeighbourhoodTransportProfile(id).then(setTransportProfile).catch(err => {
-        console.error('Error loading transport profile:', err)
-        setTransportProfile(null)
-      })
+      // Fetch transport profile from API
+      fetch(`/api/neighbourhoods/${id}/transport-profile`)
+        .then(res => {
+          if (!res.ok) {
+            console.error('Transport profile not available')
+            return null
+          }
+          return res.json()
+        })
+        .then(setTransportProfile)
+        .catch(err => {
+          console.error('Error loading transport profile:', err)
+          setTransportProfile(null)
+        })
     }
   }, [id])
 
@@ -580,7 +590,7 @@ export default function NeighbourhoodDetailPage() {
                 <option value="EXECUTIVE">EXECUTIVE</option>
               </select>
               <Link
-                href="/hdb/"
+                href="/hdb"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 View broader market trends →
@@ -691,7 +701,7 @@ export default function NeighbourhoodDetailPage() {
           <ul className="space-y-3">
             <li>
               <Link
-                href="/neighbourhoods/"
+                href="/neighbourhoods"
                 className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
               >
                 Browse all neighbourhoods

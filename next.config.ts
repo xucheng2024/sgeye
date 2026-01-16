@@ -1,15 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  trailingSlash: true,
-  async rewrites() {
-    return [
-      {
-        source: '/sitemap.xml',
-        destination: '/sitemap.xml/',
-      },
-    ];
-  },
+  // Removed trailingSlash: true to avoid redirect errors in Google Search Console
 };
 
 export default nextConfig;

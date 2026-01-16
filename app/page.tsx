@@ -89,7 +89,7 @@ export default function Home() {
                 Commute friction compounds over time.
               </p>
               <Link
-                href="/transport/"
+                href="/transport"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Explore transport access by neighbourhood
@@ -109,7 +109,7 @@ export default function Home() {
                 Noise patterns are shaped by neighbourhood layout.
               </p>
               <Link
-                href="/neighbourhoods/"
+                href="/neighbourhoods"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
               >
                 Check noise & density patterns
@@ -180,7 +180,7 @@ export default function Home() {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
-              href="/neighbourhoods/"
+              href="/neighbourhoods"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
               Browse neighbourhoods

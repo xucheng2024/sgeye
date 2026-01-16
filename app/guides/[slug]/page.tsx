@@ -125,7 +125,7 @@ const guideContent: Record<string, GuideData> = {
             transport convenience, lease safety, and school pressure to make an informed decision.
           </p>
           <Link
-            href="/neighbourhoods/"
+            href="/neighbourhoods"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Explore HDB neighbourhoods in Singapore
@@ -243,7 +243,7 @@ const guideContent: Record<string, GuideData> = {
             lease safety, amenities, and school pressure to make an informed HDB buying decision.
           </p>
           <Link
-            href="/neighbourhoods/"
+            href="/neighbourhoods"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Compare HDB neighbourhoods
@@ -361,7 +361,7 @@ const guideContent: Record<string, GuideData> = {
             burden, MRT access, and bus connectivity to make informed decisions about daily living comfort.
           </p>
           <Link
-            href="/transport/"
+            href="/transport"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
           >
             Explore Singapore HDB transport access
@@ -478,7 +478,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/neighbourhoods/"
+                  href="/neighbourhoods"
                   className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Browse all neighbourhoods

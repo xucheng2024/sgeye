@@ -11,11 +11,16 @@ export async function getNeighbourhoodTransportProfile(neighbourhoodId: string):
   try {
     if (supabase) {
       // Get access data
-      const { data: accessData } = await supabase
+      const { data: accessData, error } = await supabase
         .from('neighbourhood_access')
         .select('*')
         .eq('neighbourhood_id', neighbourhoodId)
-        .single()
+        .maybeSingle()
+      
+      if (error) {
+        console.error('Error fetching neighbourhood access:', error)
+        return null
+      }
 
       if (!accessData) return null
 
