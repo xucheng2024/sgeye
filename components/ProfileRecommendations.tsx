@@ -85,7 +85,7 @@ export function ProfileRecommendationsForCompare({
           {recommendations.map(nbhd => (
             <li key={nbhd.id} className="flex items-center justify-between py-2 border-b border-blue-100 last:border-0">
               <Link
-                href={`/neighbourhood/${nbhd.id}/`}
+                href={`/neighbourhood/${nbhd.id}`}
                 className="text-base font-medium text-blue-700 hover:text-blue-900 flex items-center gap-2"
               >
                 {nbhd.name}

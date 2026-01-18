@@ -235,7 +235,7 @@ export default function NeighbourhoodMap({ neighbourhoods, selectedFlatType }: N
                     </div>
                   )}
                   <Link
-                    href={`/neighbourhood/${neighbourhood.id}/${displayFlatType && displayFlatType !== 'All' ? `?flat_type=${displayFlatType}` : ''}`}
+                    href={`/neighbourhood/${neighbourhood.id}${displayFlatType && displayFlatType !== 'All' ? `?flat_type=${displayFlatType}` : ''}`}
                     className="inline-block mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
                     View details →

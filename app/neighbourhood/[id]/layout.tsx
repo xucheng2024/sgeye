@@ -104,7 +104,8 @@ export async function generateMetadata({
   const id = resolvedParams.id;
 
   const data = await getNeighbourhoodSeoData(id);
-  const canonical = `/neighbourhood/${id}/`;
+  // Use canonical without trailing slash to match sitemap and avoid redirects
+  const canonical = `/neighbourhood/${id}`;
 
   const titleName = data.name ? toTitleCase(data.name) : "Neighbourhood Profile";
   const planningAreaSuffix = data.planning_area_name
