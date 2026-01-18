@@ -83,92 +83,157 @@ export default function NeighbourhoodDetailPage() {
   const [livingNotes, setLivingNotes] = useState<import('@/lib/neighbourhood-living-notes').LivingNotes | null>(null)
   const [transportProfile, setTransportProfile] = useState<import('@/lib/hdb-data').NeighbourhoodTransportProfile | null>(null)
 
+  // Fetch all data in parallel with caching
   useEffect(() => {
-    if (id) {
-      loadNeighbourhood()
-      loadTrends()
-      // Track neighbourhood detail page visit
-      recordBehaviorEvent({ type: 'neighbourhood_detail', metadata: { id } })
-      AnalyticsEvents.neighbourDetailView({ neighbourhoodId: id })
-    }
-  }, [id, flatType])
+    if (!id) return
 
-  useEffect(() => {
-    if (neighbourhood?.name) {
-      getLivingNotesForNeighbourhood(neighbourhood.name).then(setLivingNotes)
-    }
-  }, [neighbourhood?.name])
+    let cancelled = false
+    
+    // Check sessionStorage for cached data (same page in same session)
+    const cacheKey = `neighbourhood-${id}-${flatType}`
+    const cached = typeof window !== 'undefined' ? sessionStorage.getItem(cacheKey) : null
 
-  useEffect(() => {
-    if (id) {
-      // Fetch transport profile from API
-      fetch(`/api/neighbourhoods/${id}/transport-profile`)
-        .then(res => {
-          if (!res.ok) {
-            console.error('Transport profile not available')
-            return null
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        // Use cached data immediately, no loading state
+        setNeighbourhood(cachedData.neighbourhood)
+        setTrends(cachedData.trends || [])
+        setTransportProfile(cachedData.transportProfile || null)
+        setLivingNotes(cachedData.livingNotes || null)
+        if (cachedData.priceThresholds) setPriceThresholds(cachedData.priceThresholds)
+        if (cachedData.leaseThresholds) setLeaseThresholds(cachedData.leaseThresholds)
+        setLoading(false)
+        // Still track analytics
+        recordBehaviorEvent({ type: 'neighbourhood_detail', metadata: { id } })
+        AnalyticsEvents.neighbourDetailView({ neighbourhoodId: id })
+        return // Skip fetching, data already available
+      } catch (e) {
+        // If cache is corrupted, continue to fetch
+        console.warn('Failed to parse cached data', e)
+      }
+    }
+    
+    // Track neighbourhood detail page visit
+    recordBehaviorEvent({ type: 'neighbourhood_detail', metadata: { id } })
+    AnalyticsEvents.neighbourDetailView({ neighbourhoodId: id })
+
+    // Load all data in parallel with browser caching
+    // API routes set Cache-Control headers, browser will cache accordingly
+    const fetchOptions: RequestInit = {
+      cache: 'force-cache' // Use browser cache, respects Cache-Control from API
+    }
+
+    async function loadAllData() {
+      try {
+        // Parallel fetch: neighbourhood, trends, and transport profile
+        const [neighbourhoodRes, trendsRes, transportRes] = await Promise.all([
+          fetch(`/api/neighbourhoods/${id}`, fetchOptions),
+          fetch(`/api/neighbourhoods/${id}/trends?flat_type=${flatType}&months=24`, fetchOptions),
+          fetch(`/api/neighbourhoods/${id}/transport-profile`, fetchOptions).catch(() => null)
+        ])
+
+        if (cancelled) return
+
+        // Parse neighbourhood data
+        const neighbourhoodData = await neighbourhoodRes.json()
+        if (!neighbourhoodRes.ok) {
+          throw new Error(neighbourhoodData.error || 'Failed to load neighbourhood')
+        }
+        setNeighbourhood(neighbourhoodData)
+
+        // Parse trends data
+        const trendsData = await trendsRes.json()
+        const trendsList = trendsRes.ok && trendsData.trends ? trendsData.trends : []
+        if (trendsRes.ok && trendsData.trends) {
+          setTrends(trendsList)
+        }
+
+        // Parse transport profile (optional)
+        let transportProfileData: any = null
+        if (transportRes) {
+          if (transportRes.ok) {
+            transportProfileData = await transportRes.json()
+            if (!cancelled) {
+              setTransportProfile(transportProfileData)
+            }
+          } else {
+            if (!cancelled) {
+              setTransportProfile(null)
+            }
           }
-          return res.json()
-        })
-        .then(setTransportProfile)
-        .catch(err => {
-          console.error('Error loading transport profile:', err)
-          setTransportProfile(null)
-        })
-    }
-  }, [id])
+        } else {
+          if (!cancelled) {
+            setTransportProfile(null)
+          }
+        }
 
-  useEffect(() => {
-    // Track lease-related interactions
-    if (neighbourhood?.summary?.median_lease_years_12m) {
-      const lease = Number(neighbourhood.summary.median_lease_years_12m)
-      if (lease < 60) {
-        recordBehaviorEvent({ type: 'short_lease_warning', metadata: { lease } })
-      }
-      recordBehaviorEvent({ type: 'lease_view', metadata: { lease } })
-    }
-  }, [neighbourhood])
+        // Load living notes (static lookup, synchronous)
+        let notes: any = null
+        if (neighbourhoodData?.name) {
+          notes = await getLivingNotesForNeighbourhood(neighbourhoodData.name)
+          if (!cancelled) {
+            setLivingNotes(notes)
+          }
+        }
 
-  async function loadNeighbourhood() {
-    try {
-      const res = await fetch(`/api/neighbourhoods/${id}`)
-      const data = await res.json()
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load neighbourhood')
-      }
-      
-      setNeighbourhood(data)
-      
-      // Calculate thresholds from nearby neighbourhoods (will be updated when nearby loaded)
-      if (data.planning_area?.id) {
-        const nearbyRes = await fetch(`/api/neighbourhoods?planning_area_id=${data.planning_area.id}&limit=50`)
-        const nearbyData = await nearbyRes.json()
-        if (nearbyData.neighbourhoods) {
-          calculateThresholds(nearbyData.neighbourhoods)
+        // Cache data to sessionStorage for instant return from other pages
+        if (!cancelled && typeof window !== 'undefined') {
+          try {
+            const cacheData = {
+              neighbourhood: neighbourhoodData,
+              trends: trendsList,
+              transportProfile: transportProfileData,
+              livingNotes: notes,
+              priceThresholds,
+              leaseThresholds,
+              timestamp: Date.now()
+            }
+            sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
+          } catch (e) {
+            // sessionStorage might be full or unavailable, continue anyway
+            console.warn('Failed to cache data', e)
+          }
+        }
+
+        // Load nearby neighbourhoods for thresholds (non-critical, can be async)
+        if (neighbourhoodData?.planning_area?.id) {
+          fetch(`/api/neighbourhoods?planning_area_id=${neighbourhoodData.planning_area.id}&limit=50`, fetchOptions)
+            .then(res => res.json())
+            .then(nearbyData => {
+              if (!cancelled && nearbyData.neighbourhoods) {
+                calculateThresholds(nearbyData.neighbourhoods)
+              }
+            })
+            .catch(err => console.error('Error loading nearby neighbourhoods:', err))
+        }
+
+        // Track lease-related interactions
+        if (neighbourhoodData?.summary?.median_lease_years_12m) {
+          const lease = Number(neighbourhoodData.summary.median_lease_years_12m)
+          if (lease < 60) {
+            recordBehaviorEvent({ type: 'short_lease_warning', metadata: { lease } })
+          }
+          recordBehaviorEvent({ type: 'lease_view', metadata: { lease } })
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err.message || 'Failed to load neighbourhood')
+          console.error('Error loading neighbourhood:', err)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load neighbourhood')
-      console.error('Error loading neighbourhood:', err)
-    } finally {
-      setLoading(false)
     }
-  }
 
+    loadAllData()
 
-  async function loadTrends() {
-    try {
-      const res = await fetch(`/api/neighbourhoods/${id}/trends?flat_type=${flatType}&months=24`)
-      const data = await res.json()
-      
-      if (res.ok && data.trends) {
-        setTrends(data.trends)
-      }
-    } catch (err) {
-      console.error('Error loading trends:', err)
+    return () => {
+      cancelled = true
     }
-  }
+  }, [id, flatType])
 
   function calculateThresholds(neighbourhoods: Neighbourhood[]) {
     const prices = neighbourhoods

@@ -17,7 +17,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export const revalidate = 300 // Revalidate every 5 minutes
+export const revalidate = 3600 // Revalidate every hour (data changes daily)
 
 export async function GET(
   request: NextRequest,
@@ -77,7 +77,7 @@ export async function GET(
       months_requested: months
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200, max-age=3600',
       },
     })
   } catch (error: any) {
