@@ -5,6 +5,12 @@ import { ArrowRight, BookOpen } from 'lucide-react'
 
 const guides = [
   {
+    slug: 'how-to-compare-hdb-neighbourhoods',
+    title: 'HDB Resale: How to Compare Neighbourhoods Beyond Price and MRT',
+    description: 'A practical guide to comparing HDB neighbourhoods beyond price and MRT — including daily living comfort, transport, and long-term livability.',
+    featured: true, // Mark as featured/pillar page
+  },
+  {
     slug: 'how-to-choose-hdb-neighbourhood',
     title: 'How to choose a HDB neighbourhood',
     description: 'A step-by-step guide to evaluating Singapore HDB neighbourhoods based on your family\'s priorities, transport convenience, and long-term needs.',
@@ -40,8 +46,17 @@ export default function GuidesPage() {
             <Link
               key={guide.slug}
               href={`/guides/${guide.slug}`}
-              className="block bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+              className={`block rounded-lg border p-6 hover:shadow-md transition-all ${
+                guide.featured 
+                  ? 'bg-blue-50 border-blue-300 hover:border-blue-400' 
+                  : 'bg-white border-gray-200 hover:border-blue-300'
+              }`}
             >
+              {guide.featured && (
+                <span className="inline-block mb-2 text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-1 rounded">
+                  Featured Guide
+                </span>
+              )}
               <h2 className="text-xl font-semibold text-gray-900 mb-2">
                 {guide.title}
               </h2>
