@@ -70,7 +70,7 @@ export default function RelatedNeighbourhoods({
             }
             
             let mrtScore = 0
-            if (mrtDist !== null && mrtDistance !== null) {
+            if (mrtDist !== null && mrtDistance != null) {
               const mrtDiff = Math.abs(mrtDist - mrtDistance)
               // Score: 1.0 = exact match, 0.0 = 500m+ difference
               mrtScore = Math.max(0, 1 - (mrtDiff / 500))
@@ -85,7 +85,7 @@ export default function RelatedNeighbourhoods({
           })
 
         // Sort by total similarity score (descending)
-        candidates.sort((a, b) => b.totalScore - a.totalScore)
+        candidates.sort((a: any, b: any) => b.totalScore - a.totalScore)
 
         // Get top 3-6 most similar
         const topCandidates = candidates.slice(0, 6)
