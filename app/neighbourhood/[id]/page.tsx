@@ -22,6 +22,7 @@ import FitProfile from '@/components/FitProfile'
 import { calculateTBI, getTBILevel, getTBILevelLabel } from '@/lib/hdb-data'
 import FloatingButton from '@/components/FloatingButton'
 import GuideCard from '@/components/GuideCard'
+import RelatedNeighbourhoods from '@/components/neighbourhoods/RelatedNeighbourhoods'
 
 interface Neighbourhood {
   id: string
@@ -759,6 +760,15 @@ export default function NeighbourhoodDetailPage() {
             />
           </div>
         </div>
+
+        {/* Related Neighbourhoods */}
+        <RelatedNeighbourhoods
+          currentNeighbourhoodId={id}
+          planningAreaId={neighbourhood?.planning_area?.id}
+          medianPrice={neighbourhood?.summary?.median_price_12m ? Number(neighbourhood.summary.median_price_12m) : null}
+          mrtDistance={neighbourhood?.access?.avg_distance_to_mrt ? Number(neighbourhood.access.avg_distance_to_mrt) : null}
+          mrtStationCount={neighbourhood?.access?.mrt_station_count ? Number(neighbourhood.access.mrt_station_count) : null}
+        />
 
         {/* Explore More */}
         <div className="mb-8 bg-gray-50 rounded-lg border border-gray-200 p-6">

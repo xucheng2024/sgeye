@@ -11,6 +11,219 @@ interface GuideData {
 }
 
 const guideContent: Record<string, GuideData> = {
+  'how-to-compare-hdb-neighbourhoods': {
+    title: 'HDB Resale: How to Compare Neighbourhoods Beyond Price and MRT',
+    description: 'A practical guide to comparing HDB neighbourhoods beyond price and MRT — including daily living comfort, transport, and long-term livability.',
+    relatedGuides: ['how-to-choose-hdb-neighbourhood', 'why-cheap-hdb-feel-uncomfortable', 'does-mrt-distance-really-matter'],
+    content: (
+      <div className="prose prose-lg max-w-none">
+        <p className="text-lg text-gray-700 leading-relaxed mb-6">
+          When people talk about buying a resale HDB flat in Singapore, the conversation often starts — and ends — with price and MRT distance.
+        </p>
+        <p className="text-lg text-gray-700 leading-relaxed mb-6">
+          Those two factors matter. But after speaking with many buyers and analysing real neighbourhood data, one thing becomes clear:
+        </p>
+        <p className="text-lg text-gray-700 leading-relaxed mb-8 font-medium">
+          Price and MRT alone are not enough to understand how it actually feels to live in a place.
+        </p>
+        <p className="text-lg text-gray-700 leading-relaxed mb-8">
+          This guide walks through a more practical way to compare HDB neighbourhoods — especially if you're planning to stay for years, not just flip for value.
+        </p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">In this guide</h3>
+          <ol className="list-decimal list-inside space-y-2 text-gray-700">
+            <li><a href="#price-vs-lease-safety" className="text-blue-600 hover:text-blue-700 underline">Price vs Lease Safety</a></li>
+            <li><a href="#mrt-vs-daily-convenience" className="text-blue-600 hover:text-blue-700 underline">MRT Distance vs Real Daily Convenience</a></li>
+            <li><a href="#daily-living-comfort" className="text-blue-600 hover:text-blue-700 underline">Daily Living Comfort</a></li>
+            <li><a href="#family-routines" className="text-blue-600 hover:text-blue-700 underline">Family Routines and Long-Term Fit</a></li>
+            <li><a href="#long-term-livability" className="text-blue-600 hover:text-blue-700 underline">Thinking Long-Term: Livability Over Time</a></li>
+          </ol>
+        </div>
+
+        <h2 id="price-vs-lease-safety" className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          1. Price vs Lease Safety: What Are You Really Paying For?
+        </h2>
+        <p className="text-gray-700 mb-4">
+          Two flats can be priced similarly today but behave very differently over time.
+        </p>
+        <p className="text-gray-700 mb-4">
+          Beyond headline prices, it's important to consider:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>Remaining lease and how it affects future resale</li>
+          <li>How mature the estate is</li>
+          <li>Whether prices are driven by genuine demand or short-term factors</li>
+        </ul>
+        <p className="text-gray-700 mb-6">
+          A lower entry price can look attractive, but may come with trade-offs in long-term flexibility.
+        </p>
+        <p className="text-gray-700 mb-6">
+          👉 Start by comparing neighbourhoods across price and lease profiles:{' '}
+          <Link href="/neighbourhoods" className="text-blue-600 hover:text-blue-700 underline">
+            Browse all neighbourhoods
+          </Link>
+        </p>
+
+        <h2 id="mrt-vs-daily-convenience" className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          2. MRT Distance vs Real Daily Convenience
+        </h2>
+        <p className="text-gray-700 mb-4">
+          "Near MRT" is one of the most overused phrases in property listings.
+        </p>
+        <p className="text-gray-700 mb-4">
+          What matters more in daily life is:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>How long it actually takes door-to-door</li>
+          <li>Whether you rely on buses, transfers, or walking</li>
+          <li>Crowding during peak hours</li>
+          <li>The mental load of commuting every day</li>
+        </ul>
+        <p className="text-gray-700 mb-6">
+          Some neighbourhoods slightly farther from MRT stations still offer smoother daily routines due to better bus connectivity, walkability, or local amenities.
+        </p>
+        <p className="text-gray-700 mb-4">
+          For example, some neighbourhoods like{' '}
+          <Link href="/neighbourhood/bishan-east" className="text-blue-600 hover:text-blue-700 underline">
+            Bishan East
+          </Link>{' '}
+          and{' '}
+          <Link href="/neighbourhood/clementi-west" className="text-blue-600 hover:text-blue-700 underline">
+            Clementi West
+          </Link>{' '}
+          are often described as "well-connected".
+        </p>
+        <p className="text-gray-700 mb-6">
+          But their daily experience differs once you factor in crowd levels, transfer patterns, and walking distance to amenities.
+        </p>
+        <p className="text-gray-700 mb-6">
+          👉 See how transport access differs across neighbourhoods:{' '}
+          <Link href="/transport" className="text-blue-600 hover:text-blue-700 underline">
+            Explore transport factors
+          </Link>
+        </p>
+
+        <h2 id="daily-living-comfort" className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          3. Daily Living Comfort (Often Ignored, Always Felt)
+        </h2>
+        <p className="text-gray-700 mb-4">
+          This is the hardest part to quantify — and the one buyers most often regret ignoring.
+        </p>
+        <p className="text-gray-700 mb-4">
+          Daily living comfort includes:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>Crowd density at different times of day</li>
+          <li>Noise levels and foot traffic</li>
+          <li>Ease of walking to food, parks, and daily errands</li>
+          <li>How the neighbourhood feels on a weekday evening (not just weekends)</li>
+        </ul>
+        <p className="text-gray-700 mb-4">
+          These factors rarely appear in listings, but they shape everyday experience far more than floor plans or renovation photos.
+        </p>
+        <p className="text-gray-700 mb-4">
+          Neighbourhoods within the same planning area can also feel very different.
+        </p>
+        <p className="text-gray-700 mb-6">
+          For instance, comparing{' '}
+          <Link href="/neighbourhood/bukit-batok-west" className="text-blue-600 hover:text-blue-700 underline">
+            Bukit Batok West
+          </Link>{' '}
+          and nearby profiles highlights how block layout, green space, and traffic patterns influence everyday comfort.
+        </p>
+        <p className="text-gray-700 mb-6">
+          👉 Compare neighbourhoods beyond listings and brochures:{' '}
+          <Link href="/neighbourhoods" className="text-blue-600 hover:text-blue-700 underline">
+            View neighbourhood profiles
+          </Link>
+        </p>
+
+        <h2 id="family-routines" className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          4. Family Routines and Long-Term Fit
+        </h2>
+        <p className="text-gray-700 mb-4">
+          If you're buying with family considerations in mind, neighbourhood choice affects more than just space.
+        </p>
+        <p className="text-gray-700 mb-4">
+          Think about:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>Primary school proximity and competition</li>
+          <li>Child-friendly amenities</li>
+          <li>Ease of daily routines over many years</li>
+          <li>Whether the area supports your lifestyle as children grow</li>
+        </ul>
+        <p className="text-gray-700 mb-6">
+          Even buyers without children today often underestimate how much neighbourhood context matters later.
+        </p>
+        <p className="text-gray-700 mb-6">
+          👉 Understand how neighbourhoods relate to family considerations:{' '}
+          <Link href="/family/psle-school" className="text-blue-600 hover:text-blue-700 underline">
+            See family-related insights
+          </Link>
+        </p>
+
+        <h2 id="long-term-livability" className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          5. Thinking Long-Term: Livability Over Time
+        </h2>
+        <p className="text-gray-700 mb-4">
+          A good neighbourhood isn't just livable today — it remains livable as circumstances change.
+        </p>
+        <p className="text-gray-700 mb-4">
+          Ask:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>Will this area still work if routines change?</li>
+          <li>Is the environment resilient to ageing infrastructure?</li>
+          <li>Does it support both convenience and sustainability?</li>
+        </ul>
+        <p className="text-gray-700 mb-4">
+          Short-term excitement fades quickly. Daily livability compounds quietly.
+        </p>
+        <p className="text-gray-700 mb-4">
+          This is why some buyers revisit areas like{' '}
+          <Link href="/neighbourhood/tampines-north" className="text-blue-600 hover:text-blue-700 underline">
+            Tampines North
+          </Link>{' '}
+          multiple times at different hours before deciding.
+        </p>
+        <p className="text-gray-700 mb-6">
+          👉 Compare neighbourhoods with a long-term lens:{' '}
+          <Link href="/neighbourhoods" className="text-blue-600 hover:text-blue-700 underline">
+            Compare neighbourhoods
+          </Link>
+        </p>
+
+        <h2 className="text-2xl font-bold text-gray-900 mt-8 mb-4">
+          Putting It All Together
+        </h2>
+        <p className="text-gray-700 mb-4">
+          Choosing a resale HDB flat isn't just about finding the "best deal".
+        </p>
+        <p className="text-gray-700 mb-4">
+          It's about finding a neighbourhood that:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-gray-700 mb-6">
+          <li>Fits your daily routines</li>
+          <li>Matches your tolerance for crowding and commuting</li>
+          <li>Supports your family and lifestyle over time</li>
+          <li>Still makes sense years after the novelty wears off</li>
+        </ul>
+        <p className="text-gray-700 mb-6">
+          If you want to explore Singapore neighbourhoods using real data on prices, transport access, and living comfort:
+        </p>
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mt-8">
+          <p className="text-gray-900 font-medium mb-2">
+            👉 Start here:{' '}
+            <Link href="/neighbourhoods" className="text-blue-600 hover:text-blue-700 underline font-semibold">
+              Browse all neighbourhood profiles
+            </Link>
+          </p>
+        </div>
+      </div>
+    ),
+  },
   'how-to-choose-hdb-neighbourhood': {
     title: 'How to choose a HDB neighbourhood',
     description: 'A step-by-step guide to evaluating Singapore HDB neighbourhoods based on your family\'s priorities, transport convenience, lease safety, and school pressure. Learn how to make informed HDB buying decisions.',

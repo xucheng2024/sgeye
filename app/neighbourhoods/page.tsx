@@ -32,6 +32,7 @@ import { MRTDistanceFilter } from '@/components/neighbourhoods/MRTDistanceFilter
 import { SortControls } from '@/components/neighbourhoods/SortControls'
 import { NeighbourhoodCard } from '@/components/neighbourhoods/NeighbourhoodCard'
 import { FilterWizard } from '@/components/neighbourhoods/FilterWizard'
+import FeaturedNeighbourhoods from '@/components/neighbourhoods/FeaturedNeighbourhoods'
 import FloatingButton from '@/components/FloatingButton'
 
 // Dynamically import map component to avoid SSR issues
@@ -895,6 +896,9 @@ function NeighbourhoodsPageContent() {
             School pressure is assessed at the planning area level in the next step.
           </p>
         </div>
+
+        {/* Featured Neighbourhoods Section - Above filters for SEO */}
+        <FeaturedNeighbourhoods />
 
         {/* Enhanced Search - Prominent placement */}
         <div className="mb-6">
