@@ -11,7 +11,9 @@
  * Note: Requires Node.js 18+ (for built-in fetch)
  */
 
+const path = require('path')
 const { createClient } = require('@supabase/supabase-js')
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') })
 
 // Use built-in fetch (Node.js 18+)
 if (typeof fetch === 'undefined') {
@@ -20,11 +22,12 @@ if (typeof fetch === 'undefined') {
 }
 
 // Configuration
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 const DATA_GOV_SG_RESOURCE_ID = 'f1765b54-a209-4718-8d38-a39237f502b3'
 const BATCH_SIZE = 100
 const MAX_BATCHES = 200 // Increased for initial import scenarios (adjust as needed)
+const BATCH_DELAY_MS = 1000 // Delay between batches to avoid rate limiting (data.gov.sg)
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set')
@@ -35,13 +38,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 /**
  * Fetch data from data.gov.sg API
+ * Implements retry with exponential backoff for 429 (rate limit) errors
  */
-async function fetchData(limit, offset) {
+async function fetchData(limit, offset, retryCount = 0) {
+  const MAX_RETRIES = 5
+  const BASE_DELAY_MS = 2000
   const url = `https://data.gov.sg/api/action/datastore_search?resource_id=${DATA_GOV_SG_RESOURCE_ID}&limit=${limit}&offset=${offset}`
   
   try {
     const response = await fetch(url)
     if (!response.ok) {
+      if (response.status === 429 && retryCount < MAX_RETRIES) {
+        const delayMs = BASE_DELAY_MS * Math.pow(2, retryCount)
+        console.warn(`  Rate limited (429), retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        return fetchData(limit, offset, retryCount + 1)
+      }
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
@@ -55,6 +67,12 @@ async function fetchData(limit, offset) {
       throw new Error('Invalid response from data.gov.sg')
     }
   } catch (error) {
+    if (error.message.startsWith('HTTP error!') && retryCount < MAX_RETRIES) {
+      const delayMs = BASE_DELAY_MS * Math.pow(2, retryCount)
+      console.warn(`  Error: ${error.message}, retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+      return fetchData(limit, offset, retryCount + 1)
+    }
     console.error('Error fetching data:', error.message)
     throw error
   }
@@ -169,6 +187,10 @@ async function updateData() {
   console.log(`Time: ${new Date().toISOString()}`)
   
   try {
+    // Initial delay to avoid rate limit on cold start (e.g. GitHub Actions)
+    console.log('Waiting 2s before first API request (rate limit precaution)...')
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
     // Get latest month in database
     const latestMonth = await getLatestMonth()
     console.log(`Latest month in database: ${latestMonth || 'None'}`)
@@ -226,8 +248,8 @@ async function updateData() {
       offset += records.length
       batchCount++
 
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Delay between batches to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS))
     }
 
     console.log('')
