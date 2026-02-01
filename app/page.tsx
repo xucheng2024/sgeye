@@ -16,7 +16,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Section 1: Hero - Single Main CTA */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+      <section className="bg-linear-to-br from-blue-600 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
           <div className="text-center">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4">
@@ -165,6 +165,15 @@ export default function Home() {
               title="MRT distance vs real convenience"
               description="Understanding MRT distance vs real convenience and what affects daily transport convenience beyond just proximity."
             />
+          </div>
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/guides"
+              className="inline-flex items-center gap-2 bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+            >
+              View all guides
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </section>

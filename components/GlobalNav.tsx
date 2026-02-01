@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { ChevronDown, TrendingUp, Clock, Home } from 'lucide-react'
+import { ChevronDown, TrendingUp, Clock, Home, BookOpen } from 'lucide-react'
 
 export default function GlobalNav() {
   const pathname = usePathname()
   const [isHouseMenuOpen, setIsHouseMenuOpen] = useState(false)
 
   const isOverviewActive = pathname === '/'
+  const isGuidesActive = pathname.startsWith('/guides')
   const isTransportActive = pathname.startsWith('/transport')
   const isFamilyActive = pathname.startsWith('/family')
   const isHouseActive = pathname.startsWith('/hdb')
@@ -43,6 +44,21 @@ export default function GlobalNav() {
               }`}
             >
               Overview
+            </Link>
+
+            {/* Guides */}
+            <Link
+              href="/guides"
+              className={`px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isGuidesActive
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4" />
+                <span>Guides</span>
+              </span>
             </Link>
 
             {/* House - Dropdown Menu */}
