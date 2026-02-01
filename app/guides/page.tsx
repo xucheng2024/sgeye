@@ -55,56 +55,6 @@ const guides = [
     title: 'HDB Add a Toilet: Support vs Opposition at a Glance',
     description: 'Can you add or split a toilet in HDB? Rules, technical feasibility, approval, grey-area risks, cost vs benefit, and practical alternatives.',
   },
-  {
-    slug: 'hdb-bto-views-positive-vs-negative',
-    title: 'HDB / BTO in Singapore: Positive vs Negative Views at a Glance',
-    description: 'How outsiders and locals view Singapore HDB and BTO: subsidy, quality, ballot, price, leasehold, international comparison, lifestyle, and culture.',
-  },
-  {
-    slug: 'hdb-secondhand-smoke-window-smoking-views',
-    title: 'HDB Secondhand Smoke & Window-Side Smoking: Two Views',
-    description: 'Non-smokers vs smokers: rights, harm, enforcement, policy, community, and personal responses to neighbour smoking and secondhand smoke in HDB.',
-  },
-  {
-    slug: 'condo-vs-hdb-two-views',
-    title: 'Condo vs HDB: Two Views at a Glance',
-    description: 'Pro-Condo vs pro-HDB: living environment, neighbours, facilities, space, quiet, security, investment, convenience, cost, and community.',
-  },
-  {
-    slug: 'high-income-couples-cant-get-bto-views',
-    title: 'High-Income Young Couples Can\'t Get BTO: Two Views',
-    description: 'Sympathisers vs critics: is BTO a lottery, is 14k too high, is it unfair, gaming the system, resale, policy, and moral judgment.',
-  },
-  {
-    slug: 'hdb-bto-system-debate-views',
-    title: 'HDB / BTO System Debate: Two Views at a Glance',
-    description: 'Support vs criticism: overall evaluation, BTO nature, price rise, HDB as asset, intergenerational fairness, supply, lease vs own, and sustainability.',
-  },
-  {
-    slug: 'condo-vs-hdb-worth-premium-views',
-    title: 'Condo vs HDB: Is the Premium Worth It? Two Views',
-    description: 'Support Condo premium vs oppose: ownership, investment, eligibility, quiet, neighbours, security, facilities, space, cost, and opportunity cost.',
-  },
-  {
-    slug: 'housing-price-rise-support-vs-oppose',
-    title: 'Housing Price Rise: Support vs Oppose at a Glance',
-    description: 'Minority (support rise) vs mainstream (oppose rise): core values, existing owners, young people, fairness, government role, and long-term risk.',
-  },
-  {
-    slug: 'hdb-empty-until-mop-views',
-    title: 'HDB Empty Until MOP, Barely Lived In: Two Views',
-    description: 'Support vs oppose: view on empty units, legality, market logic, impact on young buyers and rental, fairness, policy, and enforcement.',
-  },
-  {
-    slug: 'home-design-problem-vs-preference-views',
-    title: 'Home Design: Problem vs Preference — Two Views',
-    description: 'Design is off / has problems vs just different taste / reality limits: built-in, colour, lighting, ID industry, budget, resale, and clutter.',
-  },
-  {
-    slug: 'condo-vs-hdb-core-views',
-    title: 'Condo vs HDB: Core Views at a Glance',
-    description: 'Support Condo vs oppose Condo / support HDB: money and assets, eligibility, space, environment, facilities, security, pets, inheritance, identity, and living experience.',
-  },
 ]
 
 export default function GuidesPage() {
