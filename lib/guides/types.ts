@@ -5,4 +5,13 @@ export interface GuideData {
   description: string
   content: ReactNode
   relatedGuides?: string[]
+  /** Shown as featured on the guides index */
+  featured?: boolean
+}
+
+export interface GuideListItem {
+  slug: string
+  title: string
+  description: string
+  featured: boolean
 }

@@ -74,3 +74,54 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Guide prose: headings for anchor links */
+.guide-prose h2 {
+  scroll-margin-top: 5rem;
+}
+.guide-prose h3 {
+  scroll-margin-top: 5rem;
+}
+.guide-prose a {
+  text-underline-offset: 2px;
+}
+.guide-prose ul,
+.guide-prose ol {
+  padding-left: 1.5rem;
+}
+.guide-prose table {
+  border-collapse: collapse;
+}
+.guide-prose th,
+.guide-prose td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid var(--color-gray-200, #e5e7eb);
+}
+.guide-prose thead th {
+  font-weight: 600;
+  background: var(--color-gray-50, #f9fafb);
+}
+.guide-prose tbody tr:nth-child(even) {
+  background: var(--color-gray-50, #f9fafb);
+}
+@media (max-width: 640px) {
+  .guide-prose .responsive-table thead {
+    display: none;
+  }
+  .guide-prose .responsive-table tr {
+    display: block;
+    border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
+  }
+  .guide-prose .responsive-table td {
+    display: block;
+    border: none;
+    padding: 0.5rem 0;
+  }
+  .guide-prose .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}
