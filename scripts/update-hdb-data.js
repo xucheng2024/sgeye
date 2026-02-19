@@ -27,7 +27,10 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUP
 const DATA_GOV_SG_RESOURCE_ID = 'f1765b54-a209-4718-8d38-a39237f502b3'
 const BATCH_SIZE = 100
 const MAX_BATCHES = 200 // Increased for initial import scenarios (adjust as needed)
-const BATCH_DELAY_MS = 1000 // Delay between batches to avoid rate limiting (data.gov.sg)
+const BATCH_DELAY_MS = 3000 // Delay between batches to avoid rate limiting (data.gov.sg)
+const MAX_RETRIES = 10
+const BASE_DELAY_MS = 3000
+const MAX_BACKOFF_MS = 120000
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set')
@@ -36,46 +39,78 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+function getRetryDelayMs(response, retryCount) {
+  const retryAfter = response.headers.get('retry-after')
+
+  if (retryAfter) {
+    const asSeconds = Number.parseInt(retryAfter, 10)
+    if (!Number.isNaN(asSeconds)) {
+      return Math.min(asSeconds * 1000, MAX_BACKOFF_MS)
+    }
+
+    const asDate = new Date(retryAfter)
+    if (!Number.isNaN(asDate.getTime())) {
+      const deltaMs = asDate.getTime() - Date.now()
+      if (deltaMs > 0) {
+        return Math.min(deltaMs, MAX_BACKOFF_MS)
+      }
+    }
+  }
+
+  const exponential = BASE_DELAY_MS * Math.pow(2, retryCount)
+  const capped = Math.min(exponential, MAX_BACKOFF_MS)
+  const jitter = Math.floor(Math.random() * 1000)
+  return capped + jitter
+}
+
 /**
  * Fetch data from data.gov.sg API
- * Implements retry with exponential backoff for 429 (rate limit) errors
+ * Implements retry with exponential backoff for 429/5xx and network errors
  */
-async function fetchData(limit, offset, retryCount = 0) {
-  const MAX_RETRIES = 5
-  const BASE_DELAY_MS = 2000
-  const url = `https://data.gov.sg/api/action/datastore_search?resource_id=${DATA_GOV_SG_RESOURCE_ID}&limit=${limit}&offset=${offset}`
-  
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      if (response.status === 429 && retryCount < MAX_RETRIES) {
-        const delayMs = BASE_DELAY_MS * Math.pow(2, retryCount)
-        console.warn(`  Rate limited (429), retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
+async function fetchData(limit, offset) {
+  const url = `https://data.gov.sg/api/action/datastore_search?resource_id=${DATA_GOV_SG_RESOURCE_ID}&limit=${limit}&offset=${offset}&sort=${encodeURIComponent('month desc')}`
+
+  for (let retryCount = 0; retryCount <= MAX_RETRIES; retryCount++) {
+    try {
+      const response = await fetch(url)
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.success && data.result && data.result.records) {
+          return {
+            records: data.result.records,
+            total: data.result.total || 0
+          }
+        }
+
+        throw new Error('Invalid response from data.gov.sg')
+      }
+
+      const isRetriable = response.status === 429 || response.status >= 500
+      if (isRetriable && retryCount < MAX_RETRIES) {
+        const delayMs = getRetryDelayMs(response, retryCount)
+        console.warn(`  HTTP ${response.status}, retrying in ${(delayMs / 1000).toFixed(1)}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
         await new Promise(resolve => setTimeout(resolve, delayMs))
-        return fetchData(limit, offset, retryCount + 1)
+        continue
       }
+
       throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const data = await response.json()
-    
-    if (data.success && data.result && data.result.records) {
-      return {
-        records: data.result.records,
-        total: data.result.total || 0
+    } catch (error) {
+      const isNetworkError = error instanceof TypeError
+      if (isNetworkError && retryCount < MAX_RETRIES) {
+        const delayMs = Math.min(BASE_DELAY_MS * Math.pow(2, retryCount), MAX_BACKOFF_MS)
+        console.warn(`  Network error, retrying in ${(delayMs / 1000).toFixed(1)}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        continue
       }
-    } else {
-      throw new Error('Invalid response from data.gov.sg')
+
+      console.error('Error fetching data:', error.message)
+      throw error
     }
-  } catch (error) {
-    if (error.message.startsWith('HTTP error!') && retryCount < MAX_RETRIES) {
-      const delayMs = BASE_DELAY_MS * Math.pow(2, retryCount)
-      console.warn(`  Error: ${error.message}, retrying in ${delayMs / 1000}s (attempt ${retryCount + 1}/${MAX_RETRIES})...`)
-      await new Promise(resolve => setTimeout(resolve, delayMs))
-      return fetchData(limit, offset, retryCount + 1)
-    }
-    console.error('Error fetching data:', error.message)
-    throw error
   }
+
+  throw new Error('Failed to fetch data after maximum retries')
 }
 
 /**
@@ -283,4 +318,3 @@ async function updateData() {
 
 // Run update
 updateData()
-
